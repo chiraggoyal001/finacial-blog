@@ -1,3 +1,10 @@
+export type TagType = "major" | "minor";
+
+export interface Tag {
+  name: string;
+  type: TagType;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -8,7 +15,9 @@ export interface BlogPost {
   date: string;
   image: string;
   readTime: string;
-  tags: string[];
+  tags: Tag[];
+  views?: number;
+  likes?: number;
 }
 
 export interface User {
