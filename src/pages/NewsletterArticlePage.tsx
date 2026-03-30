@@ -88,14 +88,6 @@ const NewsletterArticlePage = () => {
         <Progress value={currentPercent} className="h-1 rounded-none" />
       </div>
 
-      {/* Banner */}
-      <section className="bg-gradient-to-br from-primary/5 via-background to-accent/30">
-        <div className="container py-6">
-          <Link to="/newsletter" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors mb-4">
-            <ArrowLeft className="h-4 w-4" /> Back to Newsletter
-          </Link>
-        </div>
-      </section>
 
       {/* Article */}
       <article className="py-8">
