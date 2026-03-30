@@ -119,6 +119,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
               </Link>
             );
           })}
+          </div>
         </div>
       </div>
     </section>
