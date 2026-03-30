@@ -36,16 +36,28 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
       <div className="container">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
-          <div className="flex gap-1">
-            <Button variant="ghost" size="icon" onClick={() => scroll("left")} className="h-8 w-8">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => scroll("right")} className="h-8 w-8">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1">
+            View All <ChevronRight className="h-3 w-3" />
+          </Button>
         </div>
-        <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2 snap-x">
+        <div className="relative group">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => scroll("left")}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => scroll("right")}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+          <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2 snap-x">
           {posts.map((post) => {
             const readPercent = getProgress(post.id);
             return (
@@ -107,6 +119,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
               </Link>
             );
           })}
+          </div>
         </div>
       </div>
     </section>
