@@ -29,6 +29,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
   const getPostLink = (post: BlogPost) => {
     if (post.category === "Newsletter") return `/newsletter/${post.id}`;
     if (post.category === "Modules") return `/modules/${post.id}`;
+    if (post.category === "Videos") return `/videos/${post.id}`;
     return `/post/${post.id}`;
   };
 

@@ -51,6 +51,28 @@ export interface Module {
   likes?: number;
 }
 
+export interface VideoChapter {
+  id: string;
+  title: string;
+  videoUrl: string; // YouTube embed URL
+  duration: string; // e.g. "12:30"
+  description: string;
+  tags: Tag[]; // tagged but not visible on card
+}
+
+export interface VideoSeries {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  tag: Tag; // head tag visible on card
+  chapters: VideoChapter[];
+  totalDuration: string;
+  linkedModuleId?: string; // link to related module
+  views?: number;
+  likes?: number;
+}
+
 export interface NavItem {
   label: string;
   href: string;

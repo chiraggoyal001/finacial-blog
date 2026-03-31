@@ -14,6 +14,8 @@ import NewsletterPage from "./pages/NewsletterPage";
 import NewsletterArticlePage from "./pages/NewsletterArticlePage";
 import ModulesPage from "./pages/ModulesPage";
 import ModuleArticlePage from "./pages/ModuleArticlePage";
+import VideosPage from "./pages/VideosPage";
+import VideoArticlePage from "./pages/VideoArticlePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,9 @@ const App = () => (
                 <Route path="/modules" element={<ModulesPage />} />
                 <Route path="/modules/:moduleId" element={<ModuleArticlePage />} />
                 <Route path="/modules/:moduleId/:chapterId" element={<ModuleArticlePage />} />
+                <Route path="/videos" element={<VideosPage />} />
+                <Route path="/videos/:seriesId" element={<VideoArticlePage />} />
+                <Route path="/videos/:seriesId/:chapterId" element={<VideoArticlePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
