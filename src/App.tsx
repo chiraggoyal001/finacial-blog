@@ -34,6 +34,9 @@ const App = () => (
                 <Route path="/subscribe" element={<SubscribePage />} />
                 <Route path="/newsletter" element={<NewsletterPage />} />
                 <Route path="/newsletter/:id" element={<NewsletterArticlePage />} />
+                <Route path="/modules" element={<ModulesPage />} />
+                <Route path="/modules/:moduleId" element={<ModuleArticlePage />} />
+                <Route path="/modules/:moduleId/:chapterId" element={<ModuleArticlePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
