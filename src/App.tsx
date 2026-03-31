@@ -14,6 +14,8 @@ import NewsletterPage from "./pages/NewsletterPage";
 import NewsletterArticlePage from "./pages/NewsletterArticlePage";
 import ModulesPage from "./pages/ModulesPage";
 import ModuleArticlePage from "./pages/ModuleArticlePage";
+import VideosPage from "./pages/VideosPage";
+import VideoArticlePage from "./pages/VideoArticlePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
