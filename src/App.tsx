@@ -12,6 +12,8 @@ import SignupPage from "./pages/SignupPage";
 import SubscribePage from "./pages/SubscribePage";
 import NewsletterPage from "./pages/NewsletterPage";
 import NewsletterArticlePage from "./pages/NewsletterArticlePage";
+import ModulesPage from "./pages/ModulesPage";
+import ModuleArticlePage from "./pages/ModuleArticlePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,9 @@ const App = () => (
                 <Route path="/subscribe" element={<SubscribePage />} />
                 <Route path="/newsletter" element={<NewsletterPage />} />
                 <Route path="/newsletter/:id" element={<NewsletterArticlePage />} />
+                <Route path="/modules" element={<ModulesPage />} />
+                <Route path="/modules/:moduleId" element={<ModuleArticlePage />} />
+                <Route path="/modules/:moduleId/:chapterId" element={<ModuleArticlePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

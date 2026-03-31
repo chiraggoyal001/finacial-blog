@@ -1,4 +1,4 @@
-import { BlogPost, NavItem } from "./types";
+import { BlogPost, NavItem, Module } from "./types";
 
 export const ADMIN_EMAILS = [
   "admin@blog.com",
@@ -176,6 +176,117 @@ export const DUMMY_POSTS: BlogPost[] = [
     tags: [{ name: "Fintech", type: "major" }, { name: "Trends", type: "minor" }],
     views: 3200,
     likes: 278,
+  },
+];
+
+export const DUMMY_MODULES: Module[] = [
+  {
+    id: "m1",
+    title: "Stock Market Fundamentals",
+    description: "Learn the basics of stock markets, how they work, and how to start investing wisely.",
+    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
+    tag: { name: "Investing", type: "major" },
+    totalReadTime: "45 min",
+    youtubePlaylist: "https://youtube.com/playlist?list=example1",
+    views: 3200,
+    likes: 245,
+    chapters: [
+      {
+        id: "m1c1",
+        title: "What is a Stock Market?",
+        content: `<p>A stock market is a marketplace where shares of publicly listed companies are traded. It serves as a platform for companies to raise capital and for investors to build wealth.</p><h2>How It Works</h2><p>Companies list their shares through an Initial Public Offering (IPO). Once listed, shares are traded between investors on the exchange. Prices are determined by supply and demand dynamics.</p><h2>Major Exchanges</h2><p>The world's largest stock exchanges include the NYSE, NASDAQ, London Stock Exchange, and Tokyo Stock Exchange. In India, BSE and NSE are the primary exchanges.</p>`,
+        readTime: "8 min",
+        tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }],
+      },
+      {
+        id: "m1c2",
+        title: "Types of Stocks",
+        content: `<p>Stocks can be classified into several categories based on various factors like market capitalization, growth potential, and dividend payout.</p><h2>By Market Cap</h2><p>Large-cap stocks are well-established companies with market caps over $10 billion. Mid-cap stocks range from $2-10 billion, while small-cap stocks are below $2 billion.</p><h2>Growth vs Value</h2><p>Growth stocks are companies expected to grow faster than the market average. Value stocks trade below their intrinsic value, offering potential upside.</p>`,
+        readTime: "10 min",
+        tags: [{ name: "Investing", type: "major" }, { name: "Analysis", type: "minor" }],
+      },
+      {
+        id: "m1c3",
+        title: "Reading Financial Statements",
+        content: `<p>Understanding financial statements is crucial for making informed investment decisions.</p><h2>Income Statement</h2><p>Shows revenue, expenses, and profit over a period. Key metrics include revenue growth, operating margin, and net profit margin.</p><h2>Balance Sheet</h2><p>A snapshot of a company's assets, liabilities, and equity at a point in time. Look at debt-to-equity ratio and current ratio.</p><h2>Cash Flow Statement</h2><p>Tracks the actual cash moving in and out. Free cash flow is a key indicator of financial health.</p>`,
+        readTime: "12 min",
+        tags: [{ name: "Investing", type: "major" }, { name: "Deep Dive", type: "minor" }],
+      },
+      {
+        id: "m1c4",
+        title: "Building Your First Portfolio",
+        content: `<p>A well-constructed portfolio balances risk and return according to your financial goals and risk tolerance.</p><h2>Diversification</h2><p>Don't put all your eggs in one basket. Spread investments across different sectors, asset classes, and geographies.</p><h2>Asset Allocation</h2><p>A common rule of thumb: subtract your age from 100 to determine the percentage allocated to equities. The rest goes into bonds and fixed income.</p><h2>Rebalancing</h2><p>Review and rebalance your portfolio periodically — at least once a year — to maintain your target allocation.</p>`,
+        readTime: "15 min",
+        tags: [{ name: "Investing", type: "major" }, { name: "Planning", type: "minor" }],
+      },
+    ],
+  },
+  {
+    id: "m2",
+    title: "Personal Finance Mastery",
+    description: "A comprehensive guide to managing your money, budgeting, and planning for the future.",
+    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
+    tag: { name: "Planning", type: "major" },
+    totalReadTime: "35 min",
+    youtubePlaylist: "https://youtube.com/playlist?list=example2",
+    views: 2800,
+    likes: 312,
+    chapters: [
+      {
+        id: "m2c1",
+        title: "Budgeting 101",
+        content: `<p>Budgeting is the foundation of personal finance. It helps you understand where your money goes and take control of your spending.</p><h2>The 50/30/20 Rule</h2><p>Allocate 50% of income to needs, 30% to wants, and 20% to savings and investments. This simple framework works for most income levels.</p><h2>Tracking Expenses</h2><p>Use apps or spreadsheets to track every expense for at least 3 months. You'll be surprised at where your money actually goes.</p>`,
+        readTime: "8 min",
+        tags: [{ name: "Planning", type: "major" }, { name: "Beginners", type: "minor" }],
+      },
+      {
+        id: "m2c2",
+        title: "Emergency Funds & Insurance",
+        content: `<p>Before you start investing, ensure you have a financial safety net in place.</p><h2>Emergency Fund</h2><p>Aim for 3-6 months of living expenses in a liquid, easily accessible account. This protects you from unexpected events like job loss or medical emergencies.</p><h2>Insurance Essentials</h2><p>Health insurance and term life insurance are non-negotiable. Consider disability insurance if your employer doesn't provide it.</p>`,
+        readTime: "10 min",
+        tags: [{ name: "Planning", type: "major" }, { name: "Beginners", type: "minor" }],
+      },
+      {
+        id: "m2c3",
+        title: "Retirement Planning",
+        content: `<p>It's never too early to start planning for retirement. The power of compounding makes early contributions incredibly valuable.</p><h2>Employer-Sponsored Plans</h2><p>Always contribute enough to get the full employer match — it's essentially free money. Increase contributions by 1% each year.</p><h2>Individual Retirement Accounts</h2><p>IRAs offer tax advantages for retirement savings. Choose between traditional (tax-deferred) and Roth (tax-free growth) based on your current vs. expected future tax rate.</p>`,
+        readTime: "12 min",
+        tags: [{ name: "Planning", type: "major" }, { name: "Deep Dive", type: "minor" }],
+      },
+    ],
+  },
+  {
+    id: "m3",
+    title: "Fintech Revolution",
+    description: "Explore how technology is disrupting traditional finance — from digital payments to DeFi.",
+    image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&h=400&fit=crop",
+    tag: { name: "Fintech", type: "major" },
+    totalReadTime: "30 min",
+    views: 1950,
+    likes: 178,
+    chapters: [
+      {
+        id: "m3c1",
+        title: "Digital Payments Landscape",
+        content: `<p>Digital payments have fundamentally changed how money moves around the world.</p><h2>UPI & Mobile Wallets</h2><p>India's UPI processes over 10 billion transactions monthly, making it the world's largest real-time payment system. Mobile wallets have brought banking to millions of unbanked individuals.</p><h2>Cross-Border Payments</h2><p>Traditional cross-border payments are slow and expensive. Fintech solutions are reducing costs and settlement times dramatically.</p>`,
+        readTime: "8 min",
+        tags: [{ name: "Fintech", type: "major" }, { name: "Trends", type: "minor" }],
+      },
+      {
+        id: "m3c2",
+        title: "Blockchain & DeFi Basics",
+        content: `<p>Blockchain technology and Decentralized Finance (DeFi) represent a paradigm shift in financial services.</p><h2>How Blockchain Works</h2><p>A blockchain is a distributed ledger that records transactions across many computers. It's immutable, transparent, and doesn't require a central authority.</p><h2>DeFi Applications</h2><p>DeFi protocols offer lending, borrowing, trading, and yield farming without traditional intermediaries. However, they come with smart contract risks and regulatory uncertainty.</p>`,
+        readTime: "10 min",
+        tags: [{ name: "Fintech", type: "major" }, { name: "Deep Dive", type: "minor" }],
+      },
+      {
+        id: "m3c3",
+        title: "AI in Financial Services",
+        content: `<p>Artificial intelligence is transforming every aspect of financial services, from customer service to risk management.</p><h2>Robo-Advisors</h2><p>AI-powered robo-advisors provide automated, algorithm-driven financial planning with minimal human supervision. They've democratized wealth management.</p><h2>Fraud Detection</h2><p>Machine learning models analyze millions of transactions in real-time to detect and prevent fraudulent activity with far greater accuracy than traditional rule-based systems.</p>`,
+        readTime: "12 min",
+        tags: [{ name: "Fintech", type: "major" }, { name: "Trends", type: "minor" }],
+      },
+    ],
   },
 ];
 
