@@ -12,6 +12,8 @@ import SignupPage from "./pages/SignupPage";
 import SubscribePage from "./pages/SubscribePage";
 import NewsletterPage from "./pages/NewsletterPage";
 import NewsletterArticlePage from "./pages/NewsletterArticlePage";
+import ModulesPage from "./pages/ModulesPage";
+import ModuleArticlePage from "./pages/ModuleArticlePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
