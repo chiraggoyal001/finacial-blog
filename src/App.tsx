@@ -18,6 +18,8 @@ import VideosPage from "./pages/VideosPage";
 import VideoArticlePage from "./pages/VideoArticlePage";
 import EventsPage from "./pages/EventsPage";
 import EventDetailPage from "./pages/EventDetailPage";
+import JuniorPage from "./pages/JuniorPage";
+import JuniorArticlePage from "./pages/JuniorArticlePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
