@@ -1,0 +1,285 @@
+import React, { useEffect, useRef, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen, Play, Sparkles, Star } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import SubscribeSection from "@/components/SubscribeSection";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { DUMMY_JUNIOR_MODULES, SOCIAL_LINKS } from "@/lib/data";
+import { useAuth } from "@/contexts/AuthContext";
+import { useReadingProgress } from "@/contexts/ReadingProgressContext";
+
+const XIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+const JuniorArticlePage = () => {
+  const { moduleId, chapterId } = useParams<{ moduleId: string; chapterId?: string }>();
+  const { isLoggedIn, user } = useAuth();
+  const { getProgress, setProgress, isRead } = useReadingProgress();
+  const isSubscribed = isLoggedIn && user?.isSubscribed;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scrollPercent, setScrollPercent] = useState(0);
+  const [quizAnswer, setQuizAnswer] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [rating, setRating] = useState(0);
+
+  const mod = DUMMY_JUNIOR_MODULES.find((m) => m.id === moduleId);
+  const activeChapterIndex = mod
+    ? Math.max(0, mod.chapters.findIndex((c) => c.id === chapterId))
+    : 0;
+  const chapter = mod?.chapters[activeChapterIndex];
+  const nextChapter = mod?.chapters[activeChapterIndex + 1];
+  const progressKey = mod && chapter ? `junior-${mod.id}-${chapter.id}` : "";
+
+  // Scroll tracking for reading chapters
+  useEffect(() => {
+    if (!chapter || chapter.contentType === "video") return;
+    const handleScroll = () => {
+      if (!contentRef.current) return;
+      const rect = contentRef.current.getBoundingClientRect();
+      const total = contentRef.current.scrollHeight - window.innerHeight;
+      const scrolled = Math.min(100, Math.max(0, Math.round((-rect.top / total) * 100)));
+      setScrollPercent(scrolled);
+      if (isLoggedIn && progressKey) {
+        setProgress(progressKey, scrolled);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [chapter, isLoggedIn, progressKey, setProgress]);
+
+  // Reset state on chapter change
+  useEffect(() => {
+    setQuizAnswer("");
+    setFeedback("");
+    setSubmitted(false);
+    setRating(0);
+    setScrollPercent(0);
+    window.scrollTo(0, 0);
+  }, [chapterId, moduleId]);
+
+  if (!mod || !chapter) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="font-display text-2xl font-bold text-foreground">Module not found</h1>
+            <Link to="/junior"><Button variant="link" className="mt-4">Back to Junior</Button></Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const isVideoChapter = chapter.contentType === "video";
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+
+      {/* Reading progress bar */}
+      {!isVideoChapter && (
+        <div className="sticky top-0 z-50 h-1 bg-muted">
+          <div className="h-full bg-secondary transition-all duration-200" style={{ width: `${scrollPercent}%` }} />
+        </div>
+      )}
+
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-secondary/10 via-background to-primary/5">
+        <div className="container py-8">
+          <Link to="/junior" className="text-sm text-secondary hover:underline mb-4 inline-block flex items-center gap-1">
+            <Sparkles className="h-3 w-3" /> Back to Junior
+          </Link>
+          <Badge variant="secondary" className="mb-2">{mod.tag.name}</Badge>
+          <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">{mod.title}</h1>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <section className="container py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8">
+          {/* Left Nav — Chapters */}
+          <aside className="space-y-1">
+            <h3 className="font-display text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Chapters</h3>
+            {mod.chapters.map((ch, i) => {
+              const chKey = `junior-${mod.id}-${ch.id}`;
+              const isActive = i === activeChapterIndex;
+              const chRead = isLoggedIn && isRead(chKey);
+              const chProgress = isLoggedIn ? getProgress(chKey) : 0;
+              const isVideo = ch.contentType === "video";
+              return (
+                <Link
+                  key={ch.id}
+                  to={`/junior/${mod.id}/${ch.id}`}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    isActive
+                      ? "bg-secondary/10 text-secondary font-semibold border border-secondary/20"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {chRead ? (
+                    <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                  ) : isVideo ? (
+                    <Play className="h-4 w-4 shrink-0" />
+                  ) : (
+                    <BookOpen className="h-4 w-4 shrink-0" />
+                  )}
+                  <span className="flex-1 truncate">{ch.title}</span>
+                  <span className="text-xs opacity-60 font-mono shrink-0">
+                    {isVideo ? ch.duration : ch.readTime}
+                  </span>
+                  {isLoggedIn && !chRead && chProgress > 0 && (
+                    <span className="text-xs text-secondary font-mono">{chProgress}%</span>
+                  )}
+                </Link>
+              );
+            })}
+          </aside>
+
+          {/* Content */}
+          <div className="space-y-8">
+            <div>
+              <h2 className="font-display text-xl md:text-2xl font-bold text-foreground mb-2">{chapter.title}</h2>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground mb-6">
+                {isVideoChapter ? (
+                  <span className="flex items-center gap-1"><Play className="h-3.5 w-3.5" /> {chapter.duration}</span>
+                ) : (
+                  <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {chapter.readTime}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Video Embed or Reading Content */}
+            {isVideoChapter && chapter.videoUrl ? (
+              <div className="rounded-xl overflow-hidden border border-border shadow-sm">
+                <div className="aspect-video">
+                  <iframe
+                    src={chapter.videoUrl}
+                    title={chapter.title}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {/* Illustration */}
+            {chapter.illustration && (
+              <div className="rounded-xl overflow-hidden border border-border shadow-sm">
+                <img src={chapter.illustration} alt={chapter.title} className="w-full h-48 object-cover" />
+              </div>
+            )}
+
+            <div
+              ref={contentRef}
+              className="prose prose-lg max-w-none text-foreground leading-relaxed"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              {chapter.content.split("\n").map((line, i) => {
+                if (line.startsWith("### ")) return <h3 key={i} className="font-display text-lg font-bold text-foreground mt-6 mb-3">{line.replace("### ", "")}</h3>;
+                if (line.startsWith("## ")) return <h2 key={i} className="font-display text-xl font-bold text-foreground mt-8 mb-4">{line.replace("## ", "")}</h2>;
+                if (line.startsWith("**") && line.endsWith("**")) return <p key={i} className="font-semibold text-foreground">{line.replace(/\*\*/g, "")}</p>;
+                if (line.startsWith("- ")) return <li key={i} className="ml-4 text-muted-foreground">{line.replace("- ", "")}</li>;
+                if (line.startsWith("Q:")) return <p key={i} className="font-semibold text-secondary mt-4">{line}</p>;
+                if (line.startsWith("A:")) return <p key={i} className="text-primary font-medium">{line}</p>;
+                if (line.trim() === "") return <br key={i} />;
+                return <p key={i} className="text-muted-foreground mb-2">{line}</p>;
+              })}
+            </div>
+
+            <Separator />
+
+            {/* Next Chapter */}
+            {nextChapter && (
+              <Link to={`/junior/${mod.id}/${nextChapter.id}`}>
+                <Card className="hover:shadow-md transition-shadow border-border group">
+                  <CardContent className="p-5 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider">Next Chapter</span>
+                      <h3 className="font-display font-semibold text-foreground mt-1">{nextChapter.title}</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {nextChapter.contentType === "video" ? nextChapter.duration : nextChapter.readTime}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-secondary transition-colors" />
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+
+            {/* Quiz / Feedback */}
+            <Card className="border-border bg-gradient-to-br from-secondary/5 to-background">
+              <CardContent className="p-6 space-y-5">
+                <h3 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-secondary" /> Quiz &amp; Feedback
+                </h3>
+                {!submitted ? (
+                  <>
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-3">How would you rate this chapter?</p>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <button key={s} onClick={() => setRating(s)} className="p-1 transition-colors">
+                            <Star className={`h-6 w-6 ${s <= rating ? "fill-secondary text-secondary" : "text-muted-foreground"}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-2">What did you learn? (Optional)</p>
+                      <Textarea
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                        placeholder="Share your thoughts..."
+                        className="resize-none"
+                        rows={3}
+                      />
+                    </div>
+                    <Button onClick={() => setSubmitted(true)} disabled={rating === 0} className="bg-secondary hover:bg-secondary/90">
+                      Submit Feedback
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <span className="text-3xl">🎉</span>
+                    <p className="font-display font-semibold text-foreground mt-2">Awesome! Thanks for your feedback!</p>
+                    <p className="text-sm text-muted-foreground mt-1">Keep learning — you're doing great!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Social Links */}
+            <div className="flex items-center gap-3">
+              <Share2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Share:</span>
+              <a href={`https://x.com/intent/tweet?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors"><XIcon /></a>
+              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors text-sm font-medium">LinkedIn</a>
+              <a href={`https://wa.me/?text=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors text-sm font-medium">WhatsApp</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SubscribeSection />
+      <Footer />
+    </div>
+  );
+};
+
+export default JuniorArticlePage;

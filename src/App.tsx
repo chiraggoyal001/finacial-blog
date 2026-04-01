@@ -18,6 +18,8 @@ import VideosPage from "./pages/VideosPage";
 import VideoArticlePage from "./pages/VideoArticlePage";
 import EventsPage from "./pages/EventsPage";
 import EventDetailPage from "./pages/EventDetailPage";
+import JuniorPage from "./pages/JuniorPage";
+import JuniorArticlePage from "./pages/JuniorArticlePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,9 @@ const App = () => (
                 <Route path="/videos/:seriesId/:chapterId" element={<VideoArticlePage />} />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/events/:eventId" element={<EventDetailPage />} />
+                <Route path="/junior" element={<JuniorPage />} />
+                <Route path="/junior/:moduleId" element={<JuniorArticlePage />} />
+                <Route path="/junior/:moduleId/:chapterId" element={<JuniorArticlePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

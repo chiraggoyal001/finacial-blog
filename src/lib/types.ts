@@ -91,6 +91,34 @@ export interface BlogEvent {
   registered?: number;
 }
 
+export type JuniorContentType = "video" | "reading";
+
+export interface JuniorChapter {
+  id: string;
+  title: string;
+  contentType: JuniorContentType;
+  content: string; // markdown-style text for reading, or description for video
+  videoUrl?: string; // YouTube embed for video chapters
+  duration?: string; // video duration
+  readTime?: string; // reading time
+  tags: Tag[];
+  illustration?: string; // fun graphic/image
+}
+
+export interface JuniorModule {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  tag: Tag;
+  contentType: JuniorContentType;
+  chapters: JuniorChapter[];
+  totalReadTime?: string;
+  totalDuration?: string;
+  views?: number;
+  likes?: number;
+}
+
 export interface NavItem {
   label: string;
   href: string;
