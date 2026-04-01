@@ -11,7 +11,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Modules", href: "/modules", description: "Structured learning paths" },
   { label: "Videos", href: "/videos", description: "Visual content library" },
   { label: "Junior", href: "/junior", badge: "Coming Soon", description: "Content for beginners" },
-  { label: "Events", href: "/events", badge: "Coming Soon", description: "Upcoming events & webinars" },
+  { label: "Events", href: "/events", description: "Upcoming events & webinars" },
   { label: "Financial Services", href: "https://example.com/financial", description: "Bot and other services" },
 ];
 

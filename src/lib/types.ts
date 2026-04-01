@@ -73,6 +73,24 @@ export interface VideoSeries {
   likes?: number;
 }
 
+export type EventType = "community" | "quiz" | "bootcamp";
+
+export interface BlogEvent {
+  id: string;
+  title: string;
+  description: string;
+  type: EventType;
+  date: string; // ISO date
+  time: string; // e.g. "14:00 - 16:00"
+  location: string; // "Online" or city name
+  image: string;
+  tags: Tag[];
+  isUpcoming: boolean;
+  registrationUrl?: string;
+  capacity?: number;
+  registered?: number;
+}
+
 export interface NavItem {
   label: string;
   href: string;
