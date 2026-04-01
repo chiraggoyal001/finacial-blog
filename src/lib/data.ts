@@ -1,4 +1,4 @@
-import { BlogPost, NavItem, Module, VideoSeries, BlogEvent } from "./types";
+import { BlogPost, NavItem, Module, VideoSeries, BlogEvent, JuniorModule } from "./types";
 
 export const ADMIN_EMAILS = [
   "admin@blog.com",
