@@ -10,7 +10,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Newsletter", href: "/newsletter", description: "Weekly insights delivered to your inbox" },
   { label: "Modules", href: "/modules", description: "Structured learning paths" },
   { label: "Videos", href: "/videos", description: "Visual content library" },
-  { label: "Junior", href: "/junior", badge: "Coming Soon", description: "Content for beginners" },
+  { label: "Junior", href: "/junior", description: "Content for beginners" },
   { label: "Events", href: "/events", description: "Upcoming events & webinars" },
   { label: "Financial Services", href: "https://example.com/financial", description: "Bot and other services" },
 ];
