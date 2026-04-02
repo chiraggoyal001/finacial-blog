@@ -106,7 +106,7 @@ const Navbar = () => {
                   <Link
                     key={item.label}
                     to={item.href}
-                    className="flex items-center justify-between py-2 text-foreground hover:text-primary transition-colors"
+                    className={`flex items-center justify-between py-2 transition-colors ${isActive(item.href) ? "text-primary font-semibold" : "text-foreground hover:text-primary"}`}
                   >
                     {item.label}
                     {item.badge && <Badge variant="secondary" className="text-[10px]">{item.badge}</Badge>}

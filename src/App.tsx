@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ReadingProgressProvider } from "@/contexts/ReadingProgressContext";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -20,6 +21,11 @@ import EventsPage from "./pages/EventsPage";
 import EventDetailPage from "./pages/EventDetailPage";
 import JuniorPage from "./pages/JuniorPage";
 import JuniorArticlePage from "./pages/JuniorArticlePage";
+import PrivacyPage from "./pages/PrivacyPage";
+import GrievancePage from "./pages/GrievancePage";
+import TermsPage from "./pages/TermsPage";
+import DisclaimerPage from "./pages/DisclaimerPage";
+import LicensePage from "./pages/LicensePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +39,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -51,6 +58,11 @@ const App = () => (
                 <Route path="/junior" element={<JuniorPage />} />
                 <Route path="/junior/:moduleId" element={<JuniorArticlePage />} />
                 <Route path="/junior/:moduleId/:chapterId" element={<JuniorArticlePage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/grievance" element={<GrievancePage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/disclaimer" element={<DisclaimerPage />} />
+                <Route path="/license" element={<LicensePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

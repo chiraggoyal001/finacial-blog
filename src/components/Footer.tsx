@@ -55,9 +55,9 @@ const Footer = () => {
           <div className="space-y-6">
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-foreground">Contact Us</h4>
-              <p className="text-sm text-muted-foreground">hello@blog.com</p>
-              <p className="text-sm text-muted-foreground">123 Finance Street, Mumbai</p>
-              <p className="text-sm text-muted-foreground">+91 98765 43210</p>
+              <a href="mailto:hello@blog.com" className="block text-sm text-muted-foreground hover:text-primary transition-colors">hello@blog.com</a>
+              <a href="https://maps.google.com/?q=123+Finance+Street,+Mumbai" target="_blank" rel="noopener noreferrer" className="block text-sm text-muted-foreground hover:text-primary transition-colors">123 Finance Street, Mumbai</a>
+              <a href="tel:+919876543210" className="block text-sm text-muted-foreground hover:text-primary transition-colors">+91 98765 43210</a>
             </div>
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-foreground">Get the App</h4>
