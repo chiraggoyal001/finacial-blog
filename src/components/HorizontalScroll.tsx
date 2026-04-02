@@ -62,7 +62,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
             variant="ghost"
             size="icon"
             onClick={() => scroll("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm transition-opacity opacity-20"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
