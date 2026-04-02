@@ -14,6 +14,12 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const { isLoggedIn, user, logout } = useAuth();
   const { isDark, toggleTheme, language, toggleLanguage } = useTheme();
+  const location = useLocation();
+
+  const isActive = (href: string) => {
+    if (href === "/") return location.pathname === "/";
+    return location.pathname.startsWith(href);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
