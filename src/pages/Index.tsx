@@ -6,8 +6,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
 import HorizontalScroll from "@/components/HorizontalScroll";
-import { DUMMY_POSTS } from "@/lib/data";
+import { DUMMY_POSTS, DUMMY_JUNIOR_MODULES, DUMMY_EVENTS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
+import { BlogPost } from "@/lib/types";
 
 const Index = () => {
   const { isLoggedIn, user } = useAuth();
@@ -17,6 +18,36 @@ const Index = () => {
   const newsletterPosts = DUMMY_POSTS.filter((p) => p.category === "Newsletter");
   const modulePosts = DUMMY_POSTS.filter((p) => p.category === "Modules");
   const videoPosts = DUMMY_POSTS.filter((p) => p.category === "Videos");
+
+  // Convert junior modules to BlogPost format for HorizontalScroll
+  const juniorPosts: BlogPost[] = DUMMY_JUNIOR_MODULES.map((m) => ({
+    id: m.id,
+    title: m.title,
+    excerpt: m.description,
+    content: "",
+    category: "Junior",
+    author: "Junior Team",
+    date: "2025-06-01",
+    image: m.image,
+    readTime: m.totalReadTime || m.totalDuration || "",
+    tags: [m.tag],
+    views: m.views,
+    likes: m.likes,
+  }));
+
+  // Convert events to BlogPost format for HorizontalScroll
+  const eventPosts: BlogPost[] = DUMMY_EVENTS.map((e) => ({
+    id: e.id,
+    title: e.title,
+    excerpt: e.description,
+    content: "",
+    category: "Events",
+    author: "Events Team",
+    date: e.date,
+    image: e.image,
+    readTime: e.time,
+    tags: e.tags,
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -77,19 +108,19 @@ const Index = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {latestPosts.slice(0, 3).map((post) => (
-              <Link key={post.id} to={`/post/${post.id}`} className="group">
+              <Link key={post.id} to={`/post/${post.id}`} className="block">
                 <div className="rounded-xl overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
                   <div className="aspect-video overflow-hidden">
                     <img
                       src={post.image}
                       alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                   </div>
                   <div className="p-5 space-y-2">
                     <span className="text-xs font-medium text-primary">{post.category}</span>
-                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                    <h3 className="font-semibold text-foreground hover:text-primary transition-colors">
                       {post.title}
                     </h3>
                     <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
@@ -106,10 +137,12 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Horizontal Scroll Sections (Hotstar-style) */}
+      {/* Horizontal Scroll Sections */}
       <HorizontalScroll title="Newsletter" posts={newsletterPosts} />
       <HorizontalScroll title="Modules" posts={modulePosts} />
       <HorizontalScroll title="Videos" posts={videoPosts} />
+      <HorizontalScroll title="Junior" posts={juniorPosts} />
+      <HorizontalScroll title="Events" posts={eventPosts} />
 
       {/* Subscribe CTA 2 (unless already subscribed) */}
       {!isSubscribed && <SubscribeSection />}
