@@ -30,7 +30,20 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
     if (post.category === "Newsletter") return `/newsletter/${post.id}`;
     if (post.category === "Modules") return `/modules/${post.id}`;
     if (post.category === "Videos") return `/videos/${post.id}`;
+    if (post.category === "Junior") return `/junior/${post.id}`;
+    if (post.category === "Events") return `/events/${post.id}`;
     return `/post/${post.id}`;
+  };
+
+  const getSectionLink = () => {
+    const map: Record<string, string> = {
+      Newsletter: "/newsletter",
+      Modules: "/modules",
+      Videos: "/videos",
+      Junior: "/junior",
+      Events: "/events",
+    };
+    return map[title] || "/";
   };
 
   return (
@@ -38,16 +51,18 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
       <div className="container">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1">
-            View All <ChevronRight className="h-3 w-3" />
-          </Button>
+          <Link to={getSectionLink()}>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1">
+              View All <ChevronRight className="h-3 w-3" />
+            </Button>
+          </Link>
         </div>
-        <div className="relative group">
+        <div className="relative group/carousel">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => scroll("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -55,25 +70,28 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
             variant="ghost"
             size="icon"
             onClick={() => scroll("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none bg-background/60 backdrop-blur-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity"
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
-          <div ref={scrollRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2 snap-x">
+          <div
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2 snap-x"
+          >
           {posts.map((post) => {
             const readPercent = getProgress(post.id);
             return (
               <Link
                 key={post.id}
                 to={getPostLink(post)}
-                className="flex-shrink-0 w-72 snap-start group"
+                className="flex-shrink-0 w-72 snap-start"
               >
                 <div className="rounded-xl overflow-hidden border border-border bg-card hover:shadow-lg transition-shadow">
                   <div className="aspect-video overflow-hidden relative">
                     <img
                       src={post.image}
                       alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                     {isLoggedIn && isRead(post.id) && (
@@ -94,7 +112,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
                         </Badge>
                       ))}
                     </div>
-                    <h4 className="font-semibold text-sm text-card-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                    <h4 className="font-semibold text-sm text-card-foreground line-clamp-2 hover:text-primary transition-colors">
                       {post.title}
                     </h4>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Search, Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,12 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const { isLoggedIn, user, logout } = useAuth();
   const { isDark, toggleTheme, language, toggleLanguage } = useTheme();
+  const location = useLocation();
+
+  const isActive = (href: string) => {
+    if (href === "/") return location.pathname === "/";
+    return location.pathname.startsWith(href);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -29,7 +35,7 @@ const Navbar = () => {
             <Link
               key={item.label}
               to={item.href}
-              className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
+              className={`px-3 py-2 text-sm font-medium transition-colors rounded-lg ${isActive(item.href) ? "text-primary bg-accent font-semibold" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
             >
               {item.label}
               {item.badge && (
@@ -100,7 +106,7 @@ const Navbar = () => {
                   <Link
                     key={item.label}
                     to={item.href}
-                    className="flex items-center justify-between py-2 text-foreground hover:text-primary transition-colors"
+                    className={`flex items-center justify-between py-2 transition-colors ${isActive(item.href) ? "text-primary font-semibold" : "text-foreground hover:text-primary"}`}
                   >
                     {item.label}
                     {item.badge && <Badge variant="secondary" className="text-[10px]">{item.badge}</Badge>}
