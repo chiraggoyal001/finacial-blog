@@ -76,8 +76,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
           </Button>
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 snap-x"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2 snap-x"
           >
           {posts.map((post) => {
             const readPercent = getProgress(post.id);
