@@ -1,16 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen, Play, Sparkles, Star } from "lucide-react";
+import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen, Play, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
+import QuizSection from "@/components/QuizSection";
+import FeedbackSection from "@/components/FeedbackSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { DUMMY_JUNIOR_MODULES, SOCIAL_LINKS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,10 +28,6 @@ const JuniorArticlePage = () => {
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
-  const [quizAnswer, setQuizAnswer] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [rating, setRating] = useState(0);
 
   const mod = DUMMY_JUNIOR_MODULES.find((m) => m.id === moduleId);
   const activeChapterIndex = mod
@@ -61,10 +56,6 @@ const JuniorArticlePage = () => {
 
   // Reset state on chapter change
   useEffect(() => {
-    setQuizAnswer("");
-    setFeedback("");
-    setSubmitted(false);
-    setRating(0);
     setScrollPercent(0);
     window.scrollTo(0, 0);
   }, [chapterId, moduleId]);
@@ -222,45 +213,19 @@ const JuniorArticlePage = () => {
               </Link>
             )}
 
-            {/* Quiz / Feedback */}
-            <Card className="border-border bg-gradient-to-br from-secondary/5 to-background">
-              <CardContent className="p-6 space-y-5">
-                <h3 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-secondary" /> Quiz &amp; Feedback
-                </h3>
-                {!submitted ? (
-                  <>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-3">How would you rate this chapter?</p>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <button key={s} onClick={() => setRating(s)} className="p-1 transition-colors">
-                            <Star className={`h-6 w-6 ${s <= rating ? "fill-secondary text-secondary" : "text-muted-foreground"}`} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-2">What did you learn? (Optional)</p>
-                      <Textarea
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Share your thoughts..."
-                        className="resize-none"
-                        rows={3}
-                      />
-                    </div>
-                    <Button onClick={() => setSubmitted(true)} disabled={rating === 0} className="bg-secondary hover:bg-secondary/90">
-                      Submit Feedback
-                    </Button>
-                  </>
-                ) : (
-                  <div className="text-center py-4">
-                    <span className="text-3xl">🎉</span>
-                    <p className="font-display font-semibold text-foreground mt-2">Awesome! Thanks for your feedback!</p>
-                    <p className="text-sm text-muted-foreground mt-1">Keep learning — you're doing great!</p>
-                  </div>
-                )}
+            {/* Quiz */}
+            {chapter.quizQuestions && chapter.quizQuestions.length > 0 && (
+              <Card className="border-border bg-gradient-to-br from-secondary/5 to-background">
+                <CardContent className="p-6">
+                  <QuizSection questions={chapter.quizQuestions} variant="junior" />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Feedback */}
+            <Card className="border-border">
+              <CardContent className="p-6">
+                <FeedbackSection variant="junior" placeholder="What did you learn? Share your thoughts..." />
               </CardContent>
             </Card>
 

@@ -5,6 +5,17 @@ export interface Tag {
   type: TagType;
 }
 
+export interface QuizOption {
+  label: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: QuizOption[];
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -35,7 +46,8 @@ export interface Chapter {
   title: string;
   content: string;
   readTime: string;
-  tags: Tag[]; // tagged but not visible on card
+  tags: Tag[];
+  quizQuestions?: QuizQuestion[];
 }
 
 export interface Module {
@@ -54,10 +66,11 @@ export interface Module {
 export interface VideoChapter {
   id: string;
   title: string;
-  videoUrl: string; // YouTube embed URL
-  duration: string; // e.g. "12:30"
+  videoUrl: string;
+  duration: string;
   description: string;
-  tags: Tag[]; // tagged but not visible on card
+  tags: Tag[];
+  quizQuestions?: QuizQuestion[];
 }
 
 export interface VideoSeries {
@@ -97,12 +110,13 @@ export interface JuniorChapter {
   id: string;
   title: string;
   contentType: JuniorContentType;
-  content: string; // markdown-style text for reading, or description for video
-  videoUrl?: string; // YouTube embed for video chapters
-  duration?: string; // video duration
-  readTime?: string; // reading time
+  content: string;
+  videoUrl?: string;
+  duration?: string;
+  readTime?: string;
   tags: Tag[];
-  illustration?: string; // fun graphic/image
+  illustration?: string;
+  quizQuestions?: QuizQuestion[];
 }
 
 export interface JuniorModule {

@@ -1,4 +1,34 @@
-import { BlogPost, NavItem, Module, VideoSeries, BlogEvent, JuniorModule } from "./types";
+import { BlogPost, NavItem, Module, VideoSeries, BlogEvent, JuniorModule, QuizQuestion } from "./types";
+
+// Reusable quiz question sets
+const STOCK_MARKET_QUIZ: QuizQuestion[] = [
+  { id: "q1", question: "What is an IPO?", options: [{ label: "Initial Public Offering", isCorrect: true }, { label: "Internal Profit Order", isCorrect: false }, { label: "Investment Portfolio Option", isCorrect: false }, { label: "Index Price Objective", isCorrect: false }] },
+  { id: "q2", question: "Which is the largest stock exchange in India?", options: [{ label: "BSE", isCorrect: false }, { label: "NSE", isCorrect: true }, { label: "MCX", isCorrect: false }, { label: "NCDEX", isCorrect: false }] },
+];
+const STOCK_TYPES_QUIZ: QuizQuestion[] = [
+  { id: "q3", question: "What defines a large-cap stock?", options: [{ label: "Market cap over $10 billion", isCorrect: true }, { label: "Stock price over $100", isCorrect: false }, { label: "Over 10,000 employees", isCorrect: false }, { label: "Listed for over 10 years", isCorrect: false }] },
+  { id: "q4", question: "Growth stocks are companies expected to:", options: [{ label: "Pay high dividends", isCorrect: false }, { label: "Grow faster than the market average", isCorrect: true }, { label: "Have low debt", isCorrect: false }, { label: "Be government-owned", isCorrect: false }] },
+];
+const FINANCIAL_STATEMENTS_QUIZ: QuizQuestion[] = [
+  { id: "q5", question: "Which statement shows revenue and expenses?", options: [{ label: "Balance Sheet", isCorrect: false }, { label: "Income Statement", isCorrect: true }, { label: "Cash Flow Statement", isCorrect: false }, { label: "Notes to Accounts", isCorrect: false }] },
+  { id: "q6", question: "Free cash flow indicates:", options: [{ label: "Company's marketing budget", isCorrect: false }, { label: "Financial health", isCorrect: true }, { label: "Number of employees", isCorrect: false }, { label: "Stock price trend", isCorrect: false }] },
+];
+const BUDGETING_QUIZ: QuizQuestion[] = [
+  { id: "q7", question: "In the 50/30/20 rule, what does the 20% represent?", options: [{ label: "Needs", isCorrect: false }, { label: "Wants", isCorrect: false }, { label: "Savings & investments", isCorrect: true }, { label: "Taxes", isCorrect: false }] },
+  { id: "q8", question: "Why should you track expenses for 3 months?", options: [{ label: "Tax requirement", isCorrect: false }, { label: "To understand spending patterns", isCorrect: true }, { label: "Bank mandate", isCorrect: false }, { label: "No specific reason", isCorrect: false }] },
+];
+const VIDEO_INTRO_QUIZ: QuizQuestion[] = [
+  { id: "vq1", question: "What is the primary purpose of a stock market?", options: [{ label: "For companies to raise capital and investors to trade", isCorrect: true }, { label: "To store physical gold", isCorrect: false }, { label: "To print currency", isCorrect: false }, { label: "To manage bank accounts", isCorrect: false }] },
+  { id: "vq2", question: "What determines stock prices?", options: [{ label: "Government regulations only", isCorrect: false }, { label: "Supply and demand", isCorrect: true }, { label: "Company age", isCorrect: false }, { label: "Number of employees", isCorrect: false }] },
+];
+const JUNIOR_INVESTING_QUIZ: QuizQuestion[] = [
+  { id: "jq1", question: "What is investing like?", options: [{ label: "Planting a seed and watching it grow 🌱", isCorrect: true }, { label: "Spending all your money at once", isCorrect: false }, { label: "Hiding money under the bed", isCorrect: false }, { label: "Giving money away", isCorrect: false }] },
+  { id: "jq2", question: "What is compound interest?", options: [{ label: "Earning interest on your interest too!", isCorrect: true }, { label: "A type of bank account", isCorrect: false }, { label: "A fee charged by banks", isCorrect: false }, { label: "A type of stock", isCorrect: false }] },
+];
+const JUNIOR_MONEY_QUIZ: QuizQuestion[] = [
+  { id: "jq3", question: "What came before coins?", options: [{ label: "Credit cards", isCorrect: false }, { label: "Bartering (trading goods)", isCorrect: true }, { label: "Digital wallets", isCorrect: false }, { label: "Checks", isCorrect: false }] },
+  { id: "jq4", question: "What is UPI?", options: [{ label: "A type of cryptocurrency", isCorrect: false }, { label: "India's real-time payment system", isCorrect: true }, { label: "A bank name", isCorrect: false }, { label: "A stock exchange", isCorrect: false }] },
+];
 
 export const ADMIN_EMAILS = [
   "admin@blog.com",
@@ -197,6 +227,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>A stock market is a marketplace where shares of publicly listed companies are traded. It serves as a platform for companies to raise capital and for investors to build wealth.</p><h2>How It Works</h2><p>Companies list their shares through an Initial Public Offering (IPO). Once listed, shares are traded between investors on the exchange. Prices are determined by supply and demand dynamics.</p><h2>Major Exchanges</h2><p>The world's largest stock exchanges include the NYSE, NASDAQ, London Stock Exchange, and Tokyo Stock Exchange. In India, BSE and NSE are the primary exchanges.</p>`,
         readTime: "8 min",
         tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }],
+        quizQuestions: STOCK_MARKET_QUIZ,
       },
       {
         id: "m1c2",
@@ -204,6 +235,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>Stocks can be classified into several categories based on various factors like market capitalization, growth potential, and dividend payout.</p><h2>By Market Cap</h2><p>Large-cap stocks are well-established companies with market caps over $10 billion. Mid-cap stocks range from $2-10 billion, while small-cap stocks are below $2 billion.</p><h2>Growth vs Value</h2><p>Growth stocks are companies expected to grow faster than the market average. Value stocks trade below their intrinsic value, offering potential upside.</p>`,
         readTime: "10 min",
         tags: [{ name: "Investing", type: "major" }, { name: "Analysis", type: "minor" }],
+        quizQuestions: STOCK_TYPES_QUIZ,
       },
       {
         id: "m1c3",
@@ -211,6 +243,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>Understanding financial statements is crucial for making informed investment decisions.</p><h2>Income Statement</h2><p>Shows revenue, expenses, and profit over a period. Key metrics include revenue growth, operating margin, and net profit margin.</p><h2>Balance Sheet</h2><p>A snapshot of a company's assets, liabilities, and equity at a point in time. Look at debt-to-equity ratio and current ratio.</p><h2>Cash Flow Statement</h2><p>Tracks the actual cash moving in and out. Free cash flow is a key indicator of financial health.</p>`,
         readTime: "12 min",
         tags: [{ name: "Investing", type: "major" }, { name: "Deep Dive", type: "minor" }],
+        quizQuestions: FINANCIAL_STATEMENTS_QUIZ,
       },
       {
         id: "m1c4",
@@ -238,6 +271,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>Budgeting is the foundation of personal finance. It helps you understand where your money goes and take control of your spending.</p><h2>The 50/30/20 Rule</h2><p>Allocate 50% of income to needs, 30% to wants, and 20% to savings and investments. This simple framework works for most income levels.</p><h2>Tracking Expenses</h2><p>Use apps or spreadsheets to track every expense for at least 3 months. You'll be surprised at where your money actually goes.</p>`,
         readTime: "8 min",
         tags: [{ name: "Planning", type: "major" }, { name: "Beginners", type: "minor" }],
+        quizQuestions: BUDGETING_QUIZ,
       },
       {
         id: "m2c2",
@@ -309,6 +343,7 @@ export const DUMMY_VIDEO_SERIES: VideoSeries[] = [
         duration: "14:32",
         description: "An overview of what stock markets are, how they function, and why they matter for wealth building.",
         tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }],
+        quizQuestions: VIDEO_INTRO_QUIZ,
       },
       {
         id: "v1c2",
@@ -516,7 +551,7 @@ export const DUMMY_JUNIOR_MODULES: JuniorModule[] = [
     contentType: "video",
     totalDuration: "25 min",
     chapters: [
-      { id: "jr-v1c1", title: "🪙 Barter to Coins", contentType: "video", content: "Discover how people traded before money existed and why coins changed everything.", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "8:00", tags: [{ name: "Basics", type: "major" }, { name: "History", type: "minor" }], illustration: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400" },
+      { id: "jr-v1c1", title: "🪙 Barter to Coins", contentType: "video", content: "Discover how people traded before money existed and why coins changed everything.", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "8:00", tags: [{ name: "Basics", type: "major" }, { name: "History", type: "minor" }], illustration: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400", quizQuestions: JUNIOR_MONEY_QUIZ },
       { id: "jr-v1c2", title: "💳 Paper to Plastic", contentType: "video", content: "From paper notes to credit cards — how payment evolved over centuries.", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "9:30", tags: [{ name: "Basics", type: "major" }, { name: "Trends", type: "minor" }], illustration: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400" },
       { id: "jr-v1c3", title: "📱 Digital Money", contentType: "video", content: "UPI, wallets, crypto — welcome to the future of payments!", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "7:30", tags: [{ name: "Fintech", type: "major" }, { name: "Trends", type: "minor" }], illustration: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400" },
     ],
@@ -548,7 +583,7 @@ export const DUMMY_JUNIOR_MODULES: JuniorModule[] = [
     contentType: "reading",
     totalReadTime: "15 min",
     chapters: [
-      { id: "jr-r1c1", title: "🌱 What is Investing?", contentType: "reading", content: "Imagine planting a seed. You water it, give it sunlight, and over time it grows into a big tree. Investing works the same way!\n\nWhen you invest, you put your money into something — like a company or a fund — and over time, it can grow bigger. This is how people build wealth over many years.\n\n**Key Idea:** Investing = making your money work for you while you sleep! 😴💰\n\n### The Magic of Compound Interest\nIf you save ₹100 and earn 10% every year, after one year you have ₹110. But the next year, you earn 10% on ₹110 — that's ₹121! The growth keeps getting bigger.\n\n### Fun Fact 🎉\nIf you invested ₹1,000 at age 15 with 12% annual returns, by age 60 you'd have over ₹1,60,000 — without adding a single rupee more!", readTime: "5 min", tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }], illustration: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400" },
+      { id: "jr-r1c1", title: "🌱 What is Investing?", contentType: "reading", content: "Imagine planting a seed. You water it, give it sunlight, and over time it grows into a big tree. Investing works the same way!\n\nWhen you invest, you put your money into something — like a company or a fund — and over time, it can grow bigger. This is how people build wealth over many years.\n\n**Key Idea:** Investing = making your money work for you while you sleep! 😴💰\n\n### The Magic of Compound Interest\nIf you save ₹100 and earn 10% every year, after one year you have ₹110. But the next year, you earn 10% on ₹110 — that's ₹121! The growth keeps getting bigger.\n\n### Fun Fact 🎉\nIf you invested ₹1,000 at age 15 with 12% annual returns, by age 60 you'd have over ₹1,60,000 — without adding a single rupee more!", readTime: "5 min", tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }], illustration: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400", quizQuestions: JUNIOR_INVESTING_QUIZ },
       { id: "jr-r1c2", title: "📊 Stocks — Owning a Piece of a Company", contentType: "reading", content: "Have you ever wished you owned a part of your favourite company? With stocks, you can!\n\nA **stock** (or share) is a tiny piece of a company. When you buy a stock, you become a part-owner. If the company does well, your stock becomes more valuable.\n\n### Example\nImagine your friend starts a lemonade stand. She needs ₹100 to buy supplies. You give her ₹50, and she gives you 50% ownership. If the stand makes ₹200, you get ₹100 back — that's a profit of ₹50! 🍋\n\n### Types of Companies\n- **Blue chip:** Big, stable companies (like the popular kid everyone trusts)\n- **Growth stocks:** Smaller companies that might grow fast (like the new kid with big ideas)\n- **Penny stocks:** Very cheap stocks, but very risky (like a mystery box!)\n\n### Remember ⚠️\nStocks go up AND down. Never invest money you can't afford to lose.", readTime: "5 min", tags: [{ name: "Investing", type: "major" }, { name: "Analysis", type: "minor" }], illustration: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=400" },
       { id: "jr-r1c3", title: "🛡️ Bonds — Lending Money Safely", contentType: "reading", content: "If stocks are like owning a slice of pizza, bonds are like lending your pizza and getting it back with extra toppings!\n\nA **bond** is when you lend money to a government or company. In return, they promise to pay you back with interest after a set time.\n\n### How It Works\n1. You lend ₹1,000 to the government\n2. They promise to pay 7% interest per year\n3. After 5 years, you get back ₹1,000 + all the interest earned\n\n### Stocks vs Bonds\n| | Stocks | Bonds |\n|---|---|---|\n| Risk | Higher 📈📉 | Lower 📊 |\n| Returns | Potentially higher | More predictable |\n| You are | An owner | A lender |\n\n### Pro Tip 💡\nA good portfolio has BOTH stocks and bonds — it's like having both adventure and safety in your financial journey!", readTime: "5 min", tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }], illustration: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400" },
     ],

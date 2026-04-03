@@ -4,13 +4,11 @@ import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen } from "lucide-reac
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
+import QuizSection from "@/components/QuizSection";
+import FeedbackSection from "@/components/FeedbackSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { DUMMY_MODULES, SOCIAL_LINKS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
@@ -28,9 +26,6 @@ const ModuleArticlePage = () => {
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
-  const [quizAnswer, setQuizAnswer] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   const mod = DUMMY_MODULES.find((m) => m.id === moduleId);
   const activeChapterIndex = mod
@@ -61,11 +56,9 @@ const ModuleArticlePage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [chapter, isLoggedIn, setProgress]);
 
-  // Reset quiz/feedback on chapter change
+  // Reset on chapter change
   useEffect(() => {
-    setQuizAnswer("");
-    setFeedback("");
-    setSubmitted(false);
+    window.scrollTo(0, 0);
   }, [chapterId]);
 
   if (!mod || !chapter) {
@@ -191,50 +184,16 @@ const ModuleArticlePage = () => {
               </div>
             )}
 
-            {/* Quiz / Feedback */}
-            <div className="mt-8 pt-6 border-t border-border space-y-6">
-              <h3 className="font-display text-lg font-bold text-foreground">Quiz & Feedback</h3>
+            {/* Quiz */}
+            {chapter.quizQuestions && chapter.quizQuestions.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-border">
+                <QuizSection questions={chapter.quizQuestions} />
+              </div>
+            )}
 
-              {!submitted ? (
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground font-medium">
-                      How would you rate this chapter?
-                    </p>
-                    <RadioGroup value={quizAnswer} onValueChange={setQuizAnswer} className="flex gap-4">
-                      {["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"].map((stars, i) => (
-                        <div key={i} className="flex items-center space-x-1">
-                          <RadioGroupItem value={String(i + 1)} id={`rating-${i + 1}`} />
-                          <Label htmlFor={`rating-${i + 1}`} className="text-sm cursor-pointer">
-                            {i + 1}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Any feedback or comments?</Label>
-                    <Textarea
-                      placeholder="Share your thoughts on this chapter..."
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      className="resize-none"
-                      rows={3}
-                    />
-                  </div>
-                  <Button
-                    onClick={() => setSubmitted(true)}
-                    disabled={!quizAnswer}
-                    size="sm"
-                  >
-                    Submit Feedback
-                  </Button>
-                </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground">
-                  Thanks for your feedback! Your rating: {quizAnswer}/5
-                </div>
-              )}
+            {/* Feedback */}
+            <div className="mt-8 pt-6 border-t border-border">
+              <FeedbackSection placeholder="Share your thoughts on this chapter..." />
             </div>
 
             {/* Social Share */}
