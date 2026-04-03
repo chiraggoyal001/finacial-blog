@@ -66,10 +66,11 @@ export interface Module {
 export interface VideoChapter {
   id: string;
   title: string;
-  videoUrl: string; // YouTube embed URL
-  duration: string; // e.g. "12:30"
+  videoUrl: string;
+  duration: string;
   description: string;
-  tags: Tag[]; // tagged but not visible on card
+  tags: Tag[];
+  quizQuestions?: QuizQuestion[];
 }
 
 export interface VideoSeries {
