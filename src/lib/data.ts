@@ -1,4 +1,34 @@
-import { BlogPost, NavItem, Module, VideoSeries, BlogEvent, JuniorModule } from "./types";
+import { BlogPost, NavItem, Module, VideoSeries, BlogEvent, JuniorModule, QuizQuestion } from "./types";
+
+// Reusable quiz question sets
+const STOCK_MARKET_QUIZ: QuizQuestion[] = [
+  { id: "q1", question: "What is an IPO?", options: [{ label: "Initial Public Offering", isCorrect: true }, { label: "Internal Profit Order", isCorrect: false }, { label: "Investment Portfolio Option", isCorrect: false }, { label: "Index Price Objective", isCorrect: false }] },
+  { id: "q2", question: "Which is the largest stock exchange in India?", options: [{ label: "BSE", isCorrect: false }, { label: "NSE", isCorrect: true }, { label: "MCX", isCorrect: false }, { label: "NCDEX", isCorrect: false }] },
+];
+const STOCK_TYPES_QUIZ: QuizQuestion[] = [
+  { id: "q3", question: "What defines a large-cap stock?", options: [{ label: "Market cap over $10 billion", isCorrect: true }, { label: "Stock price over $100", isCorrect: false }, { label: "Over 10,000 employees", isCorrect: false }, { label: "Listed for over 10 years", isCorrect: false }] },
+  { id: "q4", question: "Growth stocks are companies expected to:", options: [{ label: "Pay high dividends", isCorrect: false }, { label: "Grow faster than the market average", isCorrect: true }, { label: "Have low debt", isCorrect: false }, { label: "Be government-owned", isCorrect: false }] },
+];
+const FINANCIAL_STATEMENTS_QUIZ: QuizQuestion[] = [
+  { id: "q5", question: "Which statement shows revenue and expenses?", options: [{ label: "Balance Sheet", isCorrect: false }, { label: "Income Statement", isCorrect: true }, { label: "Cash Flow Statement", isCorrect: false }, { label: "Notes to Accounts", isCorrect: false }] },
+  { id: "q6", question: "Free cash flow indicates:", options: [{ label: "Company's marketing budget", isCorrect: false }, { label: "Financial health", isCorrect: true }, { label: "Number of employees", isCorrect: false }, { label: "Stock price trend", isCorrect: false }] },
+];
+const BUDGETING_QUIZ: QuizQuestion[] = [
+  { id: "q7", question: "In the 50/30/20 rule, what does the 20% represent?", options: [{ label: "Needs", isCorrect: false }, { label: "Wants", isCorrect: false }, { label: "Savings & investments", isCorrect: true }, { label: "Taxes", isCorrect: false }] },
+  { id: "q8", question: "Why should you track expenses for 3 months?", options: [{ label: "Tax requirement", isCorrect: false }, { label: "To understand spending patterns", isCorrect: true }, { label: "Bank mandate", isCorrect: false }, { label: "No specific reason", isCorrect: false }] },
+];
+const VIDEO_INTRO_QUIZ: QuizQuestion[] = [
+  { id: "vq1", question: "What is the primary purpose of a stock market?", options: [{ label: "For companies to raise capital and investors to trade", isCorrect: true }, { label: "To store physical gold", isCorrect: false }, { label: "To print currency", isCorrect: false }, { label: "To manage bank accounts", isCorrect: false }] },
+  { id: "vq2", question: "What determines stock prices?", options: [{ label: "Government regulations only", isCorrect: false }, { label: "Supply and demand", isCorrect: true }, { label: "Company age", isCorrect: false }, { label: "Number of employees", isCorrect: false }] },
+];
+const JUNIOR_INVESTING_QUIZ: QuizQuestion[] = [
+  { id: "jq1", question: "What is investing like?", options: [{ label: "Planting a seed and watching it grow 🌱", isCorrect: true }, { label: "Spending all your money at once", isCorrect: false }, { label: "Hiding money under the bed", isCorrect: false }, { label: "Giving money away", isCorrect: false }] },
+  { id: "jq2", question: "What is compound interest?", options: [{ label: "Earning interest on your interest too!", isCorrect: true }, { label: "A type of bank account", isCorrect: false }, { label: "A fee charged by banks", isCorrect: false }, { label: "A type of stock", isCorrect: false }] },
+];
+const JUNIOR_MONEY_QUIZ: QuizQuestion[] = [
+  { id: "jq3", question: "What came before coins?", options: [{ label: "Credit cards", isCorrect: false }, { label: "Bartering (trading goods)", isCorrect: true }, { label: "Digital wallets", isCorrect: false }, { label: "Checks", isCorrect: false }] },
+  { id: "jq4", question: "What is UPI?", options: [{ label: "A type of cryptocurrency", isCorrect: false }, { label: "India's real-time payment system", isCorrect: true }, { label: "A bank name", isCorrect: false }, { label: "A stock exchange", isCorrect: false }] },
+];
 
 export const ADMIN_EMAILS = [
   "admin@blog.com",
