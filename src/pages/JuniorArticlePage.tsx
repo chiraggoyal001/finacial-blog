@@ -213,45 +213,19 @@ const JuniorArticlePage = () => {
               </Link>
             )}
 
-            {/* Quiz / Feedback */}
-            <Card className="border-border bg-gradient-to-br from-secondary/5 to-background">
-              <CardContent className="p-6 space-y-5">
-                <h3 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-secondary" /> Quiz &amp; Feedback
-                </h3>
-                {!submitted ? (
-                  <>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-3">How would you rate this chapter?</p>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <button key={s} onClick={() => setRating(s)} className="p-1 transition-colors">
-                            <Star className={`h-6 w-6 ${s <= rating ? "fill-secondary text-secondary" : "text-muted-foreground"}`} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-2">What did you learn? (Optional)</p>
-                      <Textarea
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Share your thoughts..."
-                        className="resize-none"
-                        rows={3}
-                      />
-                    </div>
-                    <Button onClick={() => setSubmitted(true)} disabled={rating === 0} className="bg-secondary hover:bg-secondary/90">
-                      Submit Feedback
-                    </Button>
-                  </>
-                ) : (
-                  <div className="text-center py-4">
-                    <span className="text-3xl">🎉</span>
-                    <p className="font-display font-semibold text-foreground mt-2">Awesome! Thanks for your feedback!</p>
-                    <p className="text-sm text-muted-foreground mt-1">Keep learning — you're doing great!</p>
-                  </div>
-                )}
+            {/* Quiz */}
+            {chapter.quizQuestions && chapter.quizQuestions.length > 0 && (
+              <Card className="border-border bg-gradient-to-br from-secondary/5 to-background">
+                <CardContent className="p-6">
+                  <QuizSection questions={chapter.quizQuestions} variant="junior" />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Feedback */}
+            <Card className="border-border">
+              <CardContent className="p-6">
+                <FeedbackSection variant="junior" placeholder="What did you learn? Share your thoughts..." />
               </CardContent>
             </Card>
 
