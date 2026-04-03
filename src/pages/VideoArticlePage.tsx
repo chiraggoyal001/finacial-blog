@@ -163,43 +163,16 @@ const VideoArticlePage = () => {
               </div>
             )}
 
-            {/* Quiz / Feedback */}
-            <div className="mt-8 pt-6 border-t border-border space-y-6">
-              <h3 className="font-display text-lg font-bold text-foreground">Quiz & Feedback</h3>
-              {!submitted ? (
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground font-medium">
-                      How would you rate this video?
-                    </p>
-                    <RadioGroup value={quizAnswer} onValueChange={setQuizAnswer} className="flex gap-4">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex items-center space-x-1">
-                          <RadioGroupItem value={String(i)} id={`vrating-${i}`} />
-                          <Label htmlFor={`vrating-${i}`} className="text-sm cursor-pointer">{i}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Any feedback or comments?</Label>
-                    <Textarea
-                      placeholder="Share your thoughts on this video..."
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      className="resize-none"
-                      rows={3}
-                    />
-                  </div>
-                  <Button onClick={() => setSubmitted(true)} disabled={!quizAnswer} size="sm">
-                    Submit Feedback
-                  </Button>
-                </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-foreground">
-                  Thanks for your feedback! Your rating: {quizAnswer}/5
-                </div>
-              )}
+            {/* Quiz */}
+            {chapter.quizQuestions && chapter.quizQuestions.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-border">
+                <QuizSection questions={chapter.quizQuestions} />
+              </div>
+            )}
+
+            {/* Feedback */}
+            <div className="mt-8 pt-6 border-t border-border">
+              <FeedbackSection placeholder="Share your thoughts on this video..." />
             </div>
 
             {/* Social Share */}
