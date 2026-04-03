@@ -56,10 +56,6 @@ const JuniorArticlePage = () => {
 
   // Reset state on chapter change
   useEffect(() => {
-    setQuizAnswer("");
-    setFeedback("");
-    setSubmitted(false);
-    setRating(0);
     setScrollPercent(0);
     window.scrollTo(0, 0);
   }, [chapterId, moduleId]);
