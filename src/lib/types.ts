@@ -46,7 +46,8 @@ export interface Chapter {
   title: string;
   content: string;
   readTime: string;
-  tags: Tag[]; // tagged but not visible on card
+  tags: Tag[];
+  quizQuestions?: QuizQuestion[];
 }
 
 export interface Module {
