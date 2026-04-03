@@ -227,6 +227,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>A stock market is a marketplace where shares of publicly listed companies are traded. It serves as a platform for companies to raise capital and for investors to build wealth.</p><h2>How It Works</h2><p>Companies list their shares through an Initial Public Offering (IPO). Once listed, shares are traded between investors on the exchange. Prices are determined by supply and demand dynamics.</p><h2>Major Exchanges</h2><p>The world's largest stock exchanges include the NYSE, NASDAQ, London Stock Exchange, and Tokyo Stock Exchange. In India, BSE and NSE are the primary exchanges.</p>`,
         readTime: "8 min",
         tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }],
+        quizQuestions: STOCK_MARKET_QUIZ,
       },
       {
         id: "m1c2",
