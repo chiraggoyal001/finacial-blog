@@ -56,11 +56,9 @@ const ModuleArticlePage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [chapter, isLoggedIn, setProgress]);
 
-  // Reset quiz/feedback on chapter change
+  // Reset on chapter change
   useEffect(() => {
-    setQuizAnswer("");
-    setFeedback("");
-    setSubmitted(false);
+    window.scrollTo(0, 0);
   }, [chapterId]);
 
   if (!mod || !chapter) {
