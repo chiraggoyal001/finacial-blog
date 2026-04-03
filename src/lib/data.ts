@@ -271,6 +271,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>Budgeting is the foundation of personal finance. It helps you understand where your money goes and take control of your spending.</p><h2>The 50/30/20 Rule</h2><p>Allocate 50% of income to needs, 30% to wants, and 20% to savings and investments. This simple framework works for most income levels.</p><h2>Tracking Expenses</h2><p>Use apps or spreadsheets to track every expense for at least 3 months. You'll be surprised at where your money actually goes.</p>`,
         readTime: "8 min",
         tags: [{ name: "Planning", type: "major" }, { name: "Beginners", type: "minor" }],
+        quizQuestions: BUDGETING_QUIZ,
       },
       {
         id: "m2c2",
