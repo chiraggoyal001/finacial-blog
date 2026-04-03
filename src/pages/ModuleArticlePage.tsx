@@ -26,9 +26,6 @@ const ModuleArticlePage = () => {
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
-  const [quizAnswer, setQuizAnswer] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   const mod = DUMMY_MODULES.find((m) => m.id === moduleId);
   const activeChapterIndex = mod
