@@ -5,6 +5,17 @@ export interface Tag {
   type: TagType;
 }
 
+export interface QuizOption {
+  label: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: QuizOption[];
+}
+
 export interface BlogPost {
   id: string;
   title: string;
