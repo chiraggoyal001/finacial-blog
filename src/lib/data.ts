@@ -551,7 +551,7 @@ export const DUMMY_JUNIOR_MODULES: JuniorModule[] = [
     contentType: "video",
     totalDuration: "25 min",
     chapters: [
-      { id: "jr-v1c1", title: "🪙 Barter to Coins", contentType: "video", content: "Discover how people traded before money existed and why coins changed everything.", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "8:00", tags: [{ name: "Basics", type: "major" }, { name: "History", type: "minor" }], illustration: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400" },
+      { id: "jr-v1c1", title: "🪙 Barter to Coins", contentType: "video", content: "Discover how people traded before money existed and why coins changed everything.", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "8:00", tags: [{ name: "Basics", type: "major" }, { name: "History", type: "minor" }], illustration: "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400", quizQuestions: JUNIOR_MONEY_QUIZ },
       { id: "jr-v1c2", title: "💳 Paper to Plastic", contentType: "video", content: "From paper notes to credit cards — how payment evolved over centuries.", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "9:30", tags: [{ name: "Basics", type: "major" }, { name: "Trends", type: "minor" }], illustration: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400" },
       { id: "jr-v1c3", title: "📱 Digital Money", contentType: "video", content: "UPI, wallets, crypto — welcome to the future of payments!", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", duration: "7:30", tags: [{ name: "Fintech", type: "major" }, { name: "Trends", type: "minor" }], illustration: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400" },
     ],
