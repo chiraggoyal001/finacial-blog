@@ -33,9 +33,7 @@ const VideoArticlePage = () => {
     : null;
 
   useEffect(() => {
-    setQuizAnswer("");
-    setFeedback("");
-    setSubmitted(false);
+    window.scrollTo(0, 0);
   }, [chapterId]);
 
   if (!series || !chapter) {
