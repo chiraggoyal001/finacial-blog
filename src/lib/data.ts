@@ -243,6 +243,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>Understanding financial statements is crucial for making informed investment decisions.</p><h2>Income Statement</h2><p>Shows revenue, expenses, and profit over a period. Key metrics include revenue growth, operating margin, and net profit margin.</p><h2>Balance Sheet</h2><p>A snapshot of a company's assets, liabilities, and equity at a point in time. Look at debt-to-equity ratio and current ratio.</p><h2>Cash Flow Statement</h2><p>Tracks the actual cash moving in and out. Free cash flow is a key indicator of financial health.</p>`,
         readTime: "12 min",
         tags: [{ name: "Investing", type: "major" }, { name: "Deep Dive", type: "minor" }],
+        quizQuestions: FINANCIAL_STATEMENTS_QUIZ,
       },
       {
         id: "m1c4",
