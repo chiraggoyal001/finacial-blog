@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Clock, ChevronRight, Share2, Film, Play, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
+import QuizSection from "@/components/QuizSection";
+import FeedbackSection from "@/components/FeedbackSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { DUMMY_VIDEO_SERIES, DUMMY_MODULES, SOCIAL_LINKS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 
