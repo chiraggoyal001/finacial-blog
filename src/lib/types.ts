@@ -110,12 +110,13 @@ export interface JuniorChapter {
   id: string;
   title: string;
   contentType: JuniorContentType;
-  content: string; // markdown-style text for reading, or description for video
-  videoUrl?: string; // YouTube embed for video chapters
-  duration?: string; // video duration
-  readTime?: string; // reading time
+  content: string;
+  videoUrl?: string;
+  duration?: string;
+  readTime?: string;
   tags: Tag[];
-  illustration?: string; // fun graphic/image
+  illustration?: string;
+  quizQuestions?: QuizQuestion[];
 }
 
 export interface JuniorModule {
