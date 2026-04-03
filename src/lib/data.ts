@@ -343,6 +343,7 @@ export const DUMMY_VIDEO_SERIES: VideoSeries[] = [
         duration: "14:32",
         description: "An overview of what stock markets are, how they function, and why they matter for wealth building.",
         tags: [{ name: "Investing", type: "major" }, { name: "Beginners", type: "minor" }],
+        quizQuestions: VIDEO_INTRO_QUIZ,
       },
       {
         id: "v1c2",
