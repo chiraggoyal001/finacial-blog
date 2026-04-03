@@ -21,9 +21,6 @@ const VideoArticlePage = () => {
   const { seriesId, chapterId } = useParams<{ seriesId: string; chapterId?: string }>();
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
-  const [quizAnswer, setQuizAnswer] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   const series = DUMMY_VIDEO_SERIES.find((s) => s.id === seriesId);
   const activeChapterIndex = series
