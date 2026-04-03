@@ -235,6 +235,7 @@ export const DUMMY_MODULES: Module[] = [
         content: `<p>Stocks can be classified into several categories based on various factors like market capitalization, growth potential, and dividend payout.</p><h2>By Market Cap</h2><p>Large-cap stocks are well-established companies with market caps over $10 billion. Mid-cap stocks range from $2-10 billion, while small-cap stocks are below $2 billion.</p><h2>Growth vs Value</h2><p>Growth stocks are companies expected to grow faster than the market average. Value stocks trade below their intrinsic value, offering potential upside.</p>`,
         readTime: "10 min",
         tags: [{ name: "Investing", type: "major" }, { name: "Analysis", type: "minor" }],
+        quizQuestions: STOCK_TYPES_QUIZ,
       },
       {
         id: "m1c3",
