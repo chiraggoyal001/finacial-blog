@@ -4,13 +4,11 @@ import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen } from "lucide-reac
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
+import QuizSection from "@/components/QuizSection";
+import FeedbackSection from "@/components/FeedbackSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { DUMMY_MODULES, SOCIAL_LINKS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
