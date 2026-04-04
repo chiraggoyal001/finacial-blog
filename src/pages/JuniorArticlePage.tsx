@@ -92,9 +92,6 @@ const JuniorArticlePage = () => {
       {/* Hero */}
       <section className="bg-gradient-to-br from-secondary/10 via-background to-primary/5">
         <div className="container py-8">
-          <Link to="/junior" className="text-sm text-secondary hover:underline mb-4 inline-block flex items-center gap-1">
-            <Sparkles className="h-3 w-3" /> Back to Junior
-          </Link>
           <Badge variant="secondary" className="mb-2">{mod.tag.name}</Badge>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">{mod.title}</h1>
         </div>
