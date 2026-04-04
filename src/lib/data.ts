@@ -2,32 +2,34 @@ import { BlogPost, NavItem, Module, VideoSeries, BlogEvent, JuniorModule, QuizQu
 
 // Reusable quiz question sets
 const STOCK_MARKET_QUIZ: QuizQuestion[] = [
-  { id: "q1", question: "What is an IPO?", options: [{ label: "Initial Public Offering", isCorrect: true }, { label: "Internal Profit Order", isCorrect: false }, { label: "Investment Portfolio Option", isCorrect: false }, { label: "Index Price Objective", isCorrect: false }] },
-  { id: "q2", question: "Which is the largest stock exchange in India?", options: [{ label: "BSE", isCorrect: false }, { label: "NSE", isCorrect: true }, { label: "MCX", isCorrect: false }, { label: "NCDEX", isCorrect: false }] },
+  { id: "q1", question: "What is an IPO?", type: "mcq", options: [{ label: "Initial Public Offering", isCorrect: true }, { label: "Internal Profit Order", isCorrect: false }, { label: "Investment Portfolio Option", isCorrect: false }, { label: "Index Price Objective", isCorrect: false }] },
+  { id: "q2", question: "NSE is the largest stock exchange in India.", type: "true-false", options: [{ label: "True", isCorrect: true }, { label: "False", isCorrect: false }] },
+  { id: "q3", question: "The full form of SEBI is Securities and Exchange Board of _____.", type: "fill-blank", options: [], correctAnswer: "India" },
 ];
 const STOCK_TYPES_QUIZ: QuizQuestion[] = [
-  { id: "q3", question: "What defines a large-cap stock?", options: [{ label: "Market cap over $10 billion", isCorrect: true }, { label: "Stock price over $100", isCorrect: false }, { label: "Over 10,000 employees", isCorrect: false }, { label: "Listed for over 10 years", isCorrect: false }] },
-  { id: "q4", question: "Growth stocks are companies expected to:", options: [{ label: "Pay high dividends", isCorrect: false }, { label: "Grow faster than the market average", isCorrect: true }, { label: "Have low debt", isCorrect: false }, { label: "Be government-owned", isCorrect: false }] },
+  { id: "q4", question: "What defines a large-cap stock?", type: "mcq", options: [{ label: "Market cap over $10 billion", isCorrect: true }, { label: "Stock price over $100", isCorrect: false }, { label: "Over 10,000 employees", isCorrect: false }, { label: "Listed for over 10 years", isCorrect: false }] },
+  { id: "q5", question: "Which of the following are types of stocks?", type: "multi-select", options: [{ label: "Growth stocks", isCorrect: true }, { label: "Value stocks", isCorrect: true }, { label: "Savings stocks", isCorrect: false }, { label: "Dividend stocks", isCorrect: true }] },
+  { id: "q6", question: "Blue-chip stocks are generally considered safe investments.", type: "true-false", options: [{ label: "True", isCorrect: true }, { label: "False", isCorrect: false }] },
 ];
 const FINANCIAL_STATEMENTS_QUIZ: QuizQuestion[] = [
-  { id: "q5", question: "Which statement shows revenue and expenses?", options: [{ label: "Balance Sheet", isCorrect: false }, { label: "Income Statement", isCorrect: true }, { label: "Cash Flow Statement", isCorrect: false }, { label: "Notes to Accounts", isCorrect: false }] },
-  { id: "q6", question: "Free cash flow indicates:", options: [{ label: "Company's marketing budget", isCorrect: false }, { label: "Financial health", isCorrect: true }, { label: "Number of employees", isCorrect: false }, { label: "Stock price trend", isCorrect: false }] },
+  { id: "q7", question: "Which statement shows revenue and expenses?", type: "mcq", options: [{ label: "Balance Sheet", isCorrect: false }, { label: "Income Statement", isCorrect: true }, { label: "Cash Flow Statement", isCorrect: false }, { label: "Notes to Accounts", isCorrect: false }] },
+  { id: "q8", question: "The three main financial statements are Balance Sheet, Income Statement, and _____ Statement.", type: "fill-blank", options: [], correctAnswer: "Cash Flow" },
 ];
 const BUDGETING_QUIZ: QuizQuestion[] = [
-  { id: "q7", question: "In the 50/30/20 rule, what does the 20% represent?", options: [{ label: "Needs", isCorrect: false }, { label: "Wants", isCorrect: false }, { label: "Savings & investments", isCorrect: true }, { label: "Taxes", isCorrect: false }] },
-  { id: "q8", question: "Why should you track expenses for 3 months?", options: [{ label: "Tax requirement", isCorrect: false }, { label: "To understand spending patterns", isCorrect: true }, { label: "Bank mandate", isCorrect: false }, { label: "No specific reason", isCorrect: false }] },
+  { id: "q9", question: "In the 50/30/20 rule, what does the 20% represent?", type: "mcq", options: [{ label: "Needs", isCorrect: false }, { label: "Wants", isCorrect: false }, { label: "Savings & investments", isCorrect: true }, { label: "Taxes", isCorrect: false }] },
+  { id: "q10", question: "Select all valid budgeting methods:", type: "multi-select", options: [{ label: "50/30/20 rule", isCorrect: true }, { label: "Zero-based budgeting", isCorrect: true }, { label: "Random spending", isCorrect: false }, { label: "Envelope method", isCorrect: true }] },
 ];
 const VIDEO_INTRO_QUIZ: QuizQuestion[] = [
-  { id: "vq1", question: "What is the primary purpose of a stock market?", options: [{ label: "For companies to raise capital and investors to trade", isCorrect: true }, { label: "To store physical gold", isCorrect: false }, { label: "To print currency", isCorrect: false }, { label: "To manage bank accounts", isCorrect: false }] },
-  { id: "vq2", question: "What determines stock prices?", options: [{ label: "Government regulations only", isCorrect: false }, { label: "Supply and demand", isCorrect: true }, { label: "Company age", isCorrect: false }, { label: "Number of employees", isCorrect: false }] },
+  { id: "vq1", question: "What is the primary purpose of a stock market?", type: "mcq", options: [{ label: "For companies to raise capital and investors to trade", isCorrect: true }, { label: "To store physical gold", isCorrect: false }, { label: "To print currency", isCorrect: false }, { label: "To manage bank accounts", isCorrect: false }] },
+  { id: "vq2", question: "Stock prices are determined by supply and demand.", type: "true-false", options: [{ label: "True", isCorrect: true }, { label: "False", isCorrect: false }] },
 ];
 const JUNIOR_INVESTING_QUIZ: QuizQuestion[] = [
-  { id: "jq1", question: "What is investing like?", options: [{ label: "Planting a seed and watching it grow 🌱", isCorrect: true }, { label: "Spending all your money at once", isCorrect: false }, { label: "Hiding money under the bed", isCorrect: false }, { label: "Giving money away", isCorrect: false }] },
-  { id: "jq2", question: "What is compound interest?", options: [{ label: "Earning interest on your interest too!", isCorrect: true }, { label: "A type of bank account", isCorrect: false }, { label: "A fee charged by banks", isCorrect: false }, { label: "A type of stock", isCorrect: false }] },
+  { id: "jq1", question: "What is investing like?", type: "mcq", options: [{ label: "Planting a seed and watching it grow 🌱", isCorrect: true }, { label: "Spending all your money at once", isCorrect: false }, { label: "Hiding money under the bed", isCorrect: false }, { label: "Giving money away", isCorrect: false }] },
+  { id: "jq2", question: "Compound interest means earning interest on your interest too!", type: "true-false", options: [{ label: "True", isCorrect: true }, { label: "False", isCorrect: false }] },
 ];
 const JUNIOR_MONEY_QUIZ: QuizQuestion[] = [
-  { id: "jq3", question: "What came before coins?", options: [{ label: "Credit cards", isCorrect: false }, { label: "Bartering (trading goods)", isCorrect: true }, { label: "Digital wallets", isCorrect: false }, { label: "Checks", isCorrect: false }] },
-  { id: "jq4", question: "What is UPI?", options: [{ label: "A type of cryptocurrency", isCorrect: false }, { label: "India's real-time payment system", isCorrect: true }, { label: "A bank name", isCorrect: false }, { label: "A stock exchange", isCorrect: false }] },
+  { id: "jq3", question: "What came before coins?", type: "mcq", options: [{ label: "Credit cards", isCorrect: false }, { label: "Bartering (trading goods)", isCorrect: true }, { label: "Digital wallets", isCorrect: false }, { label: "Checks", isCorrect: false }] },
+  { id: "jq4", question: "UPI stands for Unified _____ Interface.", type: "fill-blank", options: [], correctAnswer: "Payments" },
 ];
 
 export const ADMIN_EMAILS = [
