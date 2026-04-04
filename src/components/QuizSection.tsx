@@ -49,27 +49,6 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
   const qType = q.type || "mcq";
   const progress = ((currentIndex + 1) / questions.length) * 100;
 
-  const isCorrect = (question: QuizQuestion): boolean => {
-    const answer = answers[question.id];
-    const type = question.type || "mcq";
-    if (!answer) return false;
-    if (type === "fill-blank") {
-      return (answer as string).trim().toLowerCase() === (question.correctAnswer || "").trim().toLowerCase();
-    }
-    if (type === "multi-select") {
-      const selected = answer as string[];
-      const correctLabels = question.options.filter(o => o.isCorrect).map(o => o.label).sort();
-      return JSON.stringify([...selected].sort()) === JSON.stringify(correctLabels);
-    }
-    // mcq or true-false
-    return question.options.find(o => o.label === answer)?.isCorrect || false;
-  };
-
-  const score = useMemo(() => {
-    if (!submitted) return 0;
-    return questions.filter(isCorrect).length;
-  }, [submitted, answers]);
-
   const scorePercent = Math.round((score / questions.length) * 100);
 
   const allAnswered = questions.every(q => {
