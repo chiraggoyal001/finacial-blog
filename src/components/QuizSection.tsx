@@ -74,7 +74,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
   if (showResults && submitted) {
     const emoji = scorePercent === 100 ? "🏆" : scorePercent >= 75 ? "🔥" : scorePercent >= 50 ? "👏" : "💪";
     const message = scorePercent === 100 ? "Perfect Score!" : scorePercent >= 75 ? "Excellent!" : scorePercent >= 50 ? "Good effort!" : "Keep learning!";
-    const streakBars = questions.map((q, i) => isCorrect(q));
+    const streakBars = questions.map((q, i) => isCorrectFn(q));
 
     return (
       <div className="space-y-5">
@@ -197,7 +197,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
       {/* Question card */}
       <div className={`p-5 rounded-xl border space-y-4 ${
         submitted
-          ? isCorrect(q)
+          ? isCorrectFn(q)
             ? "border-green-500/40 bg-green-500/5"
             : "border-red-500/40 bg-red-500/5"
           : "border-border bg-card"
@@ -307,13 +307,13 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
               disabled={submitted}
               onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
               className={submitted
-                ? isCorrect(q)
+                ? isCorrectFn(q)
                   ? "border-green-500 text-green-600"
                   : "border-red-500 text-red-500"
                 : ""
               }
             />
-            {submitted && !isCorrect(q) && (
+            {submitted && !isCorrectFn(q) && (
               <p className="text-xs text-green-600 flex items-center gap-1">
                 <CheckCircle2 className="h-3 w-3" /> Correct answer: {q.correctAnswer}
               </p>
