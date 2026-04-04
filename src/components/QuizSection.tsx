@@ -21,9 +21,30 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
   const [submitted, setSubmitted] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
+  const isJunior = variant === "junior";
+
+  const isCorrectFn = (question: QuizQuestion): boolean => {
+    const answer = answers[question.id];
+    const type = question.type || "mcq";
+    if (!answer) return false;
+    if (type === "fill-blank") {
+      return (answer as string).trim().toLowerCase() === (question.correctAnswer || "").trim().toLowerCase();
+    }
+    if (type === "multi-select") {
+      const selected = answer as string[];
+      const correctLabels = question.options.filter(o => o.isCorrect).map(o => o.label).sort();
+      return JSON.stringify([...selected].sort()) === JSON.stringify(correctLabels);
+    }
+    return question.options.find(o => o.label === answer)?.isCorrect || false;
+  };
+
+  const score = useMemo(() => {
+    if (!submitted || !questions || questions.length === 0) return 0;
+    return questions.filter(isCorrectFn).length;
+  }, [submitted, answers, questions]);
+
   if (!questions || questions.length === 0) return null;
 
-  const isJunior = variant === "junior";
   const q = questions[currentIndex];
   const qType = q.type || "mcq";
   const progress = ((currentIndex + 1) / questions.length) * 100;
