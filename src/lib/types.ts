@@ -5,6 +5,8 @@ export interface Tag {
   type: TagType;
 }
 
+export type QuizQuestionType = "mcq" | "true-false" | "fill-blank" | "multi-select";
+
 export interface QuizOption {
   label: string;
   isCorrect: boolean;
@@ -13,7 +15,9 @@ export interface QuizOption {
 export interface QuizQuestion {
   id: string;
   question: string;
+  type?: QuizQuestionType; // defaults to "mcq"
   options: QuizOption[];
+  correctAnswer?: string; // for fill-blank
 }
 
 export interface BlogPost {
