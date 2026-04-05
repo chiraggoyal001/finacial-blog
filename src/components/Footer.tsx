@@ -3,6 +3,16 @@ import { Link } from "react-router-dom";
 import { Youtube, Instagram, Facebook, Linkedin, MessageCircle } from "lucide-react";
 import { NAV_ITEMS, SOCIAL_LINKS, OTHER_PRODUCTS } from "@/lib/data";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "@/hooks/useTranslation";
+
+const NAV_LABEL_KEYS: Record<string, string> = {
+  Newsletter: "nav.newsletter",
+  Modules: "nav.modules",
+  Videos: "nav.videos",
+  Junior: "nav.junior",
+  Events: "nav.events",
+  "Financial Services": "nav.financialServices",
+};
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-label="X">
@@ -11,16 +21,15 @@ const XIcon = () => (
 );
 
 const Footer = () => {
+  const { t } = useTranslation();
+
   return (
     <footer className="bg-card border-t border-border">
       <div className="container py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Brand + Social */}
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="font-display text-2xl font-bold text-primary">Blog</Link>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              Your trusted source for financial insights, market analysis, and educational content.
-            </p>
+            <p className="text-sm text-muted-foreground max-w-xs">{t("footer.desc")}</p>
             <div className="flex items-center gap-3 pt-2">
               <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Youtube className="h-5 w-5" /></a>
               <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Instagram className="h-5 w-5" /></a>
@@ -31,43 +40,36 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Navigation */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-sm text-foreground">Explore</h4>
+            <h4 className="font-semibold text-sm text-foreground">{t("footer.explore")}</h4>
             {NAV_ITEMS.filter(i => !i.badge).map((item) => (
               <Link key={item.label} to={item.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                {item.label}
+                {t(NAV_LABEL_KEYS[item.label] || item.label)}
               </Link>
             ))}
           </div>
 
-          {/* Legal / Info */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-sm text-foreground">Our Info</h4>
-            <Link to="/privacy" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link to="/grievance" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Grievance Resolution</Link>
-            <Link to="/terms" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link>
-            <Link to="/disclaimer" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Disclaimer</Link>
-            <Link to="/license" className="block text-sm text-muted-foreground hover:text-primary transition-colors">License Compliance</Link>
+            <h4 className="font-semibold text-sm text-foreground">{t("footer.ourInfo")}</h4>
+            <Link to="/privacy" className="block text-sm text-muted-foreground hover:text-primary transition-colors">{t("footer.privacy")}</Link>
+            <Link to="/grievance" className="block text-sm text-muted-foreground hover:text-primary transition-colors">{t("footer.grievance")}</Link>
+            <Link to="/terms" className="block text-sm text-muted-foreground hover:text-primary transition-colors">{t("footer.terms")}</Link>
+            <Link to="/disclaimer" className="block text-sm text-muted-foreground hover:text-primary transition-colors">{t("footer.disclaimer")}</Link>
+            <Link to="/license" className="block text-sm text-muted-foreground hover:text-primary transition-colors">{t("footer.license")}</Link>
           </div>
 
-          {/* Contact + Apps */}
           <div className="space-y-6">
             <div className="space-y-3">
-              <h4 className="font-semibold text-sm text-foreground">Contact Us</h4>
+              <h4 className="font-semibold text-sm text-foreground">{t("footer.contactUs")}</h4>
               <a href="mailto:hello@blog.com" className="block text-sm text-muted-foreground hover:text-primary transition-colors">hello@blog.com</a>
               <a href="https://maps.google.com/?q=123+Finance+Street,+Mumbai" target="_blank" rel="noopener noreferrer" className="block text-sm text-muted-foreground hover:text-primary transition-colors">123 Finance Street, Mumbai</a>
               <a href="tel:+919876543210" className="block text-sm text-muted-foreground hover:text-primary transition-colors">+91 98765 43210</a>
             </div>
             <div className="space-y-3">
-              <h4 className="font-semibold text-sm text-foreground">Get the App</h4>
+              <h4 className="font-semibold text-sm text-foreground">{t("footer.getApp")}</h4>
               <div className="flex gap-2">
-                <a href="#" className="inline-block rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">
-                  App Store
-                </a>
-                <a href="#" className="inline-block rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">
-                  Google Play
-                </a>
+                <a href="#" className="inline-block rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">App Store</a>
+                <a href="#" className="inline-block rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">Google Play</a>
               </div>
             </div>
           </div>
@@ -75,9 +77,8 @@ const Footer = () => {
 
         <Separator className="my-8" />
 
-        {/* Other Products */}
         <div className="space-y-3 mb-8">
-          <h4 className="font-semibold text-sm text-foreground">Other Products & Services</h4>
+          <h4 className="font-semibold text-sm text-foreground">{t("footer.otherProducts")}</h4>
           <div className="flex flex-wrap gap-x-6 gap-y-2">
             {OTHER_PRODUCTS.map((product) => (
               <a key={product.name} href={product.href} className="text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -89,7 +90,7 @@ const Footer = () => {
 
         <Separator className="mb-6" />
         <p className="text-xs text-muted-foreground text-center">
-          © {new Date().getFullYear()} Blog. All rights reserved.
+          © {new Date().getFullYear()} Blog. {t("footer.rights")}
         </p>
       </div>
     </footer>
