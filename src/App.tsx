@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ReadingProgressProvider } from "@/contexts/ReadingProgressContext";
 import ScrollToTop from "@/components/ScrollToTop";
+import ChatbotWidget from "@/components/ChatbotWidget";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -66,6 +67,7 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <ChatbotWidget />
             </BrowserRouter>
           </TooltipProvider>
         </ReadingProgressProvider>
