@@ -12,8 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BlogPost } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
 
-const FloatingIcon = ({ children, className }: { children: React.ReactNode; className: string }) => (
-  <div className={`absolute hidden md:flex items-center justify-center rounded-2xl bg-card/80 backdrop-blur border border-border shadow-lg ${className}`}>
+const FloatingIcon = ({ children, className, style }: { children: React.ReactNode; className: string; style?: React.CSSProperties }) => (
+  <div className={`absolute hidden md:flex items-center justify-center rounded-2xl bg-card/80 backdrop-blur border border-border shadow-lg ${className}`} style={style}>
     {children}
   </div>
 );
