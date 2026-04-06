@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, TrendingUp, PieChart, BarChart3, Wallet, Shield, Zap } from "lucide-react";
+import { ArrowRight, Zap, TrendingUp, BarChart3 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
@@ -11,12 +11,7 @@ import { DUMMY_POSTS, DUMMY_JUNIOR_MODULES, DUMMY_EVENTS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { BlogPost } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
-
-const FloatingIcon = ({ children, className, style }: { children: React.ReactNode; className: string; style?: React.CSSProperties }) => (
-  <div className={`absolute hidden md:flex items-center justify-center rounded-2xl bg-card/80 backdrop-blur border border-border shadow-lg ${className}`} style={style}>
-    {children}
-  </div>
-);
+import heroIllustration from "@/assets/hero-illustration.png";
 
 const Index = () => {
   const { isLoggedIn, user } = useAuth();
@@ -43,28 +38,11 @@ const Index = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
-      {/* Hero with floating graphics */}
+      {/* Hero with illustration */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/30">
         {/* Decorative blobs */}
         <div className="absolute top-10 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-20 w-56 h-56 bg-secondary/5 rounded-full blur-3xl" />
-
-        {/* Floating icons */}
-        <FloatingIcon className="w-12 h-12 top-16 right-[15%] animate-bounce" style={{ animationDuration: "3s" } as React.CSSProperties}>
-          <TrendingUp className="h-5 w-5 text-primary" />
-        </FloatingIcon>
-        <FloatingIcon className="w-10 h-10 top-32 right-[30%] animate-bounce" style={{ animationDuration: "4s", animationDelay: "0.5s" } as React.CSSProperties}>
-          <PieChart className="h-4 w-4 text-secondary" />
-        </FloatingIcon>
-        <FloatingIcon className="w-11 h-11 bottom-16 right-[20%] animate-bounce" style={{ animationDuration: "3.5s", animationDelay: "1s" } as React.CSSProperties}>
-          <BarChart3 className="h-4 w-4 text-primary" />
-        </FloatingIcon>
-        <FloatingIcon className="w-10 h-10 top-24 right-[45%] animate-bounce" style={{ animationDuration: "4.5s", animationDelay: "1.5s" } as React.CSSProperties}>
-          <Wallet className="h-4 w-4 text-secondary" />
-        </FloatingIcon>
-        <FloatingIcon className="w-9 h-9 bottom-28 right-[38%] animate-bounce" style={{ animationDuration: "3.8s", animationDelay: "0.8s" } as React.CSSProperties}>
-          <Shield className="h-3.5 w-3.5 text-primary" />
-        </FloatingIcon>
 
         {/* Grid pattern overlay */}
         <div className="absolute inset-0 opacity-[0.03]" style={{
@@ -73,29 +51,42 @@ const Index = () => {
         }} />
 
         <div className="container py-16 md:py-24 relative">
-          <div className="max-w-2xl space-y-6">
-            <span className="inline-block text-xs font-semibold tracking-widest uppercase text-primary">{t("home.tagline")}</span>
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground leading-tight">
-              {t("home.heroTitle1")}{" "}<span className="text-primary">{t("home.heroTitle2")}</span>
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">{t("home.heroDesc")}</p>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/subscribe"><Button size="lg" className="rounded-xl gap-2 font-semibold">{t("home.getStarted")} <ArrowRight className="h-4 w-4" /></Button></Link>
-              <Link to="/modules"><Button variant="outline" size="lg" className="rounded-xl font-semibold">{t("home.exploreModules")}</Button></Link>
+          <div className="flex flex-col md:flex-row items-center gap-10">
+            <div className="max-w-2xl space-y-6 flex-1">
+              <span className="inline-block text-xs font-semibold tracking-widest uppercase text-primary">{t("home.tagline")}</span>
+              <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground leading-tight">
+                {t("home.heroTitle1")}{" "}<span className="text-primary">{t("home.heroTitle2")}</span>
+              </h1>
+              <p className="text-lg text-muted-foreground leading-relaxed">{t("home.heroDesc")}</p>
+              <div className="flex flex-wrap gap-3">
+                <Link to="/subscribe"><Button size="lg" className="rounded-xl gap-2 font-semibold">{t("home.getStarted")} <ArrowRight className="h-4 w-4" /></Button></Link>
+                <Link to="/modules"><Button variant="outline" size="lg" className="rounded-xl font-semibold">{t("home.exploreModules")}</Button></Link>
+              </div>
+
+              {/* Stats strip */}
+              <div className="flex gap-6 pt-4">
+                {[
+                  { icon: Zap, label: "8+ Modules", value: "" },
+                  { icon: TrendingUp, label: "10K+ Readers", value: "" },
+                  { icon: BarChart3, label: "50+ Articles", value: "" },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <s.icon className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{s.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Stats strip */}
-            <div className="flex gap-6 pt-4">
-              {[
-                { icon: Zap, label: "8+ Modules", value: "" },
-                { icon: TrendingUp, label: "10K+ Readers", value: "" },
-                { icon: BarChart3, label: "50+ Articles", value: "" },
-              ].map((s, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <s.icon className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{s.label}</span>
-                </div>
-              ))}
+            {/* Hero illustration */}
+            <div className="flex-1 flex justify-center">
+              <img
+                src={heroIllustration}
+                alt="Financial literacy illustration"
+                className="w-full max-w-md md:max-w-lg drop-shadow-xl"
+                width={1024}
+                height={768}
+              />
             </div>
           </div>
         </div>
