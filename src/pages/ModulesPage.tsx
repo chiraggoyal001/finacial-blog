@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Clock, BookOpen, Play, Eye, Heart, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -10,12 +10,19 @@ import { DUMMY_MODULES } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { ModuleCardSkeleton } from "@/components/skeletons";
 
 const ModulesPage = () => {
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const { getProgress, isRead } = useReadingProgress();
   const { t } = useTranslation();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -29,7 +36,9 @@ const ModulesPage = () => {
       </section>
       <section className="py-10">
         <div className="container space-y-8">
-          {DUMMY_MODULES.map((mod) => {
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => <ModuleCardSkeleton key={i} />)
+            : DUMMY_MODULES.map((mod) => {
             const chapterProgresses = mod.chapters.map((ch) => getProgress(ch.id));
             const avgProgress = chapterProgresses.length > 0 ? Math.round(chapterProgresses.reduce((a, b) => a + b, 0) / chapterProgresses.length) : 0;
             const allRead = mod.chapters.every((ch) => isRead(ch.id));

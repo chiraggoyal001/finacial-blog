@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Menu, X, User, LogOut } from "lucide-react";
+import { Search, Menu, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import SearchOverlay from "@/components/SearchOverlay";
 
 const NAV_LABEL_KEYS: Record<string, string> = {
@@ -22,14 +24,15 @@ const NAV_LABEL_KEYS: Record<string, string> = {
 
 const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const { isLoggedIn, user, logout } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const { isDark, toggleTheme, language, toggleLanguage } = useTheme();
   const { t } = useTranslation();
   const location = useLocation();
 
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";
-    return location.pathname.startsWith(href);
+    const pathname = location.pathname;
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   return (
@@ -73,12 +76,23 @@ const Navbar = () => {
             </div>
 
             {isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <span className="hidden md:inline text-sm text-muted-foreground">{user?.firstName || user?.email}</span>
-                <Button variant="ghost" size="icon" onClick={logout}>
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link to="/profile">
+                      <Avatar className="h-9 w-9 cursor-pointer bg-primary hover:ring-2 hover:ring-primary/50 transition-all">
+                        <AvatarFallback className="text-sm font-medium text-primary-foreground bg-primary">
+                          {(user?.firstName?.[0] || "").toUpperCase()}
+                          {(user?.lastName?.[0] || "").toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{user?.firstName} {user?.lastName}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ) : (
               <Link to="/login">
                 <Button variant="outline" size="sm" className="gap-1.5">

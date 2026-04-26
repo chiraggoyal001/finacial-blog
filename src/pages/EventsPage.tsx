@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar as CalendarIcon, MapPin, Clock, Users, Filter, Sparkles, Brain, Tent } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DUMMY_EVENTS } from "@/lib/data";
 import type { EventType } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -17,7 +18,13 @@ const EventsPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const EVENT_TYPE_META: Record<EventType, { label: string; icon: React.ElementType; color: string; description: string }> = {
     community: { label: t("events.community"), icon: Users, color: "bg-primary/10 text-primary", description: t("events.communityDesc") },
@@ -59,7 +66,7 @@ const EventsPage = () => {
             const meta = EVENT_TYPE_META[type];
             const Icon = meta.icon;
             return (
-              <Card key={type} className="cursor-pointer hover:shadow-md transition-shadow border-border" onClick={() => setTypeFilter(type)}>
+              <Card key={type} className="cursor-pointer hover:shadow-xl hover:shadow-primary/10 hover:scale-105 hover:-translate-y-1 transition-all duration-300 transform border-border" onClick={() => setTypeFilter(type)}>
                 <CardContent className="p-6 flex items-start gap-4">
                   <div className={`rounded-lg p-3 ${meta.color}`}><Icon className="h-6 w-6" /></div>
                   <div><h3 className="font-display font-semibold text-foreground">{meta.label}</h3><p className="text-sm text-muted-foreground mt-1">{meta.description}</p></div>
@@ -72,6 +79,29 @@ const EventsPage = () => {
 
       <section className="container py-10">
         <h2 className="font-display text-xl font-bold text-foreground mb-6">{t("events.upcoming")}</h2>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden border-border">
+                <Skeleton className="aspect-[16/9] w-full" />
+                <CardContent className="p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-4 w-12 rounded-full" />
+                  </div>
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <div className="flex gap-3 pt-1">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
           <div className="space-y-6">
             <Card className="border-border overflow-hidden">
@@ -116,7 +146,7 @@ const EventsPage = () => {
                   const spotsLeft = event.capacity && event.registered ? event.capacity - event.registered : null;
                   return (
                     <Link key={event.id} to={`/events/${event.id}`}>
-                      <Card className="overflow-hidden hover:shadow-md transition-shadow border-border h-full">
+                      <Card className="relative overflow-hidden hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:z-10 transition-all duration-300 transform border-border h-full">
                         <div className="aspect-[16/9] overflow-hidden"><img src={event.image} alt={event.title} className="w-full h-full object-cover" /></div>
                         <CardContent className="p-5 space-y-3">
                           <div className="flex items-center gap-2">
@@ -145,6 +175,7 @@ const EventsPage = () => {
             )}
           </div>
         </div>
+        )}
       </section>
 
       {pastEvents.length > 0 && (

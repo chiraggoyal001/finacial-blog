@@ -10,14 +10,23 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem("theme");
+    return saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  });
   const [language, setLanguage] = useState<"en" | "hi">("en");
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
 
-  const toggleTheme = () => setIsDark((p) => !p);
+  const toggleTheme = () => {
+    setIsDark((p) => {
+      const next = !p;
+      localStorage.setItem("theme", next ? "dark" : "light");
+      return next;
+    });
+  };
   const toggleLanguage = () => setLanguage((p) => (p === "en" ? "hi" : "en"));
 
   return (

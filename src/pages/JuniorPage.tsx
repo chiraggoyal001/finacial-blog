@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Clock, Play, BookOpen, Eye, Heart, CheckCircle2, Sparkles, Rocket, Star, Zap } from "lucide-react";
 import gsap from "gsap";
@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { DUMMY_JUNIOR_MODULES } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +45,12 @@ const JuniorPage = () => {
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const { getProgress, isRead } = useReadingProgress();
   const { t } = useTranslation();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 700);
+    return () => clearTimeout(timer);
+  }, []);
 
   const heroRef = useRef<HTMLDivElement>(null);
   const heroTextRef = useRef<HTMLDivElement>(null);
@@ -119,7 +126,7 @@ const JuniorPage = () => {
 
     return (
       <Link key={mod.id} to={`/junior/${mod.id}`}>
-        <Card className="overflow-hidden border-border group h-full transition-all duration-300 hover:shadow-xl hover:shadow-secondary/10 hover:-translate-y-2 hover:border-secondary/30">
+        <Card className="relative overflow-hidden border-border group h-full transition-all duration-300 hover:shadow-xl hover:shadow-secondary/10 hover:-translate-y-2 hover:scale-105 hover:z-10 hover:border-secondary/30">
           <div className="aspect-[16/10] overflow-hidden relative">
             <img src={mod.image} alt={mod.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -226,11 +233,27 @@ const JuniorPage = () => {
           </div>
           <div>
             <h2 className="font-display text-2xl font-bold text-foreground">{t("junior.videoModules")}</h2>
-            <p className="text-sm text-muted-foreground">{videoModules.length} modules · Watch & learn</p>
+            {!isLoading && <p className="text-sm text-muted-foreground">{videoModules.length} modules · Watch & learn</p>}
           </div>
         </div>
         <div ref={videoCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videoModules.map(renderCard)}
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden border-border">
+                <Skeleton className="aspect-[16/10] w-full" />
+                <CardContent className="p-5 space-y-3">
+                  <Skeleton className="h-4 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <div className="flex gap-3 pt-1">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-14" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+            : videoModules.map(renderCard)}
         </div>
       </section>
 
@@ -242,11 +265,27 @@ const JuniorPage = () => {
           </div>
           <div>
             <h2 className="font-display text-2xl font-bold text-foreground">{t("junior.readingModules")}</h2>
-            <p className="text-sm text-muted-foreground">{readingModules.length} modules · Read & explore</p>
+            {!isLoading && <p className="text-sm text-muted-foreground">{readingModules.length} modules · Read & explore</p>}
           </div>
         </div>
         <div ref={readingCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {readingModules.map(renderCard)}
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden border-border">
+                <Skeleton className="aspect-[16/10] w-full" />
+                <CardContent className="p-5 space-y-3">
+                  <Skeleton className="h-4 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <div className="flex gap-3 pt-1">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-3 w-14" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+            : readingModules.map(renderCard)}
         </div>
       </section>
 

@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const SignupPage = () => {
   const [firstName, setFirstName] = useState("");
@@ -18,19 +19,84 @@ const SignupPage = () => {
   const [subscribe, setSubscribe] = useState(true);
   const [mailPref, setMailPref] = useState<"intrusive" | "non-intrusive">("non-intrusive");
   const [notifyLaunches, setNotifyLaunches] = useState(true);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const { signup } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("Please enter a valid email address");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const validatePassword = (password: string): boolean => {
+    if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      return false;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setPasswordError("Password must contain at least one uppercase letter");
+      return false;
+    }
+    if (!/[a-z]/.test(password)) {
+      setPasswordError("Password must contain at least one lowercase letter");
+      return false;
+    }
+    if (!/[0-9]/.test(password)) {
+      setPasswordError("Password must contain at least one number");
+      return false;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      setPasswordError("Password must contain at least one special character");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpSent) { setOtpSent(true); toast.info("OTP sent to your email (prototype: enter any 6 digits)"); return; }
-    if (otp.length < 4) { toast.error("Please enter a valid OTP"); return; }
-    signup({ firstName, lastName, email, password, isSubscribed: subscribe, mailPreference: mailPref, notifyLaunches });
-    toast.success("Account created successfully!");
-    navigate("/");
+    
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+    
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    const result = await signup({ 
+      firstName, 
+      lastName, 
+      email, 
+      password, 
+      isSubscribed: subscribe, 
+      mailPreference: mailPref, 
+      notifyLaunches 
+    });
+    
+    if (result.success) {
+      if (result.error) {
+        // Email confirmation required
+        toast.success("Account created! " + result.error);
+        navigate("/login");
+      } else {
+        toast.success("Account created successfully!");
+        navigate("/");
+      }
+    } else {
+      toast.error(result.error || "Signup failed. Please try again.");
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSocial = (provider: string) => { toast.info(`${provider} signup is a prototype placeholder.`); };
@@ -63,9 +129,41 @@ const SignupPage = () => {
             <div className="space-y-2"><Label htmlFor="firstName">{t("signup.firstName")}</Label><Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="rounded-xl h-11" required /></div>
             <div className="space-y-2"><Label htmlFor="lastName">{t("signup.lastName")}</Label><Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} className="rounded-xl h-11" required /></div>
           </div>
-          <div className="space-y-2"><Label htmlFor="email">{t("login.email")}</Label><Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-xl h-11" required /></div>
-          <div className="space-y-2"><Label htmlFor="password">{t("login.password")}</Label><Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-xl h-11" required /></div>
-          {otpSent && <div className="space-y-2"><Label htmlFor="otp">{t("signup.otp")}</Label><Input id="otp" placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value)} className="rounded-xl h-11 font-mono tracking-widest text-center" maxLength={6} /></div>}
+          <div className="space-y-2">
+            <Label htmlFor="email">{t("login.email")}</Label>
+            <Input 
+              id="email" 
+              type="email" 
+              placeholder="you@example.com" 
+              value={email} 
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) validateEmail(e.target.value);
+              }} 
+              className={`rounded-xl h-11 ${emailError ? "border-red-500" : ""}`} 
+              required 
+            />
+            {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">{t("login.password")}</Label>
+            <Input 
+              id="password" 
+              type="password" 
+              placeholder="••••••••" 
+              value={password} 
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) validatePassword(e.target.value);
+              }} 
+              className={`rounded-xl h-11 ${passwordError ? "border-red-500" : ""}`} 
+              required 
+            />
+            {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
+            <p className="text-xs text-muted-foreground">
+              Min 8 chars, uppercase, lowercase, number, special char
+            </p>
+          </div>
           <div className="space-y-3 rounded-xl border border-border p-4 bg-muted/30">
             <div className="flex items-center gap-2"><Checkbox id="subscribe" checked={subscribe} onCheckedChange={(c) => setSubscribe(!!c)} /><Label htmlFor="subscribe" className="text-sm">{t("signup.subscribeNewsletter")}</Label></div>
             {subscribe && (
@@ -79,7 +177,16 @@ const SignupPage = () => {
             )}
             <div className="flex items-center gap-2"><Checkbox id="notify" checked={notifyLaunches} onCheckedChange={(c) => setNotifyLaunches(!!c)} /><Label htmlFor="notify" className="text-sm">{t("signup.notifyLaunches")}</Label></div>
           </div>
-          <Button type="submit" className="w-full rounded-xl h-11 font-semibold">{otpSent ? t("signup.createAccount") : t("signup.continue")}</Button>
+          <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              t("signup.createAccount")
+            )}
+          </Button>
         </form>
         <p className="text-center text-sm text-muted-foreground">{t("signup.haveAccount")}{" "}<Link to="/login" className="text-primary font-medium hover:underline">{t("signup.logIn")}</Link></p>
       </div>

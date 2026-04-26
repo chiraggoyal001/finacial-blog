@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Clock, Play, Eye, Heart, Film, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -8,11 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { DUMMY_VIDEO_SERIES, DUMMY_MODULES } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { VideoCardSkeleton } from "@/components/skeletons";
 
 const VideosPage = () => {
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const { t } = useTranslation();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -26,7 +33,9 @@ const VideosPage = () => {
       </section>
       <section className="py-10">
         <div className="container space-y-8">
-          {DUMMY_VIDEO_SERIES.map((series) => {
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => <VideoCardSkeleton key={i} />)
+            : DUMMY_VIDEO_SERIES.map((series) => {
             const linkedModule = series.linkedModuleId ? DUMMY_MODULES.find((m) => m.id === series.linkedModuleId) : null;
             return (
               <Link key={series.id} to={`/videos/${series.id}`} className="group block">

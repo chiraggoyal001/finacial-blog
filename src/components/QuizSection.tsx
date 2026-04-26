@@ -35,10 +35,34 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
   const isJunior = variant === "junior";
 
   useEffect(() => {
-    if (started && !submitted) {
-      timerRef.current = setInterval(() => setElapsed(tt => tt + 1), 1000);
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    if (!started || submitted) return;
+
+    let lastTime = Date.now();
+
+    const tick = () => {
+      const now = Date.now();
+      const delta = Math.floor((now - lastTime) / 1000);
+      if (delta > 0) {
+        setElapsed(tt => tt + delta);
+        lastTime = now;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        lastTime = Date.now();
+      } else {
+        tick();
+      }
+    };
+
+    timerRef.current = setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(timerRef.current!);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [started, submitted]);
 
   const isCorrectFn = (question: QuizQuestion): boolean => {
@@ -212,12 +236,14 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
               const showCorrect = submitted && opt.isCorrect;
               const showWrong = submitted && isSelected && !opt.isCorrect;
               return (
-                <div key={oi} className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${submitted ? "" : isSelected ? "bg-primary/5" : "hover:bg-accent/50"}`}>
-                  <RadioGroupItem value={opt.label} id={`${q.id}-${oi}`} disabled={submitted} />
-                  <Label htmlFor={`${q.id}-${oi}`} className={`text-sm cursor-pointer flex items-center gap-1.5 ${showCorrect ? "text-green-600 font-medium" : showWrong ? "text-red-500 line-through" : "text-foreground"}`}>
-                    {opt.label}
-                    {showCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
-                    {showWrong && <XCircle className="h-3.5 w-3.5 text-red-500" />}
+                <div key={oi} className={`flex items-center p-2 rounded-lg transition-colors ${submitted ? "" : isSelected ? "bg-primary/5" : "hover:bg-accent/50"}`}>
+                  <Label htmlFor={`${q.id}-${oi}`} className={`flex items-center gap-3 cursor-pointer flex-1 ${showCorrect ? "text-green-600 font-medium" : showWrong ? "text-red-500 line-through" : "text-foreground"}`}>
+                    <RadioGroupItem value={opt.label} id={`${q.id}-${oi}`} disabled={submitted} />
+                    <span className="text-sm flex items-center gap-1.5">
+                      {opt.label}
+                      {showCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />}
+                      {showWrong && <XCircle className="h-3.5 w-3.5 text-red-500" />}
+                    </span>
                   </Label>
                 </div>
               );

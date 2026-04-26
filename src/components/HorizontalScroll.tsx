@@ -62,7 +62,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
             variant="ghost"
             size="icon"
             onClick={() => scroll("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none backdrop-blur-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity bg-[#e4f1ef]/0 hover:bg-transparent"
+            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border opacity-0 group-hover/carousel:opacity-100 transition-opacity shadow-lg hover:bg-background hover:scale-110"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -70,13 +70,13 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
             variant="ghost"
             size="icon"
             onClick={() => scroll("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-full w-10 rounded-none backdrop-blur-sm opacity-0 group-hover/carousel:opacity-100 transition-opacity bg-[#e4f1ef]/0 hover:bg-transparent"
+            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border opacity-0 group-hover/carousel:opacity-100 transition-opacity shadow-lg hover:bg-background hover:scale-110"
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-2 px-2 snap-x"
+            className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-4 -mx-4 snap-x"
           >
           {posts.map((post) => {
             const readPercent = getProgress(post.id);
@@ -86,7 +86,7 @@ const HorizontalScroll = ({ title, posts }: HorizontalScrollProps) => {
                 to={getPostLink(post)}
                 className="flex-shrink-0 w-72 snap-start"
               >
-                <div className="rounded-xl overflow-hidden border border-border bg-card hover:shadow-lg transition-shadow">
+                <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:z-10 transition-all duration-300 transform">
                   <div className="aspect-video overflow-hidden relative">
                     <img
                       src={post.image}

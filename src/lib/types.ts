@@ -43,7 +43,65 @@ export interface User {
   isSubscribed: boolean;
   mailPreference: "intrusive" | "non-intrusive";
   notifyLaunches: boolean;
+  age?: number;
+  region?: string;
+  interests?: string[];
+  hobbies?: string;
+  profession?: string;
+  description?: string;
 }
+
+export const FINANCE_INTERESTS = [
+  "Investing",
+  "Trading",
+  "Stock Market",
+  "Mutual Funds",
+  "Retirement Planning",
+  "Tax Planning",
+  "Financial Independence",
+  "Real Estate",
+  "Cryptocurrency",
+  "Personal Finance",
+] as const;
+
+export const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+] as const;
 
 export interface Chapter {
   id: string;

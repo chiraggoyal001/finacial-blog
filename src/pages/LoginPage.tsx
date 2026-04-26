@@ -7,17 +7,30 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(email, password)) { toast.success("Logged in successfully!"); navigate("/"); }
+    setIsLoading(true);
+    
+    const result = await login(email, password);
+    
+    if (result.success) {
+      toast.success("Logged in successfully!");
+      navigate("/");
+    } else {
+      toast.error(result.error || "Login failed. Please check your credentials.");
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSocial = (provider: string) => { toast.info(`${provider} login is a prototype placeholder.`); };
@@ -49,7 +62,16 @@ const LoginPage = () => {
           <div className="space-y-2"><Label htmlFor="email">{t("login.email")}</Label><Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-xl h-11" required /></div>
           <div className="space-y-2"><Label htmlFor="password">{t("login.password")}</Label><Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-xl h-11" required /></div>
           <div className="text-right"><Link to="/forgot-password" className="text-xs text-primary hover:underline">{t("login.forgotPassword")}</Link></div>
-          <Button type="submit" className="w-full rounded-xl h-11 font-semibold">{t("login.signIn")}</Button>
+          <Button type="submit" className="w-full rounded-xl h-11 font-semibold" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              t("login.signIn")
+            )}
+          </Button>
         </form>
         <p className="text-center text-sm text-muted-foreground">{t("login.noAccount")}{" "}<Link to="/signup" className="text-primary font-medium hover:underline">{t("login.signUp")}</Link></p>
       </div>

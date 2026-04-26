@@ -70,7 +70,7 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
 
   return (
     <Link to={`/newsletter/${post.id}`} className="group block">
-      <div className="rounded-xl overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
+      <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:z-10 transition-all duration-300 transform">
         <div className="aspect-video overflow-hidden relative">
           <img
             src={post.image}

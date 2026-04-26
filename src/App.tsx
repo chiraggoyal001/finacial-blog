@@ -8,9 +8,13 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ReadingProgressProvider } from "@/contexts/ReadingProgressContext";
 import ScrollToTop from "@/components/ScrollToTop";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ProfilePage from "./pages/ProfilePage";
 import SubscribePage from "./pages/SubscribePage";
 import NewsletterPage from "./pages/NewsletterPage";
 import NewsletterArticlePage from "./pages/NewsletterArticlePage";
@@ -41,10 +45,13 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <ScrollToTop />
-              <Routes>
-                <Route path="/" element={<Index />} />
+              <ErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<Index />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/subscribe" element={<SubscribePage />} />
                 <Route path="/newsletter" element={<NewsletterPage />} />
                 <Route path="/newsletter/:id" element={<NewsletterArticlePage />} />
@@ -66,8 +73,11 @@ const App = () => (
                 <Route path="/license" element={<LicensePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-              <ChatbotWidget />
+                </Routes>
+              </ErrorBoundary>
+              <ErrorBoundary>
+                <ChatbotWidget />
+              </ErrorBoundary>
             </BrowserRouter>
           </TooltipProvider>
         </ReadingProgressProvider>

@@ -37,6 +37,11 @@ const getResponse = (msg: string): { text: string; emoji: string } => {
 
 const GYAAN_AVATAR = "🦉";
 
+interface ChatPosition {
+  horizontal: "left" | "right";
+  vertical: "top" | "bottom";
+}
+
 const ChatbotWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,8 +50,10 @@ const ChatbotWidget = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [hasCustomPos, setHasCustomPos] = useState(false);
+  const [chatPosition, setChatPosition] = useState<ChatPosition>({ horizontal: "left", vertical: "bottom" });
   const dragRef = useRef<{ startX: number; startY: number; elemX: number; elemY: number } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,7 +89,21 @@ const ChatbotWidget = () => {
       if (!isDragging || !dragRef.current) return;
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
-      setPosition({ x: dragRef.current.elemX - dx, y: dragRef.current.elemY - dy });
+
+      // Calculate new position
+      let newX = dragRef.current.elemX - dx;
+      let newY = dragRef.current.elemY - dy;
+
+      // Clamp to viewport bounds (FAB is 56px = w-14)
+      const fabSize = 56;
+      const margin = 24; // bottom-6 and right-6 = 24px
+      const maxX = window.innerWidth - fabSize - margin;
+      const maxY = window.innerHeight - fabSize - margin;
+
+      newX = Math.max(0, Math.min(newX, maxX));
+      newY = Math.max(0, Math.min(newY, maxY));
+
+      setPosition({ x: newX, y: newY });
       setHasCustomPos(true);
     };
     const handleMouseUp = () => setIsDragging(false);
@@ -98,10 +119,68 @@ const ChatbotWidget = () => {
 
   const style = hasCustomPos ? { right: position.x, bottom: position.y } : {};
 
+  // Calculate optimal chat position based on FAB location
+  const calculateChatPosition = useCallback((): ChatPosition => {
+    if (!fabRef.current) return { horizontal: "left", vertical: "bottom" };
+
+    const rect = fabRef.current.getBoundingClientRect();
+    const chatWidth = 320; // w-80 = 20rem = 320px
+    const chatHeight = 450; // approximate chat window height
+    const margin = 16;
+
+    const spaceRight = window.innerWidth - rect.right;
+    const spaceLeft = rect.left;
+    const spaceBottom = window.innerHeight - rect.bottom;
+    const spaceTop = rect.top;
+
+    // Determine horizontal direction
+    // If not enough space to the right of FAB, extend to the left
+    const extendLeft = spaceRight < chatWidth + margin;
+
+    // Determine vertical direction
+    // If not enough space below FAB, place chat above FAB (using bottom-16)
+    const placeAbove = spaceBottom < chatHeight + margin;
+
+    return {
+      horizontal: extendLeft ? "right" : "left",
+      vertical: placeAbove ? "bottom" : "top",
+    };
+  }, []);
+
+  // Update chat position when opening
+  useEffect(() => {
+    if (isOpen) {
+      setChatPosition(calculateChatPosition());
+    }
+  }, [isOpen, calculateChatPosition]);
+
+  // Recalculate on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (isOpen) {
+        setChatPosition(calculateChatPosition());
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isOpen, calculateChatPosition]);
+
+  // Get positioning classes and styles based on chat position
+  // horizontal: "left" means chat extends rightward from FAB (using left-0)
+  // horizontal: "right" means chat extends leftward from FAB (using right-0)
+  // vertical: "bottom" means chat is above FAB (using bottom-16)
+  // vertical: "top" means chat is below FAB (using top-16)
+  const getPositionClasses = () => {
+    const hClass = chatPosition.horizontal === "left" ? "left-0" : "right-0";
+    const vClass = chatPosition.vertical === "bottom" ? "bottom-16" : "top-16";
+    return `absolute ${vClass} ${hClass}`;
+  };
+
+
   return (
     <div className="fixed bottom-6 right-6 z-[90]" style={style}>
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-80 sm:w-96 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-scale-in">
+        <div className={`${getPositionClasses()} w-80 sm:w-96 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-scale-in`}>
           {/* Header */}
           <div className="bg-primary px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -188,6 +267,7 @@ const ChatbotWidget = () => {
 
       {/* FAB */}
       <button
+        ref={fabRef}
         onMouseDown={handleMouseDown}
         onClick={() => !isDragging && setIsOpen(!isOpen)}
         className={`w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:shadow-xl transition-all ${isDragging ? "cursor-grabbing scale-110" : "cursor-grab hover:scale-105"} ${isOpen ? "rotate-0" : "animate-bounce"}`}
