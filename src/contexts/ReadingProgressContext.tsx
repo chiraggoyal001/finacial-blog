@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface ReadingProgress {
   [postId: string]: number; // 0-100 percentage
@@ -13,16 +13,32 @@ interface ReadingProgressContextType {
 
 const ReadingProgressContext = createContext<ReadingProgressContextType | undefined>(undefined);
 
+const STORAGE_KEY = "reading-progress";
+
 export const ReadingProgressProvider = ({ children }: { children: ReactNode }) => {
-  const [progress, setProgressState] = useState<ReadingProgress>({
-    // Dummy data for prototype
-    "1": 100,
-    "3": 45,
-    "7": 72,
+  const [progress, setProgressState] = useState<ReadingProgress>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return {};
+        }
+      }
+    }
+    return {};
   });
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  }, [progress]);
+
   const setProgress = (postId: string, percent: number) => {
-    setProgressState((prev) => ({ ...prev, [postId]: Math.min(100, Math.max(prev[postId] || 0, percent)) }));
+    setProgressState((prev) => ({
+      ...prev,
+      [postId]: Math.min(100, Math.max(prev[postId] || 0, percent)),
+    }));
   };
 
   const getProgress = (postId: string) => progress[postId] || 0;

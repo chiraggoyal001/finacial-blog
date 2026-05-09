@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Menu, X, User } from "lucide-react";
+import { Search, Menu, X, User, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NAV_ITEMS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
+import { getAvatarUrl } from "@/lib/avatar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import SearchOverlay from "@/components/SearchOverlay";
 
@@ -24,7 +25,7 @@ const NAV_LABEL_KEYS: Record<string, string> = {
 
 const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, needsOnboarding, isAdmin } = useAuth();
   const { isDark, toggleTheme, language, toggleLanguage } = useTheme();
   const { t } = useTranslation();
   const location = useLocation();
@@ -61,7 +62,7 @@ const Navbar = () => {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setSearchOpen(true)}>
+            <Button variant="ghost" size="icon" onClick={() => setSearchOpen(true)} aria-label="Open search">
               <Search className="h-4 w-4" />
             </Button>
 
@@ -75,21 +76,41 @@ const Navbar = () => {
               <Switch checked={language === "hi"} onCheckedChange={toggleLanguage} />
             </div>
 
+            {isLoggedIn && isAdmin && (
+              <Link to="/admin">
+                <Button variant="ghost" size="icon" aria-label="Admin Dashboard" className="text-primary hover:bg-primary/10">
+                  <Shield className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
+
             {isLoggedIn ? (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link to="/profile">
-                      <Avatar className="h-9 w-9 cursor-pointer bg-primary hover:ring-2 hover:ring-primary/50 transition-all">
+                    <Link to="/profile" className="relative">
+                      <Avatar className={`h-9 w-9 cursor-pointer bg-primary transition-all ${needsOnboarding ? 'ring-2 ring-amber-500 ring-offset-2' : 'hover:ring-2 hover:ring-primary/50'}`}>
+                        <AvatarImage 
+                          src={user?.avatarUrl || (user?.id ? getAvatarUrl(user.id) : undefined)} 
+                          alt={`${user?.firstName} ${user?.lastName}`}
+                          className="object-cover"
+                        />
                         <AvatarFallback className="text-sm font-medium text-primary-foreground bg-primary">
                           {(user?.firstName?.[0] || "").toUpperCase()}
                           {(user?.lastName?.[0] || "").toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
+                      {/* Incomplete profile badge */}
+                      {needsOnboarding && (
+                        <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-amber-500 rounded-full border-2 border-background" />
+                      )}
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>{user?.firstName} {user?.lastName}</p>
+                    {needsOnboarding && (
+                      <p className="text-xs text-amber-500 mt-1">Profile incomplete - Click to complete</p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -104,7 +125,7 @@ const Navbar = () => {
 
             <Sheet>
               <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="Open navigation menu">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -121,6 +142,17 @@ const Navbar = () => {
                       {item.badge && <Badge variant="secondary" className="text-[10px]">{item.badge}</Badge>}
                     </Link>
                   ))}
+                  {isLoggedIn && isAdmin && (
+                    <Link
+                      to="/admin"
+                      className={`flex items-center justify-between py-2 transition-colors ${isActive('/admin') ? "text-primary font-semibold" : "text-foreground hover:text-primary"}`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </span>
+                    </Link>
+                  )}
                   <div className="border-t border-border pt-4 mt-2 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">{t("nav.darkMode")}</span>

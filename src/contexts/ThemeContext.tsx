@@ -14,11 +14,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem("theme");
     return saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
   });
-  const [language, setLanguage] = useState<"en" | "hi">("en");
+  const [language, setLanguage] = useState<"en" | "hi">(() => {
+    const saved = localStorage.getItem("language");
+    return (saved === "hi" ? "hi" : "en") as "en" | "hi";
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
+
+  useEffect(() => {
+    localStorage.setItem("language", language);
+  }, [language]);
 
   const toggleTheme = () => {
     setIsDark((p) => {
@@ -27,7 +34,13 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       return next;
     });
   };
-  const toggleLanguage = () => setLanguage((p) => (p === "en" ? "hi" : "en"));
+  const toggleLanguage = () => {
+    setLanguage((p) => {
+      const next = p === "en" ? "hi" : "en";
+      localStorage.setItem("language", next);
+      return next;
+    });
+  };
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme, language, toggleLanguage }}>

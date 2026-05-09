@@ -346,6 +346,11 @@ export const translations: Translations = {
   "feedback.thanks": { en: "Thanks for your feedback!", hi: "आपकी प्रतिक्रिया के लिए धन्यवाद!" },
   "feedback.yourRating": { en: "Your rating:", hi: "आपकी रेटिंग:" },
   "feedback.sharePlaceholder": { en: "Share your thoughts...", hi: "अपने विचार साझा करें..." },
+  "feedback.successTitle": { en: "Feedback Submitted", hi: "फीडबैक सबमिट किया गया" },
+  "feedback.successDesc": { en: "Thank you for helping us improve!", hi: "हमें बेहतर बनाने में मदद के लिए धन्यवाद!" },
+  "feedback.errorTitle": { en: "Submission Failed", hi: "सबमिशन विफल" },
+  "feedback.errorDesc": { en: "Please try again later.", hi: "कृपया बाद में पुनः प्रयास करें।" },
+  "feedback.submitting": { en: "Submitting...", hi: "सबमिट हो रहा है..." },
 
   // ─── Common / Article Pages ───
   "common.chapters": { en: "chapters", hi: "अध्याय" },

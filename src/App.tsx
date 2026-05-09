@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,10 +7,43 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ReadingProgressProvider } from "@/contexts/ReadingProgressContext";
 import ScrollToTop from "@/components/ScrollToTop";
-import ChatbotWidget from "@/components/ChatbotWidget";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ProtectedRoute as AdminProtectedRoute } from "@/components/admin/ProtectedRoute";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
+
+// Lazy load ChatbotWidget to reduce initial bundle size
+const ChatbotWidget = lazy(() => import("@/components/ChatbotWidget"));
+
+// Component to conditionally render ChatbotWidget (hidden on auth pages)
+const ChatbotWrapper = () => {
+  const location = useLocation();
+  const authPaths = ['/login', '/signup', '/forgot-password', '/auth/callback'];
+  const isAuthPage = authPaths.some(path => location.pathname.startsWith(path));
+  
+  if (isAuthPage) return null;
+  
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={null}>
+        <ChatbotWidget />
+      </Suspense>
+    </ErrorBoundary>
+  );
+};
+
+// Admin pages
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminArticles from "./pages/admin/AdminArticles";
+import ArticleEditor from "./pages/admin/ArticleEditor";
+import AdminModules from "./pages/admin/AdminModules";
+import AdminVideos from "./pages/admin/AdminVideos";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminJunior from "./pages/admin/AdminJunior";
+import AdminABTests from "./pages/admin/AdminABTests";
+
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -31,6 +64,8 @@ import GrievancePage from "./pages/GrievancePage";
 import TermsPage from "./pages/TermsPage";
 import DisclaimerPage from "./pages/DisclaimerPage";
 import LicensePage from "./pages/LicensePage";
+import OnboardingPage from "./pages/OnboardingPage";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +87,8 @@ const App = () => (
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+<Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/subscribe" element={<SubscribePage />} />
                 <Route path="/newsletter" element={<NewsletterPage />} />
                 <Route path="/newsletter/:id" element={<NewsletterArticlePage />} />
@@ -71,13 +108,25 @@ const App = () => (
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/disclaimer" element={<DisclaimerPage />} />
                 <Route path="/license" element={<LicensePage />} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="articles" element={<AdminArticles />} />
+                  <Route path="articles/new" element={<ArticleEditor />} />
+                  <Route path="articles/:id" element={<ArticleEditor />} />
+                  <Route path="modules" element={<AdminModules />} />
+                  <Route path="videos" element={<AdminVideos />} />
+                  <Route path="events" element={<AdminEvents />} />
+                  <Route path="junior" element={<AdminJunior />} />
+                  <Route path="ab-tests" element={<AdminABTests />} />
+                </Route>
+                
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
                 </Routes>
               </ErrorBoundary>
-              <ErrorBoundary>
-                <ChatbotWidget />
-              </ErrorBoundary>
+              <ChatbotWrapper />
             </BrowserRouter>
           </TooltipProvider>
         </ReadingProgressProvider>

@@ -23,23 +23,24 @@ interface SearchOverlayProps {
 
 const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
   const [query, setQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<(HTMLAnchorElement | null)[]>([]);
   const { t } = useTranslation();
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
       setQuery("");
+      setSelectedIndex(-1);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, [onClose]);
+    if (selectedIndex >= 0 && resultsRef.current[selectedIndex]) {
+      resultsRef.current[selectedIndex]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [selectedIndex]);
 
   const allResults = useMemo<SearchResult[]>(() => {
     const results: SearchResult[] = [];
@@ -95,6 +96,36 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
     ).slice(0, 12);
   }, [query, allResults]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (!filtered.length) return;
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setSelectedIndex(prev => (prev < filtered.length - 1 ? prev + 1 : prev));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setSelectedIndex(prev => (prev > 0 ? prev - 1 : -1));
+          break;
+        case "Enter":
+          e.preventDefault();
+          if (selectedIndex >= 0 && resultsRef.current[selectedIndex]) {
+            resultsRef.current[selectedIndex]?.click();
+          } else if (filtered.length > 0) {
+            resultsRef.current[0]?.click();
+          }
+          break;
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, filtered, selectedIndex]);
+
   if (!isOpen) return null;
 
   return (
@@ -121,12 +152,15 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                 <p className="text-center text-muted-foreground py-8 text-sm">No results found for "{query}"</p>
               ) : (
                 <div className="space-y-1">
-                  {filtered.map((r) => (
+                  {filtered.map((r, index) => (
                     <Link
+                      ref={(el) => { resultsRef.current[index] = el; }}
                       key={`${r.category}-${r.id}`}
                       to={r.link}
                       onClick={onClose}
-                      className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors group"
+                      className={`flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors group ${
+                        index === selectedIndex ? "bg-accent ring-2 ring-primary ring-inset" : ""
+                      }`}
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">

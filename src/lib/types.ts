@@ -49,6 +49,7 @@ export interface User {
   hobbies?: string;
   profession?: string;
   description?: string;
+  avatarUrl?: string;
 }
 
 export const FINANCE_INTERESTS = [
@@ -200,4 +201,186 @@ export interface NavItem {
   href: string;
   description?: string;
   badge?: string;
+}
+
+// =====================================================
+// DATABASE TYPES (Supabase)
+// =====================================================
+
+export interface DbArticle {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  author_id: string;
+  author_name: string;
+  image: string;
+  read_time: string;
+  tags: { name: string; type: 'major' | 'minor' }[];
+  views: number;
+  likes: number;
+  is_published: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbModule {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  tag: { name: string; type: 'major' | 'minor' };
+  total_read_time: string;
+  youtube_playlist: string;
+  views: number;
+  likes: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  chapters?: DbModuleChapter[];
+}
+
+export interface DbModuleChapter {
+  id: string;
+  module_id: string;
+  title: string;
+  content: string;
+  read_time: string;
+  tags: { name: string; type: 'major' | 'minor' }[];
+  sort_order: number;
+  quiz_questions: QuizQuestion[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbVideoSeries {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  tag: { name: string; type: 'major' | 'minor' };
+  total_duration: string;
+  linked_module_id: string;
+  views: number;
+  likes: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  chapters?: DbVideoChapter[];
+}
+
+export interface DbVideoChapter {
+  id: string;
+  series_id: string;
+  title: string;
+  video_url: string;
+  duration: string;
+  description: string;
+  tags: { name: string; type: 'major' | 'minor' }[];
+  sort_order: number;
+  quiz_questions: QuizQuestion[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbEvent {
+  id: string;
+  title: string;
+  description: string;
+  type: EventType;
+  date: string;
+  time: string;
+  location: string;
+  image: string;
+  tags: { name: string; type: 'major' | 'minor' }[];
+  is_upcoming: boolean;
+  registration_url: string;
+  capacity: number;
+  registered: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbJuniorModule {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  tag: { name: string; type: 'major' | 'minor' };
+  content_type: JuniorContentType;
+  total_duration: string;
+  views: number;
+  likes: number;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  chapters?: DbJuniorChapter[];
+}
+
+export interface DbJuniorChapter {
+  id: string;
+  module_id: string;
+  title: string;
+  content_type: JuniorContentType;
+  content: string;
+  video_url: string;
+  duration: string;
+  tags: { name: string; type: 'major' | 'minor' }[];
+  illustration: string;
+  sort_order: number;
+  quiz_questions: QuizQuestion[];
+  created_at: string;
+  updated_at: string;
+}
+
+// A/B Testing Types
+export interface ABTest {
+  id: string;
+  name: string;
+  description: string;
+  test_type: 'cta' | 'avatar' | 'mascot' | 'layout';
+  status: 'draft' | 'running' | 'paused' | 'completed';
+  start_date: string;
+  end_date: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ABTestVariant {
+  id: string;
+  test_id: string;
+  name: string;
+  content: Record<string, unknown>;
+  traffic_percentage: number;
+  views: number;
+  clicks: number;
+  conversions: number;
+  created_at: string;
+}
+
+export interface ABTestAssignment {
+  id: string;
+  test_id: string;
+  user_id: string;
+  variant_id: string;
+  assigned_at: string;
+}
+
+// User Role Types
+export interface DbRole {
+  id: string;
+  name: 'admin' | 'user';
+  permissions: Record<string, boolean>;
+  created_at: string;
+}
+
+export interface DbUserRole {
+  id: string;
+  user_id: string;
+  role_id: string;
+  created_at: string;
 }

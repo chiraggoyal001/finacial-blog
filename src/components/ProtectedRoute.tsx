@@ -7,10 +7,10 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isSigningOut } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  if (isLoading || isSigningOut) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="space-y-4 w-full max-w-md px-4">
