@@ -12,6 +12,15 @@ interface ArticleCardProps {
   variant?: "default" | "compact" | "hero";
 }
 
+const getPostLink = (post: BlogPost) => {
+  if (post.category === "Newsletter") return `/newsletter/${post.id}`;
+  if (post.category === "Modules") return `/modules/${post.id}`;
+  if (post.category === "Videos") return `/videos/${post.id}`;
+  if (post.category === "Junior") return `/junior/${post.id}`;
+  if (post.category === "Events") return `/events/${post.id}`;
+  return `/newsletter/${post.id}`;
+};
+
 const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
   const { isLoggedIn } = useAuth();
   const { getProgress, isRead } = useReadingProgress();
@@ -19,7 +28,7 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
 
   if (variant === "hero") {
     return (
-      <Link to={`/newsletter/${post.id}`} className="group block">
+      <Link to={getPostLink(post)} className="group block">
         <div className="relative rounded-2xl overflow-hidden border border-border bg-card">
           <div className="grid md:grid-cols-2 gap-0">
             <div className="aspect-video md:aspect-auto overflow-hidden">
@@ -69,7 +78,7 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
   }
 
   return (
-    <Link to={`/newsletter/${post.id}`} className="group block">
+    <Link to={getPostLink(post)} className="group block">
       <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:z-10 transition-all duration-300 transform">
         <div className="aspect-video overflow-hidden relative">
           <img

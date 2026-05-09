@@ -9,11 +9,20 @@ import SubscribeSection from "@/components/SubscribeSection";
 import HorizontalScroll from "@/components/HorizontalScroll";
 import { ArticleCardSkeleton, HorizontalScrollSkeleton } from "@/components/skeletons";
 import ProTip from "@/components/ProTip";
-import { DUMMY_POSTS, DUMMY_JUNIOR_MODULES, DUMMY_EVENTS } from "@/lib/data";
+import { DUMMY_POSTS, DUMMY_JUNIOR_MODULES, DUMMY_EVENTS, DUMMY_MODULES } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { BlogPost } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import heroIllustration from "@/assets/hero-illustration.png";
+
+const getPostLink = (post: BlogPost) => {
+  if (post.category === "Newsletter") return `/newsletter/${post.id}`;
+  if (post.category === "Modules") return `/modules/${post.id}`;
+  if (post.category === "Videos") return `/videos/${post.id}`;
+  if (post.category === "Junior") return `/junior/${post.id}`;
+  if (post.category === "Events") return `/events/${post.id}`;
+  return `/newsletter/${post.id}`;
+};
 
 const Index = () => {
   const { isLoggedIn, user } = useAuth();
@@ -28,8 +37,23 @@ const Index = () => {
 
   const latestPosts = [...DUMMY_POSTS].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const newsletterPosts = DUMMY_POSTS.filter((p) => p.category === "Newsletter");
-  const modulePosts = DUMMY_POSTS.filter((p) => p.category === "Modules");
   const videoPosts = DUMMY_POSTS.filter((p) => p.category === "Videos");
+
+  // Transform DUMMY_MODULES to BlogPost format for consistent card rendering
+  const modulePosts: BlogPost[] = DUMMY_MODULES.map((m) => ({
+    id: m.id,
+    title: m.title,
+    excerpt: m.description,
+    content: "",
+    category: "Modules",
+    author: "Module Team",
+    date: "2025-06-01",
+    image: m.image,
+    readTime: m.totalReadTime || "",
+    tags: [m.tag],
+    views: m.views,
+    likes: m.likes,
+  }));
 
   const juniorPosts: BlogPost[] = DUMMY_JUNIOR_MODULES.map((m) => ({
     id: m.id, title: m.title, excerpt: m.description, content: "", category: "Junior",
@@ -126,7 +150,7 @@ const Index = () => {
             {isLoading
               ? Array.from({ length: 3 }).map((_, i) => <ArticleCardSkeleton key={i} variant="default" />)
               : latestPosts.slice(0, 3).map((post) => (
-                <Link key={post.id} to={`/post/${post.id}`} className="block group">
+                <Link key={post.id} to={getPostLink(post)} className="block group">
                   <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 hover:scale-105 hover:z-10 transition-all duration-300 transform">
                     <div className="aspect-video overflow-hidden">
                       <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
