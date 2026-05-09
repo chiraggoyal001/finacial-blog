@@ -3,6 +3,7 @@ import { X, Send, User, ThumbsUp, ThumbsDown, Plus, MoreHorizontal, ChevronDown,
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Hook to detect reduced motion preference
 const useReducedMotion = () => {
@@ -130,6 +131,7 @@ interface ChatPosition {
 }
 
 const ChatbotWidget = () => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -780,8 +782,16 @@ const ChatbotWidget = () => {
                   )}
                 </div>
                 {m.role === "user" && (
-                  <div className="w-7 h-7 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 mt-1">
-                    <User className="h-3 w-3 text-secondary" />
+                  <div className="w-7 h-7 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 mt-1 overflow-hidden">
+                    {user?.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="User" className="w-full h-full object-cover" />
+                    ) : user?.firstName ? (
+                      <span className="text-[10px] font-medium text-secondary">
+                        {user.firstName.charAt(0).toUpperCase()}
+                      </span>
+                    ) : (
+                      <User className="h-3 w-3 text-secondary" />
+                    )}
                   </div>
                 )}
               </div>

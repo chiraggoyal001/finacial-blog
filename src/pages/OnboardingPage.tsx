@@ -23,7 +23,7 @@ interface ProfileFormData {
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
-  const { user, isLoggedIn, markOnboardingComplete } = useAuth();
+  const { user, isLoggedIn, markOnboardingComplete, updateProfile } = useAuth();
   const { trackOnboardingComplete, trackOnboardingSkip } = useAnalytics();
   const [isLoading, setIsLoading] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
@@ -97,6 +97,18 @@ const OnboardingPage = () => {
     setIsLoading(true);
 
     try {
+      // First update auth metadata via updateProfile
+      if (user) {
+        await updateProfile({
+          age: formData.age ? parseInt(formData.age) : undefined,
+          region: formData.region,
+          interests: formData.interests,
+          profession: formData.profession,
+          hobbies: formData.hobbies,
+          description: formData.description,
+        });
+      }
+
       const { error } = await supabase
         .from("profiles")
         .update({

@@ -158,17 +158,19 @@ export async function uploadAvatar(
     data: { publicUrl },
   } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
+  const publicUrlWithBuster = `${publicUrl}?v=${Date.now()}`;
+
   // Update profile with new avatar URL
   const { error: updateError } = await supabase
     .from("profiles")
-    .update({ avatar_url: publicUrl })
+    .update({ avatar_url: publicUrlWithBuster })
     .eq("id", userId);
 
   if (updateError) {
     return { error: updateError.message };
   }
 
-  return { url: publicUrl };
+  return { url: publicUrlWithBuster };
 }
 
 /**

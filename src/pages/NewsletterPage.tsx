@@ -9,6 +9,7 @@ import { DUMMY_POSTS, MAJOR_TAGS, MINOR_TAGS } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useArticles } from "@/hooks/useContent";
 
 const NewsletterPage = () => {
   const { isLoggedIn, user } = useAuth();
@@ -17,12 +18,30 @@ const NewsletterPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { t } = useTranslation();
 
+  const { data: dbArticles } = useArticles({ category: 'Newsletter', published: true });
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 700);
     return () => clearTimeout(timer);
   }, []);
 
-  const newsletterPosts = DUMMY_POSTS.filter((p) => p.category === "Newsletter").sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const mappedDbPosts = (dbArticles || []).map(article => ({
+    id: article.id,
+    title: article.title,
+    excerpt: article.excerpt,
+    content: article.content,
+    category: article.category,
+    author: article.author_name,
+    date: article.published_at || article.created_at,
+    image: article.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
+    readTime: article.read_time || "5 min",
+    tags: article.tags || [],
+    views: article.views || 0,
+    likes: article.likes || 0,
+  }));
+
+  const allPosts = [...mappedDbPosts, ...DUMMY_POSTS.filter((p) => p.category === "Newsletter")];
+  const newsletterPosts = allPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const latestPost = newsletterPosts[0];
   const pastPosts = newsletterPosts.slice(1);
   const mostViewed = [...newsletterPosts].sort((a, b) => (b.views || 0) - (a.views || 0));

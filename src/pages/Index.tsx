@@ -13,14 +13,14 @@ import { DUMMY_POSTS, DUMMY_JUNIOR_MODULES, DUMMY_EVENTS, DUMMY_MODULES } from "
 import { useAuth } from "@/contexts/AuthContext";
 import { BlogPost } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useArticles } from "@/hooks/useContent";
 import heroIllustration from "@/assets/hero-illustration.png";
 
 const getPostLink = (post: BlogPost) => {
-  if (post.category === "Newsletter") return `/newsletter/${post.id}`;
-  if (post.category === "Modules") return `/modules/${post.id}`;
-  if (post.category === "Videos") return `/videos/${post.id}`;
-  if (post.category === "Junior") return `/junior/${post.id}`;
-  if (post.category === "Events") return `/events/${post.id}`;
+  // If it's a DUMMY_POST from lib/data or an article from dbArticles
+  // they are all rendered by NewsletterArticlePage which acts as a generic article viewer
+  // For actual Modules (from DUMMY_MODULES), they have a different structure
+  // but latestPosts only contains DUMMY_POSTS and dbArticles
   return `/newsletter/${post.id}`;
 };
 
@@ -35,9 +35,27 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const latestPosts = [...DUMMY_POSTS].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const newsletterPosts = DUMMY_POSTS.filter((p) => p.category === "Newsletter");
-  const videoPosts = DUMMY_POSTS.filter((p) => p.category === "Videos");
+  const { data: dbArticles } = useArticles({ published: true });
+
+  const mappedDbPosts = (dbArticles || []).map(article => ({
+    id: article.id,
+    title: article.title,
+    excerpt: article.excerpt,
+    content: article.content,
+    category: article.category,
+    author: article.author_name,
+    date: article.published_at || article.created_at,
+    image: article.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
+    readTime: article.read_time || "5 min",
+    tags: article.tags || [],
+    views: article.views || 0,
+    likes: article.likes || 0,
+  }));
+
+  const allPosts = [...mappedDbPosts, ...DUMMY_POSTS];
+  const latestPosts = allPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const newsletterPosts = allPosts.filter((p) => p.category === "Newsletter");
+  const videoPosts = allPosts.filter((p) => p.category === "Videos");
 
   // Transform DUMMY_MODULES to BlogPost format for consistent card rendering
   const modulePosts: BlogPost[] = DUMMY_MODULES.map((m) => ({

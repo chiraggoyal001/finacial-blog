@@ -8,16 +8,16 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = true }: ProtectedRouteProps) {
-  const { isLoggedIn, isAdmin, isLoading, user } = useAuth();
+  const { isLoggedIn, isAdmin, isLoading, isCheckingRole, user } = useAuth();
   const location = useLocation();
 
-  // Show loading while auth is initializing
-  if (isLoading) {
+  // Show loading while auth is initializing or role is being fetched
+  if (isLoading || isCheckingRole) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Checking permissions...</p>
         </div>
       </div>
     );
@@ -29,9 +29,8 @@ export function ProtectedRoute({ children, requireAdmin = true }: ProtectedRoute
   }
 
   // Logged in but not admin - redirect to home
-  // Also check by email as a fallback while role is being fetched
-  const isAdminEmail = ['goyalchirag721@gmail.com', 'anuraggoyal231@gmail.com'].includes(user.email);
-  if (requireAdmin && !isAdmin && !isAdminEmail) {
+  // (We removed the email fallback since we wait for role check to complete)
+  if (requireAdmin && !isAdmin) {
     return <Navigate to="/" replace />;
   }
 

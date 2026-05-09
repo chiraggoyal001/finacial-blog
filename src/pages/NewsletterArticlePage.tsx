@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { DUMMY_POSTS, SOCIAL_LINKS } from "@/lib/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
+import { useArticle } from "@/hooks/useContent";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -27,7 +28,24 @@ const NewsletterArticlePage = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
 
-  const post = DUMMY_POSTS.find((p) => p.id === id);
+  const { data: dbArticle, isLoading } = useArticle(id || '');
+
+  const dummyPost = DUMMY_POSTS.find((p) => p.id === id);
+  const post = dbArticle ? {
+    id: dbArticle.id,
+    title: dbArticle.title,
+    excerpt: dbArticle.excerpt,
+    content: dbArticle.content,
+    category: dbArticle.category,
+    author: dbArticle.author_name,
+    date: dbArticle.published_at || dbArticle.created_at,
+    image: dbArticle.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
+    readTime: dbArticle.read_time || "5 min",
+    tags: dbArticle.tags || [],
+    views: dbArticle.views || 0,
+    likes: dbArticle.likes || 0,
+  } : dummyPost;
+
   const readPercent = id ? getProgress(id) : 0;
 
   // Track scroll-based reading progress
@@ -49,6 +67,20 @@ const NewsletterArticlePage = () => {
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [post, isLoggedIn, setProgress]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <h1 className="font-display text-2xl font-bold text-foreground">Loading...</h1>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!post) {
     return (

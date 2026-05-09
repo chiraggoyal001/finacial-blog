@@ -327,6 +327,40 @@ export const DUMMY_MODULES: Module[] = [
       },
     ],
   },
+  {
+    id: "2",
+    title: "Beginner's Guide to Financial Planning",
+    description: "Everything you need to know to start your financial planning journey from scratch.",
+    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
+    tag: { name: "Planning", type: "major" },
+    totalReadTime: "40 min",
+    views: 1100,
+    likes: 130,
+    chapters: [
+      {
+        id: "2c1",
+        title: "Assessing Your Current Position",
+        content: `<p>List all your assets, liabilities, income sources, and monthly expenses. This gives you a clear picture of where you stand financially.</p>`,
+        readTime: "10 min",
+        tags: [{ name: "Planning", type: "major" }, { name: "Beginners", type: "minor" }],
+      },
+      {
+        id: "2c2",
+        title: "Setting SMART Goals",
+        content: `<p>Your goals should be Specific, Measurable, Achievable, Relevant, and Time-bound. Examples include building a 6-month emergency fund or saving for a home down payment.</p>`,
+        readTime: "15 min",
+        tags: [{ name: "Planning", type: "major" }, { name: "Beginners", type: "minor" }],
+      },
+      {
+        id: "2c3",
+        title: "Creating a Budget",
+        content: `<p>The 50/30/20 rule is a great starting point — 50% needs, 30% wants, 20% savings and investments.</p>`,
+        readTime: "15 min",
+        tags: [{ name: "Planning", type: "major" }, { name: "Beginners", type: "minor" }],
+        quizQuestions: BUDGETING_QUIZ,
+      }
+    ],
+  },
 ];
 
 export const DUMMY_VIDEO_SERIES: VideoSeries[] = [

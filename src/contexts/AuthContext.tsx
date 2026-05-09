@@ -8,6 +8,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoggedIn: boolean;
   isLoading: boolean;
+  isCheckingRole: boolean;
   isSigningOut: boolean;
   needsOnboarding: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsOnboarding?: boolean; isAdmin?: boolean }>;
@@ -55,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isAdmin = userRole === 'admin';
   const isLoggedIn = !!user;
+  const isCheckingRole = isLoggedIn && userRole === null;
 
   // Fetch user role from database - wrapped in useCallback to prevent stale closures
   const fetchUserRole = useCallback(async (userId: string) => {
@@ -368,10 +370,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       setUser(null);
       setNeedsOnboarding(false);
-      // isSigningOut stays true here intentionally — the spinner remains
-      // visible during page navigation, preventing login screen flicker.
-      // The AuthProvider will be re-created with isSigningOut=false after
-      // the full page reload.
+      // Reset isSigningOut to false since client-side routing is used.
+      setIsSigningOut(false);
     } catch (error) {
       console.error("Logout error:", error);
       setIsSigningOut(false);  // Reset on error so user sees error message
@@ -424,16 +424,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, isLoggedIn, isLoading, isSigningOut, needsOnboarding, login, signup, signInWithOAuth, logout, resetPassword, updateProfile, updateUserAvatar, checkProfileCompletion: () => user ? checkProfileCompletion(user.id) : Promise.resolve(false), markOnboardingComplete }}>
-      {isLoading ? (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="space-y-4 w-full max-w-md px-4">
-            <Skeleton className="h-8 w-3/4 mx-auto" />
-            <Skeleton className="h-4 w-1/2 mx-auto" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        </div>
-      ) : isSigningOut ? (
+    <AuthContext.Provider value={{ user, isAdmin, isLoggedIn, isLoading, isCheckingRole, isSigningOut, needsOnboarding, login, signup, signInWithOAuth, logout, resetPassword, updateProfile, updateUserAvatar, checkProfileCompletion: () => user ? checkProfileCompletion(user.id) : Promise.resolve(false), markOnboardingComplete }}>
+      {isSigningOut ? (
         <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="text-center space-y-4">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />

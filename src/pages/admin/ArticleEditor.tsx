@@ -4,10 +4,8 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -18,11 +16,11 @@ import {
 import { toast } from 'sonner';
 import { useArticle, useCreateArticle, useUpdateArticle } from '@/hooks/useContent';
 import { useAuth } from '@/contexts/AuthContext';
+import { TagInput } from '@/components/admin/TagInput';
+import { ContentEditor, plainTextToHtml } from '@/components/admin/ContentEditor';
 import type { DbArticle } from '@/lib/types';
 
 const CATEGORIES = ['Newsletter', 'Modules', 'Videos', 'Junior', 'Blog'];
-const MAJOR_TAGS = ["Markets", "Investing", "Fintech", "Planning", "Economy"];
-const MINOR_TAGS = ["Analysis", "Weekly", "Beginners", "Career", "Banking", "Tax", "Trends", "Deep Dive"];
 
 export default function ArticleEditor() {
   const { id } = useParams();
@@ -64,8 +62,14 @@ export default function ArticleEditor() {
     setIsSubmitting(true);
 
     try {
+      // Auto-convert plain text content
+      const processedContent = formData.content && !formData.content.includes('<')
+        ? plainTextToHtml(formData.content)
+        : formData.content;
+
       const articleData = {
         ...formData,
+        content: processedContent,
         tags: selectedTags,
         author_id: user?.id,
       };
@@ -83,16 +87,6 @@ export default function ArticleEditor() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const toggleTag = (tagName: string, type: 'major' | 'minor') => {
-    setSelectedTags(prev => {
-      const exists = prev.find(t => t.name === tagName);
-      if (exists) {
-        return prev.filter(t => t.name !== tagName);
-      }
-      return [...prev, { name: tagName, type }];
-    });
   };
 
   if (isEditing && loadingArticle) {
@@ -140,12 +134,11 @@ export default function ArticleEditor() {
 
             <div className="space-y-2">
               <Label htmlFor="excerpt">Excerpt *</Label>
-              <Textarea
+              <Input
                 id="excerpt"
                 value={formData.excerpt}
                 onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
                 placeholder="Brief summary of the article"
-                rows={2}
                 required
               />
             </div>
@@ -179,14 +172,25 @@ export default function ArticleEditor() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="image">Featured Image URL</Label>
-              <Input
-                id="image"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                placeholder="https://..."
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="author_name">Author Name</Label>
+                <Input
+                  id="author_name"
+                  value={formData.author_name}
+                  onChange={(e) => setFormData({ ...formData, author_name: e.target.value })}
+                  placeholder="Author name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="image">Featured Image URL</Label>
+                <Input
+                  id="image"
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -197,20 +201,13 @@ export default function ArticleEditor() {
             <CardTitle>Content</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="content">Article Content (HTML) *</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="<p>Your article content here...</p>"
-                rows={15}
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Supports HTML formatting
-              </p>
-            </div>
+            <ContentEditor
+              value={formData.content || ''}
+              onChange={(content) => setFormData({ ...formData, content })}
+              label="Article Content"
+              placeholder="Write your article content..."
+              required
+            />
           </CardContent>
         </Card>
 
@@ -219,44 +216,11 @@ export default function ArticleEditor() {
           <CardHeader>
             <CardTitle>Tags</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="mb-2 block">Major Tags</Label>
-              <div className="flex flex-wrap gap-2">
-                {MAJOR_TAGS.map(tag => {
-                  const isSelected = selectedTags.find(t => t.name === tag);
-                  return (
-                    <Badge
-                      key={tag}
-                      variant={isSelected ? 'default' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => toggleTag(tag, 'major')}
-                    >
-                      {tag}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2 block">Minor Tags</Label>
-              <div className="flex flex-wrap gap-2">
-                {MINOR_TAGS.map(tag => {
-                  const isSelected = selectedTags.find(t => t.name === tag);
-                  return (
-                    <Badge
-                      key={tag}
-                      variant={isSelected ? 'secondary' : 'outline'}
-                      className="cursor-pointer"
-                      onClick={() => toggleTag(tag, 'minor')}
-                    >
-                      {tag}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
+          <CardContent>
+            <TagInput
+              selectedTags={selectedTags}
+              onChange={setSelectedTags}
+            />
           </CardContent>
         </Card>
 

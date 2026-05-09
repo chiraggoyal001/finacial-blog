@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Home,
   Users,
-  Settings
+  Settings,
+  Newspaper,
 } from 'lucide-react';
 
 const adminNavItems = [
