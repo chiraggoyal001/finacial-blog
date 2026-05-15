@@ -12,6 +12,8 @@ import { ProtectedRoute as AdminProtectedRoute } from "@/components/admin/Protec
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { lazy, Suspense } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
+import { CalculatorsSidebar } from "@/components/CalculatorsSidebar";
 import Index from "./pages/Index";
 
 // Lazy load ChatbotWidget to reduce initial bundle size
@@ -20,11 +22,13 @@ const ChatbotWidget = lazy(() => import("@/components/ChatbotWidget"));
 // Component to conditionally render ChatbotWidget (hidden on auth pages)
 const ChatbotWrapper = () => {
   const location = useLocation();
-  const authPaths = ['/login', '/signup', '/forgot-password', '/auth/callback'];
-  const isAuthPage = authPaths.some(path => location.pathname.startsWith(path));
-  
+  const authPaths = ["/login", "/signup", "/forgot-password", "/auth/callback"];
+  const isAuthPage = authPaths.some((path) =>
+    location.pathname.startsWith(path),
+  );
+
   if (isAuthPage) return null;
-  
+
   return (
     <ErrorBoundary>
       <Suspense fallback={null}>
@@ -47,6 +51,9 @@ import EventEditor from "./pages/admin/EventEditor";
 import AdminJunior from "./pages/admin/AdminJunior";
 import JuniorModuleEditor from "./pages/admin/JuniorModuleEditor";
 import AdminABTests from "./pages/admin/AdminABTests";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminAffiliates from "./pages/admin/AdminAffiliates";
 
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -70,10 +77,21 @@ import TermsPage from "./pages/TermsPage";
 import DisclaimerPage from "./pages/DisclaimerPage";
 import LicensePage from "./pages/LicensePage";
 import OnboardingPage from "./pages/OnboardingPage";
+import MyLearningPage from "./pages/MyLearningPage";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+      staleTime: 1000 * 60 * 2, // 2 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -88,58 +106,123 @@ const App = () => (
               <ErrorBoundary>
                 <Routes>
                   <Route path="/" element={<Index />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-<Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/subscribe" element={<SubscribePage />} />
-                <Route path="/newsletter" element={<NewsletterPage />} />
-                <Route path="/newsletter/:id" element={<NewsletterArticlePage />} />
-                <Route path="/modules" element={<ModulesPage />} />
-                <Route path="/modules/:moduleId" element={<ModuleArticlePage />} />
-                <Route path="/modules/:moduleId/:chapterId" element={<ModuleArticlePage />} />
-                <Route path="/videos" element={<VideosPage />} />
-                <Route path="/videos/:seriesId" element={<VideoArticlePage />} />
-                <Route path="/videos/:seriesId/:chapterId" element={<VideoArticlePage />} />
-                <Route path="/events" element={<EventsPage />} />
-                <Route path="/events/:eventId" element={<EventDetailPage />} />
-                <Route path="/junior" element={<JuniorPage />} />
-                <Route path="/junior/:moduleId" element={<JuniorArticlePage />} />
-                <Route path="/junior/:moduleId/:chapterId" element={<JuniorArticlePage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/grievance" element={<GrievancePage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/disclaimer" element={<DisclaimerPage />} />
-                <Route path="/license" element={<LicensePage />} />
-                
-                {/* Admin Routes */}
-                <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="articles" element={<AdminArticles />} />
-                  <Route path="articles/new" element={<ArticleEditor />} />
-                  <Route path="articles/:id" element={<ArticleEditor />} />
-                  <Route path="modules" element={<AdminModules />} />
-                  <Route path="modules/new" element={<ModuleEditor />} />
-                  <Route path="modules/:id" element={<ModuleEditor />} />
-                  <Route path="videos" element={<AdminVideos />} />
-                  <Route path="videos/new" element={<VideoSeriesEditor />} />
-                  <Route path="videos/:id" element={<VideoSeriesEditor />} />
-                  <Route path="events" element={<AdminEvents />} />
-                  <Route path="events/new" element={<EventEditor />} />
-                  <Route path="events/:id" element={<EventEditor />} />
-                  <Route path="junior" element={<AdminJunior />} />
-                  <Route path="junior/new" element={<JuniorModuleEditor />} />
-                  <Route path="junior/:id" element={<JuniorModuleEditor />} />
-                  <Route path="ab-tests" element={<AdminABTests />} />
-                </Route>
-                
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route
+                    path="/forgot-password"
+                    element={<ForgotPasswordPage />}
+                  />
+                  <Route
+                    path="/reset-password"
+                    element={<ResetPasswordPage />}
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <ProtectedRoute>
+                        <OnboardingPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/learning"
+                    element={
+                      <ProtectedRoute>
+                        <MyLearningPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/subscribe" element={<SubscribePage />} />
+                  <Route path="/newsletter" element={<NewsletterPage />} />
+                  <Route
+                    path="/newsletter/:id"
+                    element={<NewsletterArticlePage />}
+                  />
+                  <Route path="/modules" element={<ModulesPage />} />
+                  <Route
+                    path="/modules/:moduleId"
+                    element={<ModuleArticlePage />}
+                  />
+                  <Route
+                    path="/modules/:moduleId/:chapterId"
+                    element={<ModuleArticlePage />}
+                  />
+                  <Route path="/videos" element={<VideosPage />} />
+                  <Route
+                    path="/videos/:seriesId"
+                    element={<VideoArticlePage />}
+                  />
+                  <Route
+                    path="/videos/:seriesId/:chapterId"
+                    element={<VideoArticlePage />}
+                  />
+                  <Route path="/events" element={<EventsPage />} />
+                  <Route
+                    path="/events/:eventId"
+                    element={<EventDetailPage />}
+                  />
+                  <Route path="/junior" element={<JuniorPage />} />
+                  <Route
+                    path="/junior/:moduleId"
+                    element={<JuniorArticlePage />}
+                  />
+                  <Route
+                    path="/junior/:moduleId/:chapterId"
+                    element={<JuniorArticlePage />}
+                  />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/grievance" element={<GrievancePage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/disclaimer" element={<DisclaimerPage />} />
+                  <Route path="/license" element={<LicensePage />} />
+
+                  {/* Admin Routes */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <AdminProtectedRoute>
+                        <AdminLayout />
+                      </AdminProtectedRoute>
+                    }
+                  >
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="articles" element={<AdminArticles />} />
+                    <Route path="articles/new" element={<ArticleEditor />} />
+                    <Route path="articles/:id" element={<ArticleEditor />} />
+                    <Route path="modules" element={<AdminModules />} />
+                    <Route path="modules/new" element={<ModuleEditor />} />
+                    <Route path="modules/:id" element={<ModuleEditor />} />
+                    <Route path="videos" element={<AdminVideos />} />
+                    <Route path="videos/new" element={<VideoSeriesEditor />} />
+                    <Route path="videos/:id" element={<VideoSeriesEditor />} />
+                    <Route path="events" element={<AdminEvents />} />
+                    <Route path="events/new" element={<EventEditor />} />
+                    <Route path="events/:id" element={<EventEditor />} />
+                    <Route path="junior" element={<AdminJunior />} />
+                    <Route path="junior/new" element={<JuniorModuleEditor />} />
+                    <Route path="junior/:id" element={<JuniorModuleEditor />} />
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="ab-tests" element={<AdminABTests />} />
+                    <Route path="affiliates" element={<AdminAffiliates />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                  </Route>
+
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </ErrorBoundary>
+              <LocalErrorBoundary componentName="Financial Tools">
+                <CalculatorsSidebar />
+              </LocalErrorBoundary>
               <ChatbotWrapper />
             </BrowserRouter>
           </TooltipProvider>

@@ -38,6 +38,8 @@ export default function EventEditor() {
     registration_url: '',
     capacity: undefined,
     is_published: false,
+    virtual_lobby_url: '',
+    recording_url: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -151,6 +153,17 @@ export default function EventEditor() {
               <div className="space-y-2">
                 <Label>Registration URL</Label>
                 <Input value={formData.registration_url} onChange={e => setFormData({ ...formData, registration_url: e.target.value })} placeholder="https://..." />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Virtual Lobby URL (Online)</Label>
+                <Input value={formData.virtual_lobby_url || ''} onChange={e => setFormData({ ...formData, virtual_lobby_url: e.target.value })} placeholder="Link for Zoom/Meet" />
+              </div>
+              <div className="space-y-2">
+                <Label>Recording URL (Post-event)</Label>
+                <Input value={formData.recording_url || ''} onChange={e => setFormData({ ...formData, recording_url: e.target.value })} placeholder="Link to video recording" />
               </div>
             </div>
 

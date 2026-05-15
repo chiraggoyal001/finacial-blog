@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Loader2, Plus, Trash2, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -66,11 +67,61 @@ export default function ModuleEditor() {
     total_read_time: '',
     youtube_playlist: '',
     is_published: false,
+    seo_title: '',
+    seo_description: '',
   });
 
   const [chapters, setChapters] = useState<ChapterForm[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteChapterId, setDeleteChapterId] = useState<string | null>(null);
+  const [lastAutoSaved, setLastAutoSaved] = useState<Date | null>(null);
+
+  const DRAFT_KEY = `draft_module_${id || 'new'}`;
+
+  // Auto-save logic
+  useEffect(() => {
+    if (isSubmitting || !formData.title) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ 
+        formData, 
+        chapters,
+        updatedAt: new Date().toISOString()
+      }));
+      setLastAutoSaved(new Date());
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData, chapters, DRAFT_KEY, isSubmitting]);
+
+  // Check for draft on mount
+  useEffect(() => {
+    const savedDraftStr = localStorage.getItem(DRAFT_KEY);
+    if (!savedDraftStr || existingModule) return;
+
+    try {
+      const { formData: draftData, updatedAt } = JSON.parse(savedDraftStr);
+      const draftDate = new Date(updatedAt);
+      const isRecent = (new Date().getTime() - draftDate.getTime()) < 1000 * 60 * 60 * 24; // 24 hours
+
+      if (isRecent && draftData.title) {
+        toast("Unsaved draft found", {
+          description: `Saved ${draftDate.toLocaleTimeString()} - would you like to restore it?`,
+          action: {
+            label: "Restore",
+            onClick: () => {
+              const { formData: restoredData, chapters: restoredChapters } = JSON.parse(savedDraftStr);
+              setFormData(prev => ({ ...prev, ...restoredData }));
+              setChapters(restoredChapters || []);
+              toast.success("Draft restored!");
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing module draft", e);
+    }
+  }, [DRAFT_KEY, existingModule]);
 
   useEffect(() => {
     if (existingModule) {
@@ -82,9 +133,13 @@ export default function ModuleEditor() {
         total_read_time: existingModule.total_read_time,
         youtube_playlist: existingModule.youtube_playlist,
         is_published: existingModule.is_published,
+        seo_title: existingModule.seo_title || '',
+        seo_description: existingModule.seo_description || '',
       });
+      // Clear draft once live data is loaded
+      localStorage.removeItem(DRAFT_KEY);
     }
-  }, [existingModule]);
+  }, [existingModule, DRAFT_KEY]);
 
   useEffect(() => {
     if (existingChapters) {
@@ -215,6 +270,7 @@ export default function ModuleEditor() {
         }
         toast.success('Module created successfully');
       }
+      localStorage.removeItem(DRAFT_KEY);
       navigate('/admin/modules');
     } catch (error) {
       toast.error(isEditing ? 'Failed to update module' : 'Failed to create module');
@@ -277,15 +333,28 @@ export default function ModuleEditor() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="total_read_time">Total Read Time</Label>
-                <Input
-                  id="total_read_time"
-                  value={formData.total_read_time}
-                  onChange={e => setFormData({ ...formData, total_read_time: e.target.value })}
-                  placeholder="e.g., 45 min"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="total_read_time">Total Read Time</Label>
+                  <Input
+                    id="total_read_time"
+                    value={formData.total_read_time}
+                    onChange={(e) => setFormData({ ...formData, total_read_time: e.target.value })}
+                    placeholder="e.g. 45 min"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled_for">Schedule for (Optional)</Label>
+                  <Input
+                    id="scheduled_for"
+                    type="datetime-local"
+                    value={formData.scheduled_for ? new Date(formData.scheduled_for).toISOString().slice(0, 16) : ''}
+                    onChange={(e) => setFormData({ ...formData, scheduled_for: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Set a future date to auto-publish.</p>
+                </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="youtube_playlist">YouTube Playlist URL</Label>
                 <Input
@@ -321,6 +390,34 @@ export default function ModuleEditor() {
               singleTag
               label="Head Tag (visible on card)"
             />
+          </CardContent>
+        </Card>
+
+        {/* SEO Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>SEO Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="seo_title">SEO Title</Label>
+              <Input
+                id="seo_title"
+                value={formData.seo_title || ''}
+                onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
+                placeholder="Custom title for search engines (optional)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="seo_description">SEO Meta Description</Label>
+              <Textarea
+                id="seo_description"
+                value={formData.seo_description || ''}
+                onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+                placeholder="Custom description for search results (optional)"
+                rows={3}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -442,17 +539,24 @@ export default function ModuleEditor() {
         </Card>
 
         {/* Actions */}
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isSubmitting} className="flex-1">
-            {isSubmitting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-            ) : (
-              <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Module' : 'Create Module'}</>
-            )}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/admin/modules')} disabled={isSubmitting}>
-            Cancel
-          </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isSubmitting} className="flex-1">
+              {isSubmitting ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+              ) : (
+                <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Module' : 'Create Module'}</>
+              )}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/admin/modules')} disabled={isSubmitting}>
+              Cancel
+            </Button>
+          </div>
+          {lastAutoSaved && (
+            <p className="text-[10px] text-muted-foreground text-center">
+              Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
+            </p>
+          )}
         </div>
       </form>
 

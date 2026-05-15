@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useArticle, useCreateArticle, useUpdateArticle } from '@/hooks/useContent';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { TagInput } from '@/components/admin/TagInput';
 import { ContentEditor, plainTextToHtml } from '@/components/admin/ContentEditor';
 import type { DbArticle } from '@/lib/types';
@@ -44,18 +45,70 @@ export default function ArticleEditor() {
     read_time: '',
     tags: [],
     is_published: false,
+    seo_title: '',
+    seo_description: '',
   });
 
   const [selectedTags, setSelectedTags] = useState<{ name: string; type: 'major' | 'minor' }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastAutoSaved, setLastAutoSaved] = useState<Date | null>(null);
+
+  const DRAFT_KEY = `draft_article_${id || 'new'}`;
+
+  // Auto-save logic
+  useEffect(() => {
+    if (isSubmitting || !formData.title) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ 
+        formData, 
+        selectedTags,
+        updatedAt: new Date().toISOString() 
+      }));
+      setLastAutoSaved(new Date());
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData, selectedTags, DRAFT_KEY, isSubmitting]);
+
+  // Check for draft on mount
+  useEffect(() => {
+    const savedDraftStr = localStorage.getItem(DRAFT_KEY);
+    if (!savedDraftStr || existingArticle) return;
+
+    try {
+      const { formData: draftData, updatedAt } = JSON.parse(savedDraftStr);
+      const draftDate = new Date(updatedAt);
+      const isRecent = (new Date().getTime() - draftDate.getTime()) < 1000 * 60 * 60 * 24; // 24 hours
+      
+      if (isRecent && draftData.title) {
+        toast("Unsaved draft found", {
+          description: `Saved ${draftDate.toLocaleTimeString()} - would you like to restore it?`,
+          action: {
+            label: "Restore",
+            onClick: () => {
+              const { formData: restoredData, selectedTags: draftTags } = JSON.parse(savedDraftStr);
+              setFormData(prev => ({ ...prev, ...restoredData }));
+              setSelectedTags(draftTags || []);
+              toast.success("Draft restored!");
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing draft", e);
+    }
+  }, [DRAFT_KEY, existingArticle]);
 
   // Load existing data when editing
   useEffect(() => {
     if (existingArticle) {
       setFormData(existingArticle);
       setSelectedTags(existingArticle.tags || []);
+      // Clear draft once live data is loaded to avoid confusion
+      localStorage.removeItem(DRAFT_KEY);
     }
-  }, [existingArticle]);
+  }, [existingArticle, DRAFT_KEY]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +116,9 @@ export default function ArticleEditor() {
 
     try {
       // Auto-convert plain text content
-      const processedContent = formData.content && !formData.content.includes('<')
+      // Only convert if content is plain text (no HTML tags) and hasn't been previously HTML-encoded
+      const isHtml = formData.content?.includes('<') && (formData.content?.includes('</') || formData.content?.includes('/>'));
+      const processedContent = formData.content && !isHtml
         ? plainTextToHtml(formData.content)
         : formData.content;
 
@@ -78,9 +133,10 @@ export default function ArticleEditor() {
         await updateMutation.mutateAsync({ id, ...articleData });
         toast.success('Article updated successfully');
       } else {
-        await createMutation.mutateAsync(articleData as Omit<DbArticle, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes'>);
+        await createMutation.mutateAsync(articleData as Omit<DbArticle, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes' | 'avg_rating' | 'rating_count'>);
         toast.success('Article created successfully');
       }
+      localStorage.removeItem(DRAFT_KEY);
       navigate('/admin/articles');
     } catch (error) {
       toast.error(isEditing ? 'Failed to update article' : 'Failed to create article');
@@ -141,8 +197,6 @@ export default function ArticleEditor() {
                 placeholder="Brief summary of the article"
                 required
               />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
@@ -150,16 +204,30 @@ export default function ArticleEditor() {
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="scheduled_for">Schedule for (Optional)</Label>
+                <Input
+                  id="scheduled_for"
+                  type="datetime-local"
+                  value={formData.scheduled_for ? new Date(formData.scheduled_for).toISOString().slice(0, 16) : ''}
+                  onChange={(e) => setFormData({ ...formData, scheduled_for: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+                />
+                <p className="text-[10px] text-muted-foreground">Set a future date to auto-publish.</p>
+              </div>
+            </div>
 
               <div className="space-y-2">
                 <Label htmlFor="read_time">Read Time</Label>
@@ -191,6 +259,34 @@ export default function ArticleEditor() {
                   placeholder="https://..."
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SEO Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle>SEO Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="seo_title">SEO Title</Label>
+              <Input
+                id="seo_title"
+                value={formData.seo_title || ''}
+                onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
+                placeholder="Custom title for search engines (optional)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="seo_description">SEO Meta Description</Label>
+              <Textarea
+                id="seo_description"
+                value={formData.seo_description || ''}
+                onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+                placeholder="Custom description for search results (optional)"
+                rows={3}
+              />
             </div>
           </CardContent>
         </Card>
@@ -247,32 +343,39 @@ export default function ArticleEditor() {
         </Card>
 
         {/* Actions */}
-        <div className="flex gap-4">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {isEditing ? 'Update Article' : 'Create Article'}
-              </>
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate('/admin/articles')}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-4">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isEditing ? 'Update Article' : 'Create Article'}
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/admin/articles')}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+          </div>
+          {lastAutoSaved && (
+            <p className="text-[10px] text-muted-foreground text-center">
+              Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
+            </p>
+          )}
         </div>
       </form>
     </div>

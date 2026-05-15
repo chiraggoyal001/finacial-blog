@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff } from "lucide-react";
@@ -26,9 +26,14 @@ const LoginPage = () => {
     
     if (result.success) {
       toast.success("Logged in successfully!");
-      // Redirect admins to /admin, users to home
+      // Redirect based on user state:
+      // 1. Admins to /admin
+      // 2. Users needing onboarding to /profile
+      // 3. Regular users to home
       if (result.isAdmin) {
         navigate("/admin");
+      } else if (result.needsOnboarding) {
+        navigate("/profile");
       } else {
         navigate("/");
       }

@@ -37,17 +37,23 @@ function loadEnv() {
 
 const env = loadEnv();
 const supabaseUrl = env.VITE_SUPABASE_URL;
-const supabaseKey = env.VITE_SUPABASE_KEY;
+const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing Supabase credentials in .env file');
   console.log('\n📄 Current .env contents:');
   console.log(`   VITE_SUPABASE_URL=${supabaseUrl || '(missing)'}`);
-  console.log(`   VITE_SUPABASE_KEY=${supabaseKey ? '(set)' : '(missing)'}`);
-  console.log('\n💡 Fix: Add these lines to your .env file:');
-  console.log('VITE_SUPABASE_URL=https://your-project.supabase.co');
-  console.log('VITE_SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...');
+  console.log(`   SUPABASE_SERVICE_ROLE_KEY=${env.SUPABASE_SERVICE_ROLE_KEY ? '(set)' : '(missing)'}`);
+  console.log(`   VITE_SUPABASE_KEY=${env.VITE_SUPABASE_KEY ? '(set)' : '(missing)'}`);
+  console.log('\n💡 Fix: For seeding, add your Service Role Key to .env:');
+  console.log('SUPABASE_SERVICE_ROLE_KEY=eyJ...');
   process.exit(1);
+}
+
+if (env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.log('⚡ Using Service Role Key (RLS Bypass enabled)');
+} else {
+  console.log('⚠️ Using Anon Key (May fail due to RLS)');
 }
 
 console.log('✅ Loaded credentials from .env');

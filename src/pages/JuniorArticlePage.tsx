@@ -11,9 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { DUMMY_JUNIOR_MODULES, SOCIAL_LINKS } from "@/lib/data";
-import { useAuth } from "@/contexts/AuthContext";
+import { useJuniorModule } from "@/hooks/useContent";
+import { SOCIAL_LINKS } from "@/lib/data";
+import { useAuth } from "@/hooks/useAuth";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
+import { JuniorModule, JuniorChapter } from "@/lib/types";
+import { sanitizeHtml } from "@/lib/sanitize";
+import DataError from "@/components/DataError";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -29,51 +33,109 @@ const JuniorArticlePage = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
 
-  const mod = DUMMY_JUNIOR_MODULES.find((m) => m.id === moduleId);
-  const activeChapterIndex = mod
-    ? Math.max(0, mod.chapters.findIndex((c) => c.id === chapterId))
-    : 0;
-  const chapter = mod?.chapters[activeChapterIndex];
-  const nextChapter = mod?.chapters[activeChapterIndex + 1];
-  const progressKey = mod && chapter ? `junior-${mod.id}-${chapter.id}` : "";
+  const { data: dbJuniorModule, isLoading, error, refetch } = useJuniorModule(moduleId || "", { publishedOnly: true });
 
-  // Scroll tracking for reading chapters
   useEffect(() => {
-    if (!chapter || chapter.contentType === "video") return;
-    const handleScroll = () => {
-      if (!contentRef.current) return;
-      const rect = contentRef.current.getBoundingClientRect();
-      const total = contentRef.current.scrollHeight - window.innerHeight;
-      const scrolled = Math.min(100, Math.max(0, Math.round((-rect.top / total) * 100)));
-      setScrollPercent(scrolled);
-      if (isLoggedIn && progressKey) {
-        setProgress(progressKey, scrolled);
-      }
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [chapter, isLoggedIn, progressKey, setProgress]);
-
-  // Reset state on chapter change
-  useEffect(() => {
-    setScrollPercent(0);
     window.scrollTo(0, 0);
-  }, [chapterId, moduleId]);
+  }, [chapterId]);
 
-  if (!mod || !chapter) {
+  useEffect(() => {
+    if (!chapterId || !isLoggedIn || !contentRef.current) return;
+
+    const handleScroll = () => {
+      const el = contentRef.current;
+      if (!el) return;
+      
+      const rect = el.getBoundingClientRect();
+      const totalHeight = el.scrollHeight;
+      const visibleBottom = window.innerHeight - rect.top;
+      const percent = Math.round(Math.min(100, Math.max(0, (visibleBottom / totalHeight) * 100)));
+      
+      setScrollPercent(percent);
+      const key = `junior-${moduleId}-${chapterId}`;
+      setProgress(key, percent);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [moduleId, chapterId, isLoggedIn, setProgress]);
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="font-display text-2xl font-bold text-foreground">Module not found</h1>
-            <Link to="/junior"><Button variant="link" className="mt-4">Back to Junior</Button></Link>
+          <div className="text-center space-y-4">
+            <div className="h-8 w-48 bg-muted animate-pulse rounded mx-auto" />
+            <div className="h-4 w-32 bg-muted animate-pulse rounded mx-auto" />
           </div>
         </div>
         <Footer />
       </div>
     );
   }
+
+  if (error || !dbJuniorModule) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Module Not Found"
+            message="The junior module you are looking for might have been moved or is not yet published."
+            onRetry={() => refetch()} 
+          />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const mod: JuniorModule = {
+    id: dbJuniorModule.id,
+    title: dbJuniorModule.title,
+    description: dbJuniorModule.description,
+    image: dbJuniorModule.image,
+    tag: dbJuniorModule.tag,
+    contentType: dbJuniorModule.content_type,
+    chapters: (dbJuniorModule.chapters || []).map((ch): JuniorChapter => ({
+      id: ch.id,
+      title: ch.title,
+      contentType: ch.content_type,
+      content: ch.content,
+      videoUrl: ch.video_url,
+      duration: ch.duration,
+      readTime: ch.duration,
+      tags: ch.tags,
+      illustration: ch.illustration,
+      quizQuestions: ch.quiz_questions,
+    })),
+    totalReadTime: dbJuniorModule.total_duration,
+    totalDuration: dbJuniorModule.total_duration,
+    views: dbJuniorModule.views,
+    likes: dbJuniorModule.likes,
+  };
+  const activeChapterIndex = Math.max(0, mod.chapters.findIndex((c) => c.id === chapterId));
+  const chapter = mod.chapters[activeChapterIndex];
+  
+  if (!chapter) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="font-display text-2xl font-bold text-foreground">Chapter not found</h1>
+            <Link to={`/junior/${mod.id}`}><Button variant="link" className="mt-4">Back to Module</Button></Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const nextChapter = mod.chapters[activeChapterIndex + 1];
+  const progressKey = `junior-${mod.id}-${chapter.id}`;
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const isVideoChapter = chapter.contentType === "video";
@@ -178,16 +240,20 @@ const JuniorArticlePage = () => {
               className="prose prose-lg max-w-none text-foreground leading-relaxed"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              {chapter.content.split("\n").map((line, i) => {
-                if (line.startsWith("### ")) return <h3 key={i} className="font-display text-lg font-bold text-foreground mt-6 mb-3">{line.replace("### ", "")}</h3>;
-                if (line.startsWith("## ")) return <h2 key={i} className="font-display text-xl font-bold text-foreground mt-8 mb-4">{line.replace("## ", "")}</h2>;
-                if (line.startsWith("**") && line.endsWith("**")) return <p key={i} className="font-semibold text-foreground">{line.replace(/\*\*/g, "")}</p>;
-                if (line.startsWith("- ")) return <li key={i} className="ml-4 text-muted-foreground">{line.replace("- ", "")}</li>;
-                if (line.startsWith("Q:")) return <p key={i} className="font-semibold text-secondary mt-4">{line}</p>;
-                if (line.startsWith("A:")) return <p key={i} className="text-primary font-medium">{line}</p>;
-                if (line.trim() === "") return <br key={i} />;
-                return <p key={i} className="text-muted-foreground mb-2">{line}</p>;
-              })}
+              {chapter.content.includes('<') ? (
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(chapter.content) }} />
+              ) : (
+                chapter.content.split("\n").map((line, i) => {
+                  if (line.startsWith("### ")) return <h3 key={i} className="font-display text-lg font-bold text-foreground mt-6 mb-3">{line.replace("### ", "")}</h3>;
+                  if (line.startsWith("## ")) return <h2 key={i} className="font-display text-xl font-bold text-foreground mt-8 mb-4">{line.replace("## ", "")}</h2>;
+                  if (line.startsWith("**") && line.endsWith("**")) return <p key={i} className="font-semibold text-foreground">{line.replace(/\*\*/g, "")}</p>;
+                  if (line.startsWith("- ")) return <li key={i} className="ml-4 text-muted-foreground">{line.replace("- ", "")}</li>;
+                  if (line.startsWith("Q:")) return <p key={i} className="font-semibold text-secondary mt-4">{line}</p>;
+                  if (line.startsWith("A:")) return <p key={i} className="text-primary font-medium">{line}</p>;
+                  if (line.trim() === "") return <br key={i} />;
+                  return <p key={i} className="text-muted-foreground mb-2">{line}</p>;
+                })
+              )}
             </div>
 
             <Separator />

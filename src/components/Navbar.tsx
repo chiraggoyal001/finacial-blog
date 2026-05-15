@@ -1,18 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Menu, X, User, Shield } from "lucide-react";
+import { Search, Menu, X, User, Shield, LayoutDashboard, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NAV_ITEMS } from "@/lib/data";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { getAvatarUrl } from "@/lib/avatar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import SearchOverlay from "@/components/SearchOverlay";
+import SystemBanner from "@/components/SystemBanner";
+import { useNavigate } from "react-router-dom";
 
 const NAV_LABEL_KEYS: Record<string, string> = {
   Newsletter: "nav.newsletter",
@@ -30,6 +40,26 @@ const Navbar = () => {
   const { t } = useTranslation();
   const location = useLocation();
 
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  // Keyboard shortcut: Cmd+K or Ctrl+K to open search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";
     const pathname = location.pathname;
@@ -38,6 +68,7 @@ const Navbar = () => {
 
   return (
     <>
+      <SystemBanner />
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2">
@@ -62,8 +93,11 @@ const Navbar = () => {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setSearchOpen(true)} aria-label="Open search">
+            <Button variant="ghost" size="sm" onClick={() => setSearchOpen(true)} aria-label="Open search (Cmd+K)" className="gap-2">
               <Search className="h-4 w-4" />
+              <kbd className="hidden sm:inline-flex text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border font-mono">
+                ⌘K
+              </kbd>
             </Button>
 
             <div className="hidden md:flex items-center gap-2">
@@ -85,35 +119,52 @@ const Navbar = () => {
             )}
 
             {isLoggedIn ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link to="/profile" className="relative">
-                      <Avatar className={`h-9 w-9 cursor-pointer bg-primary transition-all ${needsOnboarding ? 'ring-2 ring-amber-500 ring-offset-2' : 'hover:ring-2 hover:ring-primary/50'}`}>
-                        <AvatarImage 
-                          src={user?.avatarUrl || (user?.id ? getAvatarUrl(user.id) : undefined)} 
-                          alt={`${user?.firstName} ${user?.lastName}`}
-                          className="object-cover"
-                        />
-                        <AvatarFallback className="text-sm font-medium text-primary-foreground bg-primary">
-                          {(user?.firstName?.[0] || "").toUpperCase()}
-                          {(user?.lastName?.[0] || "").toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {/* Incomplete profile badge */}
-                      {needsOnboarding && (
-                        <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-amber-500 rounded-full border-2 border-background" />
-                      )}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{user?.firstName} {user?.lastName}</p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="relative">
+                    <Avatar className={`h-9 w-9 cursor-pointer bg-primary transition-all ${needsOnboarding ? 'ring-2 ring-amber-500 ring-offset-2' : 'hover:ring-2 hover:ring-primary/50'}`}>
+                      <AvatarImage 
+                        src={user?.avatarUrl || (user?.id ? getAvatarUrl(user.id) : undefined)} 
+                        alt={`${user?.firstName} ${user?.lastName}`}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="text-sm font-medium text-primary-foreground bg-primary">
+                        {(user?.firstName?.[0] || "").toUpperCase()}
+                        {(user?.lastName?.[0] || "").toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     {needsOnboarding && (
-                      <p className="text-xs text-amber-500 mt-1">Profile incomplete - Click to complete</p>
+                      <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-amber-500 rounded-full border-2 border-background" />
                     )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.firstName} {user?.lastName}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/learning")}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <span>My Learning</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/onboarding")}>
+                    <SettingsIcon className="mr-2 h-4 w-4" />
+                    <span>Preferences</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Link to="/login">
                 <Button variant="outline" size="sm" className="gap-1.5">

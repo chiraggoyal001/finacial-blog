@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Eye, Code, Type, FileText } from 'lucide-react';
+import { Eye, Code, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface ContentEditorProps {
   value: string;
@@ -57,7 +60,7 @@ export function plainTextToHtml(text: string): string {
       continue;
     }
 
-    // Detect headings: lines ending with colon, short ALL CAPS, or lines starting with #
+    // Detect headings: lines starting with #
     if (line.startsWith('# ')) {
       if (inList) { htmlParts.push(inList === 'ul' ? '</ul>' : '</ol>'); inList = null; }
       htmlParts.push(`<h2>${processInline(line.substring(2))}</h2>`);
@@ -136,17 +139,24 @@ export function ContentEditor({
   required = false,
   rows = 15,
 }: ContentEditorProps) {
-  const [mode, setMode] = useState<'plain' | 'html' | 'preview'>('plain');
+  const [mode, setMode] = useState<'visual' | 'html' | 'preview'>('visual');
 
-  const handlePlainTextChange = (text: string) => {
-    onChange(text);
-  };
+  const modules = useMemo(() => ({
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
+      ['link', 'image'],
+      ['clean']
+    ],
+  }), []);
 
-  const convertToHtml = () => {
-    const html = plainTextToHtml(value);
-    onChange(html);
-    setMode('html');
-  };
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet', 'indent',
+    'link', 'image'
+  ];
 
   return (
     <div className="space-y-2">
@@ -155,13 +165,13 @@ export function ContentEditor({
         <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
           <Button
             type="button"
-            variant={mode === 'plain' ? 'default' : 'ghost'}
+            variant={mode === 'visual' ? 'default' : 'ghost'}
             size="sm"
             className="h-7 text-xs gap-1"
-            onClick={() => setMode('plain')}
+            onClick={() => setMode('visual')}
           >
             <Type className="h-3 w-3" />
-            Plain
+            Visual
           </Button>
           <Button
             type="button"
@@ -186,38 +196,24 @@ export function ContentEditor({
         </div>
       </div>
 
-      {mode === 'plain' && (
-        <>
-          <Textarea
-            value={value}
-            onChange={e => handlePlainTextChange(e.target.value)}
-            placeholder={`Type in plain English. Use:
-- Lines ending with : become headings
-- Lines starting with - or * become bullet lists
-- Lines starting with 1. 2. become numbered lists  
-- **bold** and *italic* formatting
-- Empty lines separate paragraphs
-
-${placeholder}`}
-            rows={rows}
-            required={required}
+      {mode === 'visual' && (
+        <div className="bg-background rounded-md border min-h-[400px] flex flex-col">
+          <ReactQuill 
+            theme="snow"
+            value={value || ''}
+            onChange={onChange}
+            modules={modules}
+            formats={formats}
+            placeholder={placeholder}
+            className="flex-1 flex flex-col"
           />
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Write in plain English — it will be auto-formatted when saved.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={convertToHtml}
-            >
-              <FileText className="mr-1 h-3 w-3" />
-              Convert to HTML
-            </Button>
-          </div>
-        </>
+          <style>{`
+            .quill { display: flex; flex-direction: column; }
+            .ql-container { flex: 1; min-h: 300px; font-size: 16px; }
+            .ql-editor { min-h: 300px; }
+            .ql-toolbar { border-top: none; border-left: none; border-right: none; border-bottom: 1px solid hsl(var(--border)); }
+          `}</style>
+        </div>
       )}
 
       {mode === 'html' && (
@@ -228,7 +224,7 @@ ${placeholder}`}
             placeholder="<p>Your HTML content here...</p>"
             rows={rows}
             required={required}
-            className="font-mono text-sm"
+            className="font-mono text-sm min-h-[400px]"
           />
           <p className="text-xs text-muted-foreground">
             Direct HTML editing mode. Use HTML tags for formatting.
@@ -239,12 +235,12 @@ ${placeholder}`}
       {mode === 'preview' && (
         <div
           className={cn(
-            'border rounded-lg p-4 min-h-[200px] prose prose-sm max-w-none dark:prose-invert',
+            'border rounded-lg p-4 min-h-[400px] prose prose-sm max-w-none dark:prose-invert',
             'prose-headings:font-bold prose-h2:text-xl prose-h3:text-lg prose-h4:text-base',
             'prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5',
           )}
           dangerouslySetInnerHTML={{
-            __html: value.includes('<') ? value : plainTextToHtml(value),
+            __html: sanitizeHtml(value.includes('<') ? value : plainTextToHtml(value)),
           }}
         />
       )}

@@ -3,7 +3,8 @@ import { X, Send, User, ThumbsUp, ThumbsDown, Plus, MoreHorizontal, ChevronDown,
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
 // Hook to detect reduced motion preference
 const useReducedMotion = () => {
@@ -318,7 +319,7 @@ const ChatbotWidget = () => {
     }, 30); // 30ms between updates for smooth effect
   }, []);
 
-  const sendMessage = useCallback((text: string, isRetry: boolean = false) => {
+  const sendMessage = useCallback(async (text: string, isRetry: boolean = false) => {
     if (!text.trim()) return;
     
     // Clear any previous failed state when sending new message
@@ -341,33 +342,48 @@ const ChatbotWidget = () => {
     setInput("");
     setIsTyping(true);
 
-    const resp = getResponse(text);
-    const delay = calculateTypingDelay(resp.text.length);
-    
-    // Determine response type for follow-ups
-    const lower = text.toLowerCase();
-    let responseType = "default";
-    if (lower.includes("module") || lower.includes("course") || lower.includes("learn")) responseType = "modules";
-    else if (lower.includes("subscri") || lower.includes("newsletter") || lower.includes("sign up")) responseType = "subscribe";
-    else if (lower.includes("junior") || lower.includes("kid") || lower.includes("young") || lower.includes("beginner")) responseType = "junior";
-    else if (lower.includes("event") || lower.includes("meetup") || lower.includes("bootcamp") || lower.includes("quiz")) responseType = "events";
+    try {
+      // Capture the most recent history for context (last 10 messages)
+      const chatHistory = messages.slice(-10).map(m => ({
+        role: m.role,
+        content: m.content
+      }));
 
-    setTimeout(() => {
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { 
+          message: text,
+          history: chatHistory
+        }
+      });
+
+      if (error) throw error;
+
+      const aiResponse = data.response;
+      
       const botMsgId = (Date.now() + 1).toString();
       const botMsg: Message = { id: botMsgId, role: "bot", content: "", time: now() };
       setMessages((prev) => [...prev, botMsg]);
       setIsTyping(false);
       setStreamingId(botMsgId);
-      streamText(botMsgId, resp.text, resp.emoji);
+      streamText(botMsgId, aiResponse, "🦉");
       
-      // Set suggested follow-ups (pick 2-3 randomly)
-      const followUps = FOLLOW_UPS[responseType];
-      const shuffled = [...followUps].sort(() => 0.5 - Math.random());
-      setSuggestedFollowUps(shuffled.slice(0, 3));
+      // We can also ask the AI for follow-ups in the future, 
+      // but for now let's keep it simple or use a default set
+      setSuggestedFollowUps(["Tell me more", "What else can you do?", "Help me with finance"]);
       
-      // Increment unread if chat is closed
-      setUnreadCount((prev) => (!isOpen ? prev + 1 : prev));
-    }, delay);
+    } catch (err) {
+      console.error("Error calling chatbot function:", err);
+      setIsTyping(false);
+      const errorMsgId = Date.now().toString();
+      setMessages((prev) => [...prev, {
+        id: errorMsgId,
+        role: "bot",
+        content: "I'm having trouble connecting right now. Please try again later.",
+        time: now(),
+        failed: true
+      }]);
+      setFailedMessageId(errorMsgId);
+    }
   }, [streamText, isOpen]);
 
   const handleRetry = useCallback(() => {
@@ -620,6 +636,10 @@ const ChatbotWidget = () => {
   // vertical: "bottom" means chat is above FAB (using bottom-16)
   // vertical: "top" means chat is below FAB (using top-16)
   const getPositionClasses = () => {
+    // On mobile, always position chat above FAB for consistent UX
+    if (isMobile) {
+      return "absolute bottom-16 left-0";
+    }
     const hClass = chatPosition.horizontal === "left" ? "left-0" : "right-0";
     const vClass = chatPosition.vertical === "bottom" ? "bottom-16" : "top-16";
     return `absolute ${vClass} ${hClass}`;
@@ -653,8 +673,8 @@ const ChatbotWidget = () => {
           ref={chatContainerRef}
           onTouchStart={handleChatTouchStart}
           onTouchEnd={handleChatTouchEnd}
-          className={`${getPositionClasses()} bg-card border ${prefersHighContrast ? "border-2 border-black dark:border-white" : "border-border"} rounded-2xl shadow-2xl overflow-hidden ${prefersReducedMotion ? "" : "animate-scale-in"} flex flex-col ${isMobile ? 'max-h-[70vh]' : ''}`}
-          style={{ width: chatSize.width, height: isMobile && keyboardHeight > 0 ? Math.min(chatSize.height, window.innerHeight - keyboardHeight - 100) : chatSize.height }}
+          className={`${getPositionClasses()} bg-card border ${prefersHighContrast ? "border-2 border-black dark:border-white" : "border-border"} rounded-2xl shadow-2xl overflow-hidden ${prefersReducedMotion ? "" : "animate-scale-in"} flex flex-col ${isMobile ? 'max-h-[70vh] w-[calc(100vw-3rem)]' : ''}`}
+          style={{ width: isMobile ? undefined : chatSize.width, height: isMobile && keyboardHeight > 0 ? Math.min(chatSize.height, window.innerHeight - keyboardHeight - 100) : chatSize.height }}
           role="dialog"
           aria-modal="true"
           aria-label="Chat with Gyaan AI"

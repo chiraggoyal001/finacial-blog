@@ -8,10 +8,15 @@ import ArticleCard from "@/components/ArticleCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { DUMMY_POSTS, SOCIAL_LINKS } from "@/lib/data";
-import { useAuth } from "@/contexts/AuthContext";
+import { useArticle, useArticles } from "@/hooks/useContent";
+import { ArticlePageSkeleton } from "@/components/skeletons";
+import { useSEO } from "@/hooks/useSEO";
+import { BookmarkButton } from "@/components/BookmarkButton";
+import { sanitizeHtml } from "@/lib/sanitize";
+import { useAuth } from "@/hooks/useAuth";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
-import { useArticle } from "@/hooks/useContent";
+import DataError from "@/components/DataError";
+import { SOCIAL_LINKS } from "@/lib/data";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -28,10 +33,66 @@ const NewsletterArticlePage = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
 
-  const { data: dbArticle, isLoading } = useArticle(id || '');
+  const { data: dbArticle, isLoading, error, refetch } = useArticle(id || '', { publishedOnly: true });
+  const { data: dbArticles } = useArticles({ published: true });
 
-  const dummyPost = DUMMY_POSTS.find((p) => p.id === id);
-  const post = dbArticle ? {
+  const allArticles = (dbArticles || []).map(article => ({
+    id: article.id,
+    title: article.title,
+    excerpt: article.excerpt,
+    content: article.content,
+    category: article.category,
+    author: article.author_name,
+    date: article.published_at || article.created_at,
+    image: article.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
+    readTime: article.read_time || "5 min",
+    tags: article.tags || [],
+    views: article.views || 0,
+    likes: article.likes || 0,
+  }));
+
+  const readPercent = id ? getProgress(id) : 0;
+
+  useEffect(() => {
+    if (!id || !isLoggedIn || !contentRef.current) return;
+
+    const handleScroll = () => {
+      const el = contentRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const totalHeight = el.scrollHeight;
+      const visibleBottom = window.innerHeight - rect.top;
+      const percent = Math.round(Math.min(100, Math.max(0, (visibleBottom / totalHeight) * 100)));
+      setScrollPercent(percent);
+      setProgress(id, percent);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [id, isLoggedIn, setProgress]);
+
+  if (isLoading) {
+    return <ArticlePageSkeleton />;
+  }
+
+  if (error || !dbArticle) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Article Not Found"
+            message="The article you are looking for might have been moved or is not yet published."
+            onRetry={() => refetch()} 
+          />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const post = {
     id: dbArticle.id,
     title: dbArticle.title,
     excerpt: dbArticle.excerpt,
@@ -44,68 +105,17 @@ const NewsletterArticlePage = () => {
     tags: dbArticle.tags || [],
     views: dbArticle.views || 0,
     likes: dbArticle.likes || 0,
-  } : dummyPost;
-
-  const readPercent = id ? getProgress(id) : 0;
-
-  // Track scroll-based reading progress
-  useEffect(() => {
-    if (!post || !isLoggedIn || !contentRef.current) return;
-
-    const handleScroll = () => {
-      const el = contentRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const totalHeight = el.scrollHeight;
-      const visibleBottom = window.innerHeight - rect.top;
-      const percent = Math.round(Math.min(100, Math.max(0, (visibleBottom / totalHeight) * 100)));
-      setScrollPercent(percent);
-      setProgress(post.id, percent);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [post, isLoggedIn, setProgress]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <h1 className="font-display text-2xl font-bold text-foreground">Loading...</h1>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <h1 className="font-display text-2xl font-bold text-foreground">Article Not Found</h1>
-            <Link to="/newsletter">
-              <Button variant="outline">Back to Newsletter</Button>
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+    seoTitle: dbArticle.seo_title,
+    seoDescription: dbArticle.seo_description,
+  };
 
   // Recommendations: same tags, excluding current
-  const recommendations = DUMMY_POSTS
+  const recommendations = allArticles
     .filter((p) => p.id !== post.id && p.tags.some((t) => post.tags.some((pt) => pt.name === t.name)))
     .slice(0, 3);
 
   // Other articles from same category
-  const otherArticles = DUMMY_POSTS
+  const otherArticles = allArticles
     .filter((p) => p.id !== post.id && p.category === post.category)
     .slice(0, 3);
 
@@ -136,11 +146,14 @@ const NewsletterArticlePage = () => {
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground leading-tight">
               {post.title}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
-              <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{post.readTime}</span>
-              {post.views && <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{post.views.toLocaleString()}</span>}
-              {post.likes && <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{post.likes}</span>}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{post.readTime}</span>
+                {post.views && <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{post.views.toLocaleString()}</span>}
+                {post.likes && <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{post.likes}</span>}
+              </div>
+              <BookmarkButton contentType="article" contentId={post.id} showText />
             </div>
             {isLoggedIn && readPercent > 0 && (
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -159,7 +172,7 @@ const NewsletterArticlePage = () => {
           <div
             ref={contentRef}
             className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
           />
 
           {/* Social Share */}

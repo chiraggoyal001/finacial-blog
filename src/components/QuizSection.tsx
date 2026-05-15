@@ -8,9 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { QuizQuestion } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSubmitQuiz, QuizSubmissionResult } from "@/hooks/useGamification";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface QuizSectionProps {
   questions: QuizQuestion[];
+  quizId?: string;
   variant?: "default" | "junior";
 }
 
@@ -22,15 +26,19 @@ const formatTime = (seconds: number) => {
   return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
-const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default" }) => {
+const QuizSection: React.FC<QuizSectionProps> = ({ questions, quizId, variant = "default" }) => {
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [submitted, setSubmitted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [submissionData, setSubmissionResult] = useState<QuizSubmissionResult | null>(null);
+  
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { t } = useTranslation();
+  const { isLoggedIn } = useAuth();
+  const submitQuiz = useSubmitQuiz();
 
   const isJunior = variant === "junior";
 
@@ -60,7 +68,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(timerRef.current!);
+      if (timerRef.current) clearInterval(timerRef.current);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [started, submitted]);
@@ -97,10 +105,24 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
     return (a as string).trim() !== "";
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setSubmitted(true);
     setShowResults(true);
+
+    if (isLoggedIn) {
+      try {
+        const result = await submitQuiz.mutateAsync({
+          quizId: quizId || questions[0]?.id || 'unknown',
+          score,
+          total: questions.length
+        });
+        setSubmissionResult(result);
+      } catch (err) {
+        console.error("Failed to submit quiz result:", err);
+        toast.error("Couldn't save your progress, but great job finishing!");
+      }
+    }
   };
 
   const handleRetry = () => {
@@ -168,6 +190,38 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, variant = "default
             </div>
             <p className="font-display text-lg font-bold text-foreground">{message}</p>
           </div>
+
+          {/* Gamification Stats */}
+          {submissionData && (
+            <div className="py-2 px-4 rounded-xl bg-primary/5 border border-primary/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-full bg-amber-500/20 text-amber-600">
+                    <Zap className="h-4 w-4 fill-current" />
+                  </div>
+                  <span className="text-sm font-bold text-foreground">XP Earned</span>
+                </div>
+                <span className="text-lg font-black text-amber-600">+{submissionData.xp_awarded}</span>
+              </div>
+              
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <span>Your Global Rank</span>
+                  <span className="text-primary">Top {100 - submissionData.percentile}%</span>
+                </div>
+                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000 ease-out"
+                    style={{ width: `${submissionData.percentile}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground text-left">
+                  You are performing better than {submissionData.percentile}% of learners!
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
             <Timer className="h-4 w-4" />
             <span>{t("quiz.time")} <strong className="text-foreground">{formatTime(elapsed)}</strong></span>

@@ -52,7 +52,7 @@ export async function processImage(file: File): Promise<ProcessImageResult> {
 
     img.onload = () => {
       // Calculate dimensions to maintain aspect ratio and crop to center
-      let { width, height } = img;
+      const { width, height } = img;
       let sx = 0;
       let sy = 0;
       let sWidth = width;

@@ -79,7 +79,7 @@ export default function AdminJunior() {
                   <TableHead>Duration</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Views</TableHead>
-                  <TableHead className="text-right">Likes</TableHead>
+                  <TableHead className="text-right">Avg Rating</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -88,7 +88,7 @@ export default function AdminJunior() {
                   <TableRow key={module.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        {module.image ? <img src={module.image} alt="" className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted flex items-center justify-center"><GraduationCap className="h-5 w-5 text-muted-foreground" /></div>}
+                        {module.image ? <img src={module.image} alt={module.title} className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted flex items-center justify-center"><GraduationCap className="h-5 w-5 text-muted-foreground" /></div>}
                         <div>
                           <div className="font-medium">{module.title}</div>
                           <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">{module.description}</div>
@@ -99,7 +99,16 @@ export default function AdminJunior() {
                     <TableCell>{module.total_duration}</TableCell>
                     <TableCell>{module.is_published ? <Badge className="bg-green-100 text-green-800"><Eye className="mr-1 h-3 w-3" />Published</Badge> : <Badge variant="secondary"><EyeOff className="mr-1 h-3 w-3" />Draft</Badge>}</TableCell>
                     <TableCell className="text-right">{module.views}</TableCell>
-                    <TableCell className="text-right">{module.likes}</TableCell>
+                    <TableCell className="text-right">
+                      {module.avg_rating > 0 ? (
+                        <span className="flex items-center justify-end gap-1">
+                          {Number(module.avg_rating).toFixed(1)}
+                          <svg className="h-3 w-3 fill-yellow-400 text-yellow-400" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>

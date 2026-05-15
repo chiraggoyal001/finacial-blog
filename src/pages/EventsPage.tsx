@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Calendar as CalendarIcon, MapPin, Clock, Users, Filter, Sparkles, Brain, Tent } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -9,22 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DUMMY_EVENTS } from "@/lib/data";
-import type { EventType } from "@/lib/types";
+import type { EventType, BlogEvent } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useEvents } from "@/hooks/useContent";
+import DataError from "@/components/DataError";
 
 const EventsPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(true);
   const { t } = useTranslation();
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: dbEvents, isLoading, error, refetch } = useEvents({ published: true });
 
   const EVENT_TYPE_META: Record<EventType, { label: string; icon: React.ElementType; color: string; description: string }> = {
     community: { label: t("events.community"), icon: Users, color: "bg-primary/10 text-primary", description: t("events.communityDesc") },
@@ -32,18 +27,34 @@ const EventsPage = () => {
     bootcamp: { label: t("events.bootcamp"), icon: Tent, color: "bg-info/10 text-info", description: t("events.bootcampDesc") },
   };
 
-  const locations = useMemo(() => Array.from(new Set(DUMMY_EVENTS.map((e) => e.location))).sort(), []);
-  const eventDates = useMemo(() => DUMMY_EVENTS.filter((e) => e.isUpcoming).map((e) => new Date(e.date)), []);
+  const events: BlogEvent[] = (dbEvents || []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    description: e.description,
+    type: e.type,
+    date: e.date,
+    time: e.time,
+    location: e.location,
+    image: e.image,
+    tags: e.tags,
+    isUpcoming: e.is_upcoming,
+    registrationUrl: e.registration_url,
+    capacity: e.capacity,
+    registered: e.registered,
+  }));
+
+  const locations = useMemo(() => Array.from(new Set(events.map((e) => e.location))).sort(), [events]);
+  const eventDates = useMemo(() => events.filter((e) => e.isUpcoming).map((e) => new Date(e.date)), [events]);
   const filteredEvents = useMemo(() =>
-    DUMMY_EVENTS.filter((e) => {
+    events.filter((e) => {
       if (!e.isUpcoming) return false;
       if (typeFilter !== "all" && e.type !== typeFilter) return false;
       if (locationFilter !== "all" && e.location !== locationFilter) return false;
       if (selectedDate) { if (new Date(e.date).toDateString() !== selectedDate.toDateString()) return false; }
       return true;
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-  [typeFilter, locationFilter, selectedDate]);
-  const pastEvents = DUMMY_EVENTS.filter((e) => !e.isUpcoming);
+  [events, typeFilter, locationFilter, selectedDate]);
+  const pastEvents = events.filter((e) => !e.isUpcoming);
 
   const clearFilters = () => { setTypeFilter("all"); setLocationFilter("all"); setSelectedDate(undefined); };
   const hasActiveFilters = typeFilter !== "all" || locationFilter !== "all" || selectedDate;
@@ -51,6 +62,13 @@ const EventsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
+
+      {error && (
+        <div className="container py-10">
+          <DataError onRetry={() => refetch()} />
+        </div>
+      )}
+
       <section className="bg-gradient-to-br from-primary/5 via-background to-accent/30">
         <div className="container py-10 md:py-16">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase text-primary mb-2">{t("events.tag")}</span>
@@ -79,29 +97,6 @@ const EventsPage = () => {
 
       <section className="container py-10">
         <h2 className="font-display text-xl font-bold text-foreground mb-6">{t("events.upcoming")}</h2>
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden border-border">
-                <Skeleton className="aspect-[16/9] w-full" />
-                <CardContent className="p-5 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-5 w-20 rounded-full" />
-                    <Skeleton className="h-4 w-12 rounded-full" />
-                  </div>
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                  <div className="flex gap-3 pt-1">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-3 w-16" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
           <div className="space-y-6">
             <Card className="border-border overflow-hidden">
@@ -132,7 +127,24 @@ const EventsPage = () => {
             </div>
           </div>
           <div>
-            {filteredEvents.length === 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="rounded-xl overflow-hidden border border-border bg-card">
+                    <div className="aspect-[16/9] bg-muted animate-pulse" />
+                    <div className="p-5 space-y-3">
+                      <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                      <div className="h-5 w-3/4 bg-muted animate-pulse rounded" />
+                      <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                      <div className="flex gap-2 mt-2">
+                        <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                        <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredEvents.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Sparkles className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="font-medium">{t("events.noEvents")}</p>
@@ -175,7 +187,6 @@ const EventsPage = () => {
             )}
           </div>
         </div>
-        )}
       </section>
 
       {pastEvents.length > 0 && (
@@ -186,17 +197,19 @@ const EventsPage = () => {
               const meta = EVENT_TYPE_META[event.type];
               const Icon = meta.icon;
               return (
-                <Card key={event.id} className="overflow-hidden border-border opacity-75">
-                  <div className="aspect-[16/9] overflow-hidden grayscale"><img src={event.image} alt={event.title} className="w-full h-full object-cover" /></div>
-                  <CardContent className="p-4 space-y-2">
-                    <Badge variant="outline" className={meta.color}><Icon className="h-3 w-3 mr-1" /> {meta.label}</Badge>
-                    <h3 className="font-display font-semibold text-foreground text-sm">{event.title}</h3>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <CalendarIcon className="h-3 w-3" /> {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                      <span className="mx-1">·</span><MapPin className="h-3 w-3" /> {event.location}
-                    </p>
-                  </CardContent>
-                </Card>
+                <Link key={event.id} to={`/events/${event.id}`}>
+                  <Card className="overflow-hidden border-border opacity-75 hover:opacity-100 transition-opacity">
+                    <div className="aspect-[16/9] overflow-hidden grayscale"><img src={event.image} alt={event.title} className="w-full h-full object-cover" /></div>
+                    <CardContent className="p-4 space-y-2">
+                      <Badge variant="outline" className={meta.color}><Icon className="h-3 w-3 mr-1" /> {meta.label}</Badge>
+                      <h3 className="font-display font-semibold text-foreground text-sm">{event.title}</h3>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <CalendarIcon className="h-3 w-3" /> {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        <span className="mx-1">·</span><MapPin className="h-3 w-3" /> {event.location}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
               );
             })}
           </div>

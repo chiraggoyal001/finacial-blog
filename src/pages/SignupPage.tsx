@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
 import { Loader2, Check, X, Shield, ChevronDown, Eye, EyeOff } from "lucide-react";
@@ -30,6 +30,26 @@ const SignupPage = () => {
   const { signup, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // Check for pending subscription from anonymous user flow
+  useEffect(() => {
+    const pendingEmail = localStorage.getItem("pendingSubscriptionEmail");
+    const pendingFrequency = localStorage.getItem("pendingSubscriptionFrequency");
+    
+    if (pendingEmail) {
+      setEmail(pendingEmail);
+      setSubscribe(true);
+      // Set mail preference based on frequency
+      if (pendingFrequency === "daily") {
+        setMailPref("intrusive");
+      } else {
+        setMailPref("non-intrusive");
+      }
+      // Clear the pending subscription data
+      localStorage.removeItem("pendingSubscriptionEmail");
+      localStorage.removeItem("pendingSubscriptionFrequency");
+    }
+  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

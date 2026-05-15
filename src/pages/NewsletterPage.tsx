@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
 import ArticleCard from "@/components/ArticleCard";
 import HorizontalScroll from "@/components/HorizontalScroll";
 import { ArticleCardSkeleton, HorizontalScrollSkeleton } from "@/components/skeletons";
-import { DUMMY_POSTS, MAJOR_TAGS, MINOR_TAGS } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useArticles } from "@/hooks/useContent";
 
@@ -15,15 +14,9 @@ const NewsletterPage = () => {
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const { t } = useTranslation();
 
-  const { data: dbArticles } = useArticles({ category: 'Newsletter', published: true });
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 700);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: dbArticles, isLoading } = useArticles({ category: 'Newsletter', published: true });
 
   const mappedDbPosts = (dbArticles || []).map(article => ({
     id: article.id,
@@ -40,8 +33,17 @@ const NewsletterPage = () => {
     likes: article.likes || 0,
   }));
 
-  const allPosts = [...mappedDbPosts, ...DUMMY_POSTS.filter((p) => p.category === "Newsletter")];
-  const newsletterPosts = allPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const newsletterPosts = mappedDbPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  // Dynamically extract unique tags from the articles
+  const availableTags = useMemo(() => {
+    const tags = new Set<string>();
+    newsletterPosts.forEach(post => {
+      post.tags.forEach(tag => tags.add(tag.name));
+    });
+    return Array.from(tags).sort();
+  }, [newsletterPosts]);
+
   const latestPost = newsletterPosts[0];
   const pastPosts = newsletterPosts.slice(1);
   const mostViewed = [...newsletterPosts].sort((a, b) => (b.views || 0) - (a.views || 0));
@@ -72,8 +74,16 @@ const NewsletterPage = () => {
         <div className="container space-y-4">
           <h2 className="font-display text-lg font-bold text-foreground">{t("newsletter.browseByTag")}</h2>
           <div className="flex flex-wrap gap-2">
-            {MAJOR_TAGS.map((tag) => <Badge key={tag} variant={activeTag === tag ? "default" : "outline"} className="cursor-pointer text-xs" onClick={() => setActiveTag(activeTag === tag ? null : tag)}>{tag}</Badge>)}
-            {MINOR_TAGS.map((tag) => <Badge key={tag} variant={activeTag === tag ? "secondary" : "outline"} className="cursor-pointer text-xs" onClick={() => setActiveTag(activeTag === tag ? null : tag)}>{tag}</Badge>)}
+            {availableTags.map((tag) => (
+              <Badge 
+                key={tag} 
+                variant={activeTag === tag ? "default" : "outline"} 
+                className="cursor-pointer text-xs" 
+                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+              >
+                {tag}
+              </Badge>
+            ))}
           </div>
           {activeTag && filteredByTag.length > 0 && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">{filteredByTag.map((post) => <ArticleCard key={post.id} post={post} />)}</div>}
           {activeTag && filteredByTag.length === 0 && <p className="text-sm text-muted-foreground">{t("newsletter.noArticles")} "{activeTag}".</p>}

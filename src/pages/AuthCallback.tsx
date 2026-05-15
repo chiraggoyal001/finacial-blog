@@ -1,73 +1,151 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const processedRef = useRef(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    // Listen for auth state changes which handles the OAuth redirect reliably
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+  // Helper to create profile for OAuth users (uses upsert to handle existing profiles)
+  const createOAuthProfile = async (user: any) => {
+    try {
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        first_name: user.user_metadata?.first_name || user.user_metadata?.given_name || user.user_metadata?.name?.split(' ')[0] || '',
+        last_name: user.user_metadata?.last_name || user.user_metadata?.family_name || user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
+        email: user.email || '',
+        is_subscribed: false,
+        mail_preference: 'non-intrusive',
+        notify_launches: false,
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+        signup_method: user.app_metadata?.provider || 'oauth',
+        onboarding_completed: false,
+      });
+
+      if (error) {
+        console.error('Error creating OAuth profile:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Error creating OAuth profile:', err);
+      return false;
+    }
+  };
+
+  // Helper to check if user needs onboarding
+  const checkAndRedirect = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('onboarding_completed, signup_method, first_name')
+        .eq('id', userId)
+        .single();
+
+      if (error || !profile) {
+        // If no profile exists, create one for OAuth users
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const created = await createOAuthProfile(user);
+          if (created) {
+            // New OAuth profile created, redirect to onboarding
+            toast.success('Welcome! Please complete your profile.');
+            navigate('/profile');
+            return;
+          }
+        }
+        // If we couldn't create profile or get user, show error
+        toast.error('Profile not found');
+        navigate('/login');
+        return;
+      }
+
+      const needsOnboarding = !profile.onboarding_completed || !profile.first_name;
+
+      if (needsOnboarding) {
+        // New OAuth user or incomplete profile - redirect to profile completion
+        const method = profile.signup_method || 'email';
+        if (method !== 'email') {
+          toast.success(`Welcome! Please complete your profile.`);
+        } else {
+          toast.success('Please complete your profile to continue.');
+        }
+        navigate('/profile');
+      } else {
+        // Existing complete profile - go home
         toast.success('Logged in successfully!');
         navigate('/');
       }
-    });
+    } catch {
+      toast.success('Logged in successfully!');
+      navigate('/');
+    }
+  };
 
-    // Check if there are any error parameters in the URL
+  useEffect(() => {
+    // Guard against double-execution in StrictMode
+    if (processedRef.current) return;
+    processedRef.current = true;
+
+    // Check for error parameters in the URL first
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const searchParams = new URLSearchParams(window.location.search);
-    
+
     const error = hashParams.get('error') || searchParams.get('error');
     const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
 
     if (error) {
-      setErrorMsg(errorDescription || 'Authentication failed');
       toast.error(errorDescription || 'Authentication failed');
-      const timer = setTimeout(() => navigate('/login'), 2000);
-      return () => clearTimeout(timer);
+      timerRef.current = setTimeout(() => navigate('/login'), 2000);
+      return;
     }
 
-    // Also try to get session just in case the event fired before we subscribed
+    // Check if we already have a session (for OAuth redirect)
     supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
       if (sessionError) {
-        setErrorMsg(sessionError.message);
         toast.error('Authentication failed: ' + sessionError.message);
-        const timer = setTimeout(() => navigate('/login'), 2000);
-        return () => clearTimeout(timer);
-      } else if (session) {
-        toast.success('Logged in successfully!');
-        navigate('/');
-      } else {
-        // Give it a safety timeout for the redirect to finish processing
-        const timer = setTimeout(() => {
-          supabase.auth.getSession().then(({ data: { session: delayedSession } }) => {
-            if (!delayedSession) {
-              toast.error('Authentication timed out');
-              navigate('/login');
-            }
-          });
-        }, 3000);
-        // Important: we don't clear this timeout on unmount inside this block
-        // because the outer effect cleanup will handle subscription, but the timer should run if we're stuck
+        timerRef.current = setTimeout(() => navigate('/login'), 2000);
+        return;
       }
+
+      if (session) {
+        void checkAndRedirect(session.user.id);
+        return;
+      }
+
+      // No session yet - listen for SIGNED_IN event (OAuth may still be processing)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          subscription.unsubscribe();
+          void checkAndRedirect(session.user.id);
+        }
+      });
+
+      // Safety timeout if OAuth never completes
+      timerRef.current = setTimeout(() => {
+        subscription.unsubscribe();
+        supabase.auth.getSession().then(({ data: { session: delayedSession } }) => {
+          if (delayedSession) {
+            void checkAndRedirect(delayedSession.user.id);
+          } else {
+            toast.error('Authentication timed out');
+            navigate('/login');
+          }
+        });
+      }, 10000); // 10 second safety timeout
     });
 
     return () => {
-      subscription.unsubscribe();
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
       <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-      {errorMsg ? (
-        <p className="text-red-500 text-sm text-center max-w-sm px-4">{errorMsg}</p>
-      ) : (
-        <p className="text-muted-foreground text-sm">Completing login...</p>
-      )}
+      <p className="text-muted-foreground text-sm">Completing login...</p>
     </div>
   );
 }

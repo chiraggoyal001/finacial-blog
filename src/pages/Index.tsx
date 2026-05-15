@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Zap, TrendingUp, BarChart3 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
 import HorizontalScroll from "@/components/HorizontalScroll";
-import { ArticleCardSkeleton, HorizontalScrollSkeleton } from "@/components/skeletons";
+import { ArticleCardSkeleton, HorizontalScrollSkeleton, ProTipSkeleton } from "@/components/skeletons";
 import ProTip from "@/components/ProTip";
-import { DUMMY_POSTS, DUMMY_JUNIOR_MODULES, DUMMY_EVENTS, DUMMY_MODULES } from "@/lib/data";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { BlogPost } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
-import { useArticles } from "@/hooks/useContent";
+import { useArticles, useModules, useVideoSeries, useJuniorModules, useEvents, useTips } from "@/hooks/useContent";
+import { useRecommendations } from "@/hooks/useRecommendations";
 import heroIllustration from "@/assets/hero-illustration.png";
+import { useSEO } from "@/hooks/useSEO";
+import { sanitizeHtml } from "@/lib/sanitize";
+import DataError from "@/components/DataError";
 
 const getPostLink = (post: BlogPost) => {
-  // If it's a DUMMY_POST from lib/data or an article from dbArticles
-  // they are all rendered by NewsletterArticlePage which acts as a generic article viewer
-  // For actual Modules (from DUMMY_MODULES), they have a different structure
-  // but latestPosts only contains DUMMY_POSTS and dbArticles
+  // Route based on category to the correct detail page
+  if (post.category === "Newsletter") return `/newsletter/${post.id}`;
+  if (post.category === "Modules") return `/modules/${post.id}`;
+  if (post.category === "Videos") return `/videos/${post.id}`;
+  if (post.category === "Junior") return `/junior/${post.id}`;
+  if (post.category === "Events") return `/events/${post.id}`;
   return `/newsletter/${post.id}`;
 };
 
@@ -28,61 +32,152 @@ const Index = () => {
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const cacheOptions = { staleTime: 1000 * 60 * 5, gcTime: 1000 * 60 * 10 };
+  const { data: dbArticles, isLoading: isLoadingArticles, error: errorArticles, refetch: refetchArticles } = useArticles({ published: true }, cacheOptions);
+  const { data: dbModules, isLoading: isLoadingModules, error: errorModules, refetch: refetchModules } = useModules({ published: true }, cacheOptions);
+  const { data: dbVideoSeries, isLoading: isLoadingVideos, error: errorVideos, refetch: refetchVideos } = useVideoSeries({ published: true }, cacheOptions);
+  const { data: dbJuniorModules, isLoading: isLoadingJunior, error: errorJunior, refetch: refetchJunior } = useJuniorModules({ published: true }, cacheOptions);
+  const { data: dbEvents, isLoading: isLoadingEvents, error: errorEvents, refetch: refetchEvents } = useEvents({ published: true }, cacheOptions);
+  const { data: dbTips, isLoading: isLoadingTips } = useTips(cacheOptions);
+  const { data: recommendations, isLoading: isLoadingRecs } = useRecommendations(6, cacheOptions);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
-  }, []);
+  useSEO({
+    title: 'Home',
+    description: 'Dhaani is your guide to financial literacy. Explore modules, newsletters, and videos to master your personal finances.',
+  });
 
-  const { data: dbArticles } = useArticles({ published: true });
+  const activeTip = useMemo(() => {
+    if (!dbTips || dbTips.length === 0) return null;
+    return dbTips[Math.floor(Math.random() * dbTips.length)];
+  }, [dbTips]);
 
-  const mappedDbPosts = (dbArticles || []).map(article => ({
-    id: article.id,
-    title: article.title,
-    excerpt: article.excerpt,
-    content: article.content,
-    category: article.category,
-    author: article.author_name,
-    date: article.published_at || article.created_at,
-    image: article.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
-    readTime: article.read_time || "5 min",
-    tags: article.tags || [],
-    views: article.views || 0,
-    likes: article.likes || 0,
+  // Individual loading states per section to prevent any single stuck query from freezing the entire page
+  const error = errorArticles || errorModules || errorVideos || errorJunior || errorEvents;
+  const isPageLoading = isLoadingArticles && isLoadingModules && isLoadingVideos && isLoadingJunior && isLoadingEvents;
+
+  const handleRetry = () => {
+    refetchArticles();
+    refetchModules();
+    refetchVideos();
+    refetchJunior();
+    refetchEvents();
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Unable to Load Content"
+            message="We're having trouble loading the latest content. Please try again later."
+            onRetry={handleRetry} 
+          />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const recommendationPosts: BlogPost[] = (recommendations || []).map(r => ({
+    id: r.id,
+    title: r.title,
+    excerpt: r.excerpt,
+    content: "",
+    category: r.category,
+    author: "Recommended",
+    date: r.created_at,
+    image: r.image,
+    readTime: "Suggested",
+    tags: r.tags || [],
+    views: r.views,
+    likes: r.likes,
   }));
 
-  const allPosts = [...mappedDbPosts, ...DUMMY_POSTS];
-  const latestPosts = allPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const newsletterPosts = allPosts.filter((p) => p.category === "Newsletter");
-  const videoPosts = allPosts.filter((p) => p.category === "Videos");
+  const newsletterPosts: BlogPost[] = (dbArticles || [])
+    .filter(a => a.category === 'Newsletter')
+    .map(article => ({
+      id: article.id,
+      title: article.title,
+      excerpt: article.excerpt,
+      content: article.content,
+      category: article.category,
+      author: article.author_name,
+      date: article.published_at || article.created_at,
+      image: article.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
+      readTime: article.read_time || "5 min",
+      tags: article.tags || [],
+      views: article.views || 0,
+      likes: article.likes || 0,
+    }));
 
-  // Transform DUMMY_MODULES to BlogPost format for consistent card rendering
-  const modulePosts: BlogPost[] = DUMMY_MODULES.map((m) => ({
+  const modulePosts: BlogPost[] = (dbModules || []).map((m) => ({
     id: m.id,
     title: m.title,
     excerpt: m.description,
     content: "",
     category: "Modules",
     author: "Module Team",
-    date: "2025-06-01",
+    date: m.created_at,
     image: m.image,
-    readTime: m.totalReadTime || "",
+    readTime: m.total_read_time || "",
     tags: [m.tag],
     views: m.views,
     likes: m.likes,
   }));
 
-  const juniorPosts: BlogPost[] = DUMMY_JUNIOR_MODULES.map((m) => ({
-    id: m.id, title: m.title, excerpt: m.description, content: "", category: "Junior",
-    author: "Junior Team", date: "2025-06-01", image: m.image,
-    readTime: m.totalReadTime || m.totalDuration || "", tags: [m.tag], views: m.views, likes: m.likes,
+  const videoSeriesPosts: BlogPost[] = (dbVideoSeries || []).map((v) => ({
+    id: v.id,
+    title: v.title,
+    excerpt: v.description,
+    content: "",
+    category: "Videos",
+    author: "Video Team",
+    date: v.created_at,
+    image: v.thumbnail,
+    readTime: v.total_duration || "",
+    tags: [v.tag],
+    views: v.views,
+    likes: v.likes,
   }));
 
-  const eventPosts: BlogPost[] = DUMMY_EVENTS.map((e) => ({
-    id: e.id, title: e.title, excerpt: e.description, content: "", category: "Events",
-    author: "Events Team", date: e.date, image: e.image, readTime: e.time, tags: e.tags,
+  const juniorPosts: BlogPost[] = (dbJuniorModules || []).map((m) => ({
+    id: m.id,
+    title: m.title,
+    excerpt: m.description,
+    content: "",
+    category: "Junior",
+    author: "Junior Team",
+    date: m.created_at,
+    image: m.image,
+    readTime: m.total_duration || "",
+    tags: [m.tag],
+    views: m.views,
+    likes: m.likes,
   }));
+
+  const eventPosts: BlogPost[] = (dbEvents || []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    excerpt: e.description,
+    content: "",
+    category: "Events",
+    author: "Events Team",
+    date: e.date,
+    image: e.image,
+    readTime: e.time,
+    tags: e.tags,
+  }));
+
+  const allVideoPosts = videoSeriesPosts;
+
+  // Get latest from each category for the "Latest" section
+  const latestFromEachCategory: BlogPost[] = [
+    newsletterPosts[0],
+    modulePosts[0],
+    videoSeriesPosts[0],
+  ].filter(Boolean);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -132,7 +227,7 @@ const Index = () => {
             <div className="flex-1 flex justify-center">
               <img
                 src={heroIllustration}
-                alt="Financial literacy illustration"
+                alt="Dhaani mascot helping with financial literacy"
                 className="w-full max-w-md md:max-w-lg drop-shadow-xl"
                 width={1024}
                 height={768}
@@ -151,11 +246,30 @@ const Index = () => {
 
       {!isSubscribed && <SubscribeSection />}
 
+      {/* Personalized Recommendations */}
+      {isLoadingRecs ? (
+        <HorizontalScrollSkeleton title="Recommended for You" count={3} />
+      ) : recommendationPosts.length > 0 ? (
+        <HorizontalScroll 
+          title="Recommended for You" 
+          posts={recommendationPosts} 
+          description="Tailored to your interests"
+        />
+      ) : null}
+
       {/* Pro Tip */}
       <div className="container">
-        <ProTip>
-          Start with the <Link to="/modules" className="text-primary font-semibold hover:underline">Stock Market Fundamentals</Link> module if you're new to investing. It covers everything from IPOs to portfolio building!
-        </ProTip>
+        {isLoadingTips ? (
+          <ProTipSkeleton />
+        ) : activeTip ? (
+          <ProTip>
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeTip.content) }} />
+          </ProTip>
+        ) : (
+          <ProTip>
+            Start with the <Link to="/modules" className="text-primary font-semibold hover:underline">Stock Market Fundamentals</Link> module if you're new to investing. It covers everything from IPOs to portfolio building!
+          </ProTip>
+        )}
       </div>
 
       <section className="py-12">
@@ -165,47 +279,64 @@ const Index = () => {
             <span className="text-xs text-muted-foreground font-mono">{t("home.updated")} {new Date().toLocaleDateString()}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading
-              ? Array.from({ length: 3 }).map((_, i) => <ArticleCardSkeleton key={i} variant="default" />)
-              : latestPosts.slice(0, 3).map((post) => (
-                <Link key={post.id} to={getPostLink(post)} className="block group">
-                  <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 hover:scale-105 hover:z-10 transition-all duration-300 transform">
-                    <div className="aspect-video overflow-hidden">
-                      <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                    </div>
-                    <div className="p-5 space-y-2">
-                      <span className="text-xs font-medium text-primary">{post.category}</span>
-                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                        <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
-                        <span>·</span>
-                        <span>{post.readTime}</span>
+            {Array.from({ length: 3 }).map((_, i) => {
+              const post = latestFromEachCategory[i];
+              // Show a skeleton for each slot that is still loading or missing data
+              if (post) {
+                return (
+                  <Link key={post.id} to={getPostLink(post)} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl">
+                    <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 hover:scale-105 hover:z-10 transition-all duration-300 transform">
+                      <div className="aspect-video overflow-hidden">
+                        <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      </div>
+                      <div className="p-5 space-y-2">
+                        <span className="text-xs font-medium text-primary">{post.category}</span>
+                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                          <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
+                          <span>·</span>
+                          <span>{post.readTime}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              }
+              return <ArticleCardSkeleton key={`skeleton-${i}`} variant="default" />;
+            })}
           </div>
         </div>
       </section>
 
-      {isLoading ? (
-        <>
-          <HorizontalScrollSkeleton title={t("nav.newsletter")} count={4} />
-          <HorizontalScrollSkeleton title={t("nav.modules")} count={4} />
-          <HorizontalScrollSkeleton title={t("nav.videos")} count={4} />
-          <HorizontalScrollSkeleton title={t("nav.junior")} count={4} />
-          <HorizontalScrollSkeleton title={t("nav.events")} count={4} />
-        </>
+      {isLoadingArticles ? (
+        <HorizontalScrollSkeleton title={t("nav.newsletter")} count={4} />
       ) : (
-        <>
-          <HorizontalScroll title={t("nav.newsletter")} posts={newsletterPosts} />
-          <HorizontalScroll title={t("nav.modules")} posts={modulePosts} />
-          <HorizontalScroll title={t("nav.videos")} posts={videoPosts} />
-          <HorizontalScroll title={t("nav.junior")} posts={juniorPosts} />
-          <HorizontalScroll title={t("nav.events")} posts={eventPosts} />
-        </>
+        <HorizontalScroll title={t("nav.newsletter")} posts={newsletterPosts} sectionType="Newsletter" />
+      )}
+
+      {isLoadingModules ? (
+        <HorizontalScrollSkeleton title={t("nav.modules")} count={4} />
+      ) : (
+        <HorizontalScroll title={t("nav.modules")} posts={modulePosts} sectionType="Modules" />
+      )}
+
+      {isLoadingVideos ? (
+        <HorizontalScrollSkeleton title={t("nav.videos")} count={3} />
+      ) : (
+        <HorizontalScroll title={t("nav.videos")} posts={allVideoPosts} sectionType="Videos" />
+      )}
+
+      {isLoadingJunior ? (
+        <HorizontalScrollSkeleton title={t("nav.junior")} count={4} />
+      ) : (
+        <HorizontalScroll title={t("nav.junior")} posts={juniorPosts} sectionType="Junior" />
+      )}
+
+      {isLoadingEvents ? (
+        <HorizontalScrollSkeleton title={t("nav.events")} count={4} />
+      ) : (
+        <HorizontalScroll title={t("nav.events")} posts={eventPosts} sectionType="Events" />
       )}
 
       {!isSubscribed && <SubscribeSection />}

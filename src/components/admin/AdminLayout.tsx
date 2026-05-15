@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -19,7 +19,7 @@ import {
   Home,
   Users,
   Settings,
-  Newspaper,
+  Link,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -54,9 +54,24 @@ const adminNavItems = [
     icon: GraduationCap,
   },
   {
+    title: 'Users',
+    href: '/admin/users',
+    icon: Users,
+  },
+  {
     title: 'A/B Tests',
     href: '/admin/ab-tests',
     icon: FlaskConical,
+  },
+  {
+    title: 'Affiliates',
+    href: '/admin/affiliates',
+    icon: Link,
+  },
+  {
+    title: 'Settings',
+    href: '/admin/settings',
+    icon: Settings,
   },
 ];
 
@@ -75,6 +90,7 @@ export function AdminLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
+    setIsMobileMenuOpen(false);
     await logout();
     navigate('/login');
   };
@@ -181,13 +197,9 @@ export function AdminLayout() {
             </div>
             <span className="font-semibold">Admin</span>
           </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-          </Sheet>
+          <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
+            <Menu className="h-5 w-5" />
+          </Button>
         </header>
 
         {/* Page Content */}

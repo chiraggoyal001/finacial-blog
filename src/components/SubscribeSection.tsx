@@ -1,11 +1,14 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Mail } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
 interface SubscribeSectionProps {
   variant?: "inline" | "full";
@@ -14,13 +17,63 @@ interface SubscribeSectionProps {
 const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
   const [email, setEmail] = useState("");
   const [frequency, setFrequency] = useState("weekly");
+  const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation();
+  const { isLoggedIn, user, updateProfile } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    toast.success(t("subscribe.success"), { description: `You'll receive ${frequency} updates at ${email}` });
-    setEmail("");
+
+    setIsLoading(true);
+
+    try {
+      if (isLoggedIn && user) {
+        // Save subscription to user's profile in database
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            is_subscribed: true,
+            mail_preference: frequency === "daily" ? "intrusive" : "non-intrusive",
+          })
+          .eq("id", user.id);
+
+        if (error) {
+          console.error("Error saving subscription:", error);
+          toast.error("Failed to save subscription. Please try again.");
+          setIsLoading(false);
+          return;
+        }
+
+        // Also update local user state
+        if (updateProfile) {
+          await updateProfile({
+            isSubscribed: true,
+            mailPreference: frequency === "daily" ? "intrusive" : "non-intrusive",
+          });
+        }
+
+        toast.success(t("subscribe.success"), {
+          description: `You're now subscribed to ${frequency} updates at ${email}`,
+        });
+      } else {
+        // Anonymous user - save email and redirect to signup
+        localStorage.setItem("pendingSubscriptionEmail", email);
+        localStorage.setItem("pendingSubscriptionFrequency", frequency);
+        toast.success("Thanks for your interest!", {
+          description: "Please sign up or log in to complete your subscription.",
+        });
+        navigate("/signup");
+      }
+
+      setEmail("");
+    } catch (error) {
+      console.error("Subscription error:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (variant === "full") {
@@ -51,7 +104,16 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
                 </div>
               </RadioGroup>
             </div>
-            <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold">{t("subscribe.button")}</Button>
+            <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl text-base font-semibold">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Subscribing...
+                </>
+              ) : (
+                t("subscribe.button")
+              )}
+            </Button>
           </form>
           <p className="text-xs text-muted-foreground">
             {t("subscribe.joinTribe")}{" "}
@@ -68,7 +130,13 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
         <h3 className="font-display text-xl font-bold text-foreground">{t("subscribe.title")}</h3>
         <form onSubmit={handleSubmit} className="flex gap-2 max-w-md mx-auto">
           <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-10 rounded-lg flex-1" required />
-          <Button type="submit" className="rounded-lg px-6">{t("subscribe.button")}</Button>
+          <Button type="submit" disabled={isLoading} className="rounded-lg px-6">
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              t("subscribe.button")
+            )}
+          </Button>
         </form>
       </div>
     </section>

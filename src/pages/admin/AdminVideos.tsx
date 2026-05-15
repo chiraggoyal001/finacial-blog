@@ -87,7 +87,7 @@ export default function AdminVideos() {
                   <TableRow key={video.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        {video.thumbnail ? <img src={video.thumbnail} alt="" className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted flex items-center justify-center"><Video className="h-5 w-5 text-muted-foreground" /></div>}
+                        {video.thumbnail ? <img src={video.thumbnail} alt={video.title} className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted flex items-center justify-center"><Video className="h-5 w-5 text-muted-foreground" /></div>}
                         <div>
                           <div className="font-medium">{video.title}</div>
                           <div className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">{video.description}</div>

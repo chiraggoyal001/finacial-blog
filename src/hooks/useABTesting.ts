@@ -159,6 +159,7 @@ export const useUserABAssignment = (testId: string, userId: string) => {
   return useQuery({
     queryKey: ['abAssignment', testId, userId],
     queryFn: async () => {
+      if (!userId) return null;
       const { data, error } = await supabase
         .from('ab_test_assignments')
         .select('*, ab_test_variants(*)')
@@ -306,16 +307,18 @@ export const useRecordABTestConversion = () => {
 };
 
 // =====================================================
-// HELPER HOOK: Get Variant for Current User
+// HELPER HOOK: Get Variant for Current User (REFACTORED)
 // =====================================================
 
 export const useABTestVariantForUser = (testName: string, userId?: string) => {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ['abTestVariant', testName, userId],
     queryFn: async () => {
       if (!userId) return null;
       
-      // Find the test by name
+      // 1. Find the test by name
       const { data: test, error: testError } = await supabase
         .from('ab_tests')
         .select('id')
@@ -325,7 +328,7 @@ export const useABTestVariantForUser = (testName: string, userId?: string) => {
       
       if (testError || !test) return null;
       
-      // Check if user has an assignment
+      // 2. Check if user already has an assignment
       const { data: assignment, error: assignError } = await supabase
         .from('ab_test_assignments')
         .select('*, ab_test_variants(*)')
@@ -333,15 +336,46 @@ export const useABTestVariantForUser = (testName: string, userId?: string) => {
         .eq('user_id', userId)
         .single();
       
-      if (assignError || !assignment) {
-        // No assignment yet - assign one
-        const assignMutation = useAssignABVariant();
-        const result = await assignMutation.mutateAsync({ testId: test.id, userId });
-        return result.variant;
+      if (!assignError && assignment) {
+        return (assignment as any).ab_test_variants as ABTestVariant;
       }
       
-      return (assignment as any).ab_test_variants as ABTestVariant;
+      // 3. If no assignment, create one (LOGIC MOVED OUT OF MUTATION CALL)
+      // Get variants
+      const { data: variants } = await supabase
+        .from('ab_test_variants')
+        .select('*')
+        .eq('test_id', test.id);
+      
+      if (!variants?.length) return null;
+      
+      // Weighted random assignment
+      const totalWeight = variants.reduce((sum, v) => sum + (v.traffic_percentage || 50), 0);
+      let random = Math.random() * totalWeight;
+      let selectedVariant = variants[0];
+      
+      for (const variant of variants) {
+        random -= (variant.traffic_percentage || 50);
+        if (random <= 0) {
+          selectedVariant = variant;
+          break;
+        }
+      }
+      
+      // Persist assignment
+      const { data: newAssignment } = await supabase
+        .from('ab_test_assignments')
+        .insert({
+          test_id: test.id,
+          user_id: userId,
+          variant_id: selectedVariant.id,
+        })
+        .select('*, ab_test_variants(*)')
+        .single();
+      
+      return (newAssignment as any)?.ab_test_variants as ABTestVariant || selectedVariant;
     },
     enabled: !!userId && !!testName,
+    staleTime: Infinity, // Assignments shouldn't change
   });
 };

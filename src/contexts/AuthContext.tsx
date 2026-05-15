@@ -1,446 +1,416 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from "react";
 import { User } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface AuthContextType {
   user: User | null;
-  isAdmin: boolean;
+  userRole: string | null;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
-  isCheckingRole: boolean;
   isSigningOut: boolean;
   needsOnboarding: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsOnboarding?: boolean; isAdmin?: boolean }>;
-  signup: (data: Partial<User> & { password: string }) => Promise<{ success: boolean; error?: string }>;
-  signInWithOAuth: (provider: 'google' | 'twitter') => Promise<{ success: boolean; error?: string }>;
+  setNeedsOnboarding: (val: boolean) => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; isAdmin?: boolean; needsOnboarding?: boolean; error?: string }>;
+  signup: (params: { email: string; password: string; firstName: string; lastName: string; isSubscribed?: boolean; mailPreference?: string; notifyLaunches?: boolean }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
-  updateUserAvatar: (avatarUrl: string | null) => void;
-  checkProfileCompletion: () => Promise<boolean>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updateAvatar: (url: string) => void;
+  signInWithOAuth: (provider: 'google' | 'twitter') => Promise<{ success: boolean; error?: string }>;
   markOnboardingComplete: () => void;
+  updateUserAvatar: (url: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export { AuthContext };
 
-// Helper to convert Supabase user to our User type
-const mapSupabaseUser = (supabaseUser: any, userData: any): User => ({
+const mapSupabaseUser = (supabaseUser: any, profileData: any): User => ({
   id: supabaseUser.id,
-  firstName: userData?.firstName || supabaseUser.user_metadata?.firstName || "",
-  lastName: userData?.lastName || supabaseUser.user_metadata?.lastName || "",
   email: supabaseUser.email || "",
-  isSubscribed: userData?.isSubscribed || supabaseUser.user_metadata?.isSubscribed || false,
-  mailPreference: userData?.mailPreference || supabaseUser.user_metadata?.mailPreference || "non-intrusive",
-  notifyLaunches: userData?.notifyLaunches || supabaseUser.user_metadata?.notifyLaunches || false,
-  age: userData?.age || supabaseUser.user_metadata?.age,
-  region: userData?.region || supabaseUser.user_metadata?.region,
-  interests: userData?.interests || supabaseUser.user_metadata?.interests,
-  hobbies: userData?.hobbies || supabaseUser.user_metadata?.hobbies,
-  profession: userData?.profession || supabaseUser.user_metadata?.profession,
-  description: userData?.description || supabaseUser.user_metadata?.description,
-  avatarUrl: userData?.avatarUrl || userData?.avatar_url || supabaseUser.user_metadata?.avatarUrl,
+  firstName: profileData.firstName || profileData.first_name || "",
+  lastName: profileData.lastName || profileData.last_name || "",
+  avatarUrl: profileData.avatarUrl || profileData.avatar_url || "",
+  isSubscribed: profileData.isSubscribed || profileData.is_subscribed || false,
+  onboardingCompleted: profileData.onboardingCompleted || profileData.onboarding_completed || false,
+  mailPreference: profileData.mailPreference || "non-intrusive",
+  notifyLaunches: profileData.notifyLaunches || false,
+  age: profileData.age,
+  region: profileData.region,
+  interests: profileData.interests || [],
+  xp: profileData.xp || 0,
 });
+
+const ADMIN_EMAILS = ['goyalchirag721@gmail.com', 'anuraggoyal231@gmail.com'];
+
+/** 
+ * Determines the effective user role, falling back to the email-based admin check
+ * if the database role query is null, undefined, or empty.
+ */
+const getEffectiveRole = (dbRole: string | null | undefined, email: string | undefined): string => {
+  if (dbRole === 'admin') return 'admin';
+  if (!dbRole || dbRole === 'user') {
+    if (email && ADMIN_EMAILS.includes(email.toLowerCase())) {
+      return 'admin';
+    }
+  }
+  return dbRole || 'user';
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
-  const [userRole, setUserRole] = useState<'admin' | 'user' | null>(null);
-
-  // Refs to prevent race conditions and stale closures
-  const isProcessingAuth = useRef(false);
-  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const hasCompletedInitialAuth = useRef(false);
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isAdmin = userRole === 'admin';
-  const isLoggedIn = !!user;
-  const isCheckingRole = isLoggedIn && userRole === null;
-
-  // Fetch user role from database - wrapped in useCallback to prevent stale closures
-  const fetchUserRole = useCallback(async (userId: string) => {
+  // Profile data fetcher (Consolidated) with fallback when no profile row exists
+  const fetchProfileAndSetUser = useCallback(async (supabaseUser: any) => {
+    if (!supabaseUser) return;
+    
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('roles(name)')
-        .eq('user_id', userId)
-        .single();
-      
-      if (error || !data) {
-        setUserRole('user');
-        return;
+      const [{ data: profile }, { data: roleData }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', supabaseUser.id).single(),
+        supabase.from('user_roles').select('*, roles(*)').eq('user_id', supabaseUser.id).maybeSingle()
+      ]);
+
+      if (profile) {
+        const mappedUser = mapSupabaseUser(supabaseUser, profile);
+        setUser(mappedUser);
+        setUserRole(getEffectiveRole((roleData as any)?.roles?.name, supabaseUser.email));
+        setNeedsOnboarding(!profile.onboarding_completed);
+      } else {
+        // No profile row found — the DB trigger may not have fired yet, or the user
+        // signed up via OAuth and the trigger is still processing. Set a minimal user
+        // from the auth session so the user isn't stuck in "logged out" limbo.
+        const fallbackUser: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          firstName: supabaseUser.user_metadata?.firstName || supabaseUser.user_metadata?.given_name || '',
+          lastName: supabaseUser.user_metadata?.lastName || supabaseUser.user_metadata?.family_name || '',
+          avatarUrl: supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || '',
+          isSubscribed: false,
+          onboardingCompleted: false,
+          mailPreference: 'non-intrusive',
+          notifyLaunches: false,
+          age: undefined,
+          region: undefined,
+          interests: [],
+          xp: 0,
+        };
+        setUser(fallbackUser);
+        setUserRole(getEffectiveRole((roleData as any)?.roles?.name, supabaseUser.email));
+        setNeedsOnboarding(true);
+        console.warn('No profile row found for user; using fallback user object. Trigger may be delayed.');
       }
-      
-      const roleName = (data.roles as any)?.name as 'admin' | 'user';
-      setUserRole(roleName || 'user');
-    } catch (error) {
-      console.error('Error fetching user role:', error);
-      setUserRole('user');
-    }
-  }, []);
-
-  // Check if user profile needs onboarding and fetch avatar - wrapped in useCallback
-  const checkProfileCompletion = useCallback(async (userId: string): Promise<boolean> => {
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("onboarding_completed, avatar_url")
-        .eq("id", userId)
-        .single();
-
-      if (error || !profile) {
-        return true; // Assume needs onboarding if no profile
-      }
-
-      // Update user state with avatar URL if available
-      if (profile.avatar_url) {
-        setUser((prev) => prev ? { ...prev, avatarUrl: profile.avatar_url } : null);
-      }
-
-      return !profile.onboarding_completed;
-    } catch {
-      return true;
-    }
-  }, []);
-
-  // Create profile in database after signup
-  const createUserProfile = async (
-    userId: string,
-    data: Partial<User> & { signupIp?: string; userAgent?: string }
-  ) => {
-    try {
-      const { error } = await supabase.from("profiles").insert({
-        id: userId,
-        first_name: data.firstName || "",
-        last_name: data.lastName || "",
-        email: data.email || "",
-        is_subscribed: data.isSubscribed || false,
-        mail_preference: data.mailPreference || "non-intrusive",
-        notify_launches: data.notifyLaunches || false,
-        signup_ip: data.signupIp || null,
-        signup_user_agent: data.userAgent || null,
-        onboarding_completed: false,
-      });
-
-      if (error) {
-        console.error("Error creating profile:", error);
-      }
-    } catch (error) {
-      console.error("Error creating profile:", error);
-    }
-  };
-
-  // Fetch complete user profile including avatar_url - wrapped in useCallback
-  const fetchUserProfile = useCallback(async (userId: string): Promise<{ avatarUrl?: string; onboardingCompleted?: boolean }> => {
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("avatar_url, onboarding_completed")
-        .eq("id", userId)
-        .single();
-
-      if (error || !profile) {
-        return {};
-      }
-
-      return {
-        avatarUrl: profile.avatar_url || undefined,
-        onboardingCompleted: profile.onboarding_completed,
+    } catch (err) {
+      console.error('Error fetching full profile:', err);
+      // Even on error, set a minimal user from auth data so the user isn't stuck
+      const fallbackUser: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        firstName: supabaseUser.user_metadata?.firstName || '',
+        lastName: supabaseUser.user_metadata?.lastName || '',
+        avatarUrl: supabaseUser.user_metadata?.avatar_url || '',
+        isSubscribed: false,
+        onboardingCompleted: false,
+        mailPreference: 'non-intrusive',
+        notifyLaunches: false,
+        age: undefined,
+        region: undefined,
+        interests: [],
+        xp: 0,
       };
-    } catch {
-      return {};
+      setUser(fallbackUser);
+      // Even on error, use email fallback for admin detection
+      setUserRole(getEffectiveRole(null, supabaseUser.email));
+      setNeedsOnboarding(true);
     }
   }, []);
 
-  // Safety timeout to prevent infinite loading state
+  // Initialize session once
   useEffect(() => {
-    if (isLoading) {
-      // Clear any existing timeout
-      if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current);
-      }
-      // Set a safety timeout to clear loading after 8 seconds
-      authTimeoutRef.current = setTimeout(() => {
-        if (isLoading && !hasCompletedInitialAuth.current) {
-          console.warn('Auth safety timeout triggered - forcing loading state to false');
-          setIsLoading(false);
-        }
-      }, 8000);
-    }
-    return () => {
-      if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current);
-      }
-    };
-  }, [isLoading]);
+    let mounted = true;
 
-  // Check for existing session on app load with race condition guards
-  useEffect(() => {
-    // Guard against duplicate processing
-    if (isProcessingAuth.current) return;
-    if (hasCompletedInitialAuth.current) return;
-
-    const checkSession = async () => {
-      isProcessingAuth.current = true;
+    const initSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          // Fetch profile data FIRST to include avatar_url
-          const profileData = await fetchUserProfile(session.user.id);
-          
-          const mappedUser = mapSupabaseUser(session.user, {
-            ...session.user.user_metadata,
-            avatarUrl: profileData.avatarUrl,
-          });
-          setUser(mappedUser);
-          
-          // Fetch user role from database
-          await fetchUserRole(session.user.id);
-          
-          // Set onboarding status from profile
-          setNeedsOnboarding(!profileData.onboardingCompleted);
+        if (mounted && session?.user) {
+          await fetchProfileAndSetUser(session.user);
         }
-      } catch (error) {
-        console.error("Error checking session:", error);
+      } catch (err) {
+        console.error('Session init error:', err);
       } finally {
-        hasCompletedInitialAuth.current = true;
-        isProcessingAuth.current = false;
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+          hasCompletedInitialAuth.current = true;
+        }
       }
     };
+    void initSession();
 
-    checkSession();
-  }, [fetchUserProfile, fetchUserRole]);
+    // Setup global auth state listener
+    // IMPORTANT: onAuthStateChange fires 'SIGNED_IN' for the existing session immediately
+    // when subscribed. We skip this initial event because initSession() already handles it.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
 
-  // Listen for auth state changes separately from initial check
-  useEffect(() => {
-    // Use refs for fresh callbacks
-    const handleAuthStateChange = async (event: string, session: any) => {
-      // Guard against processing during initial auth check
-      if (!hasCompletedInitialAuth.current && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-        // Let the initial checkSession handle this
-        return;
-      }
-
-      if (event === "SIGNED_IN" && session?.user) {
-        // Fetch profile data FIRST to include avatar_url
-        const profileData = await fetchUserProfile(session.user.id);
-        
-        const mappedUser = mapSupabaseUser(session.user, {
-          ...session.user.user_metadata,
-          avatarUrl: profileData.avatarUrl,
-        });
-        setUser(mappedUser);
-        
-        // Fetch user role from database
-        await fetchUserRole(session.user.id);
-        
-        // Set onboarding status from profile
-        setNeedsOnboarding(!profileData.onboardingCompleted);
-      } else if (event === "SIGNED_OUT") {
+      // Skip the initial SIGNED_IN event that fires for an existing session -
+      // initSession() already fetched the profile above
+      if (event === 'SIGNED_IN' && hasCompletedInitialAuth.current) {
+        // This is a new sign-in (not the initial one), fetch the profile
+        if (session?.user) {
+          await fetchProfileAndSetUser(session.user);
+        }
+      } else if (event === 'USER_UPDATED' && session?.user) {
+        await fetchProfileAndSetUser(session.user);
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setUserRole(null);
         setNeedsOnboarding(false);
-        // DO NOT reset setIsSigningOut here — logout() needs it to stay true
-        // to prevent login screen flicker during the page transition
       }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Use void to handle async without awaiting
-      void handleAuthStateChange(event, session);
     });
 
-    return () => subscription.unsubscribe();
-  }, [fetchUserProfile, fetchUserRole]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
+    };
+  }, [fetchProfileAndSetUser]);
+
+  // Profiles Realtime Subscription — listens for both INSERT and UPDATE so that
+  // if the DB trigger creates a profile row after we've set a fallback user
+  // (e.g. during OAuth), we seamlessly swap in the real profile data.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        (payload) => {
+          const up = payload.new as Record<string, any>;
+          // No new data or a DELETE event — nothing to update
+          if (!up || !up.id || payload.eventType === 'DELETE') return;
+          
+          // Use the supabase user data from the auth session to rebuild the mapped user
+          supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+            if (!authUser) return;
+            
+            // Fetch full profile + role to rebuild the state properly
+            Promise.all([
+              supabase.from('profiles').select('*').eq('id', up.id).single(),
+              supabase.from('user_roles').select('*, roles(*)').eq('user_id', up.id).maybeSingle()
+            ]).then(([{ data: freshProfile }, { data: roleData }]) => {
+              if (freshProfile) {
+                const mappedUser = mapSupabaseUser(authUser, freshProfile);
+                setUser(mappedUser);
+                setUserRole((roleData as any)?.roles?.name || 'user');
+                setNeedsOnboarding(!freshProfile.onboarding_completed);
+              }
+            }).catch(() => {
+              // Fallback — at least apply the changed fields from the payload
+              setUser(prev => {
+                if (!prev || prev.id !== up.id) return prev;
+                return {
+                  ...prev,
+                  xp: up.xp ?? prev.xp,
+                  isSubscribed: up.is_subscribed ?? prev.isSubscribed,
+                  onboardingCompleted: up.onboarding_completed ?? prev.onboardingCompleted,
+                  avatarUrl: up.avatar_url ?? prev.avatarUrl,
+                  interests: up.interests ?? prev.interests,
+                  firstName: up.first_name ?? prev.firstName,
+                  lastName: up.last_name ?? prev.lastName,
+                  age: up.age ?? prev.age,
+                  region: up.region ?? prev.region,
+                };
+              });
+              if (up.onboarding_completed !== undefined) {
+                setNeedsOnboarding(!up.onboarding_completed);
+              }
+            });
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      if (data.user) {
-        const mappedUser = mapSupabaseUser(data.user, data.user.user_metadata);
-        setUser(mappedUser);
-        
-        // Fetch user role from database
-        await fetchUserRole(data.user.id);
-        
-        // Check if user needs onboarding
-        const needsOnboardingStatus = await checkProfileCompletion(data.user.id);
-        setNeedsOnboarding(needsOnboardingStatus);
-        
-        // Determine if admin based on email
-        const isUserAdmin = ['goyalchirag721@gmail.com', 'anuraggoyal231@gmail.com'].includes(data.user.email || '');
-        
-        return { success: true, needsOnboarding: needsOnboardingStatus, isAdmin: isUserAdmin };
-      }
-
-      return { success: false, error: "Login failed" };
-    } catch (error: any) {
-      return { success: false, error: error.message || "An unexpected error occurred" };
-    }
-  };
-
-  const signup = async (data: Partial<User> & { password: string }) => {
-    try {
-      const { data: authData, error } = await supabase.auth.signUp({
-        email: data.email || "",
-        password: data.password,
-        options: {
-          data: {
-            firstName: data.firstName || "",
-            lastName: data.lastName || "",
-            isSubscribed: data.isSubscribed || false,
-            mailPreference: data.mailPreference || "non-intrusive",
-            notifyLaunches: data.notifyLaunches || false,
-          },
-        },
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      if (authData.user) {
-        const mappedUser = mapSupabaseUser(authData.user, authData.user.user_metadata);
-        setUser(mappedUser);
-        
-        // Create profile in database
-        const signupIp = await fetch("https://api.ipify.org?format=json")
-          .then((r) => r.json())
-          .then((d) => d.ip)
-          .catch(() => null);
-        
-        await createUserProfile(authData.user.id, {
-          ...data,
-          signupIp,
-          userAgent: navigator.userAgent,
-        });
-        
-        // New users always need onboarding
-        setNeedsOnboarding(true);
-        
-        // If email confirmation is required, user might need to verify email first
-        if (authData.session) {
-          return { success: true };
-        } else {
-          return { success: true, error: "Please check your email to confirm your account" };
-        }
-      }
-
-      return { success: false, error: "Signup failed" };
-    } catch (error: any) {
-      return { success: false, error: error.message || "An unexpected error occurred" };
-    }
-  };
-
-  const signInWithOAuth = async (provider: 'google' | 'twitter') => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: window.location.origin + '/auth/callback',
-        },
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      // OAuth redirects, so we don't get an immediate session
-      // The auth callback page will handle the session
+      const [{ data: profile }, { data: roleData }] = await Promise.all([
+        supabase.from('profiles').select('onboarding_completed').eq('id', data.user.id).single(),
+        supabase.from('user_roles').select('*, roles(*)').eq('user_id', data.user.id).maybeSingle()
+      ]);
+      const isAdmin = getEffectiveRole((roleData as any)?.roles?.name, data.user.email) === 'admin';
+      const needsOnboardingVal = profile ? !profile.onboarding_completed : false;
+      
+      // Eagerly set local user state before the onAuthStateChange event fires,
+      // preventing a flash where ProtectedRoute redirects to /login
+      // after a successful login.
+      fetchProfileAndSetUser(data.user);
+      
+      return { success: true, isAdmin, needsOnboarding: needsOnboardingVal };
+    } catch {
+      // Even if profile/role fetch fails, eagerly set state from auth data
+      fetchProfileAndSetUser(data.user);
       return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message || "An unexpected error occurred" };
     }
+  };
+
+  const signup = async (params: { email: string; password: string; firstName: string; lastName: string; isSubscribed?: boolean; mailPreference?: string; notifyLaunches?: boolean }) => {
+    const { email, password, firstName, lastName, isSubscribed, mailPreference, notifyLaunches } = params;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { 
+        data: { firstName, lastName },
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      },
+    });
+    if (error) return { success: false, error: error.message };
+
+    if (data?.user) {
+      const profileUpdates: Record<string, any> = {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        signup_method: 'email',
+      };
+      if (isSubscribed !== undefined) profileUpdates.is_subscribed = isSubscribed;
+      if (mailPreference !== undefined) profileUpdates.mail_preference = mailPreference;
+      if (notifyLaunches !== undefined) profileUpdates.notify_launches = notifyLaunches;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({ id: data.user.id, ...profileUpdates });
+
+      if (profileError) {
+        console.error('Error saving profile after signup:', profileError);
+      }
+    }
+
+    return { success: true };
   };
 
   const logout = async () => {
     try {
       setIsSigningOut(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await supabase.auth.signOut();
       setUser(null);
+      setUserRole(null);
       setNeedsOnboarding(false);
-      // Reset isSigningOut to false since client-side routing is used.
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
       setIsSigningOut(false);
-    } catch (error) {
-      console.error("Logout error:", error);
-      setIsSigningOut(false);  // Reset on error so user sees error message
-      throw error;
-    }
-  };
-
-  const resetPassword = async (email: string) => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/reset-password",
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message || "An unexpected error occurred" };
     }
   };
 
   const updateProfile = async (data: Partial<User>) => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: data,
-      });
+      if (!user) throw new Error("Not logged in");
 
-      if (error) {
-        return { success: false, error: error.message };
+      const profileUpdates: any = {};
+      if (data.firstName !== undefined) profileUpdates.first_name = data.firstName;
+      if (data.lastName !== undefined) profileUpdates.last_name = data.lastName;
+      if (data.age !== undefined) profileUpdates.age = data.age;
+      if (data.region !== undefined) profileUpdates.region = data.region;
+      if (data.interests !== undefined) profileUpdates.interests = data.interests;
+      if (data.hobbies !== undefined) profileUpdates.hobbies = data.hobbies;
+      if (data.profession !== undefined) profileUpdates.profession = data.profession;
+      if (data.description !== undefined) profileUpdates.description = data.description;
+      if (data.mailPreference !== undefined) profileUpdates.mail_preference = data.mailPreference;
+      if (data.notifyLaunches !== undefined) profileUpdates.notify_launches = data.notifyLaunches;
+      if (data.onboardingCompleted !== undefined) profileUpdates.onboarding_completed = data.onboardingCompleted;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(profileUpdates)
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      setUser(prev => prev ? { ...prev, ...data } : null);
+      if (data.onboardingCompleted !== undefined) {
+        setNeedsOnboarding(!data.onboardingCompleted);
       }
-
-      // Update local user state with new data
-      setUser((prev) => (prev ? { ...prev, ...data } : null));
+      
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message || "An unexpected error occurred" };
+      console.error('Profile update error:', error);
+      return { success: false, error: error.message };
     }
   };
 
-  // Mark onboarding as complete (called from ProfilePage when profile is saved)
+  const updateAvatar = (url: string) => {
+    setUser(prev => prev ? { ...prev, avatarUrl: url } : null);
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  };
+
+  const signInWithOAuth = async (provider: 'google' | 'twitter') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        }
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || `${provider} login failed` };
+    }
+  };
+
   const markOnboardingComplete = () => {
     setNeedsOnboarding(false);
   };
 
-  // Update user avatar URL in state (called after upload)
-  const updateUserAvatar = (avatarUrl: string | null) => {
-    setUser((prev) => (prev ? { ...prev, avatarUrl: avatarUrl || undefined } : null));
+  const updateUserAvatar = (url: string | null) => {
+    setUser(prev => prev ? { ...prev, avatarUrl: url || '' } : null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, isLoggedIn, isLoading, isCheckingRole, isSigningOut, needsOnboarding, login, signup, signInWithOAuth, logout, resetPassword, updateProfile, updateUserAvatar, checkProfileCompletion: () => user ? checkProfileCompletion(user.id) : Promise.resolve(false), markOnboardingComplete }}>
-      {isSigningOut ? (
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="text-center space-y-4">
-            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground">Signing out...</p>
-          </div>
-        </div>
-      ) : (
-        children
-      )}
+    <AuthContext.Provider
+      value={{
+        user,
+        userRole,
+        isLoggedIn: !!user,
+        isAdmin: userRole === "admin",
+        isLoading,
+        isSigningOut,
+        needsOnboarding,
+        setNeedsOnboarding,
+        login,
+        signup,
+        logout,
+        updateProfile,
+        resetPassword,
+        updateAvatar,
+        signInWithOAuth,
+        markOnboardingComplete,
+        updateUserAvatar,
+      }}
+    >
+      {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
-  return context;
 };

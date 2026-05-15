@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Clock, Play, BookOpen, Eye, Heart, CheckCircle2, Sparkles, Rocket, Star, Zap } from "lucide-react";
 import gsap from "gsap";
@@ -8,12 +8,13 @@ import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { DUMMY_JUNIOR_MODULES } from "@/lib/data";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useJuniorModules } from "@/hooks/useContent";
+import { JuniorModule, JuniorChapter } from "@/lib/types";
+import DataError from "@/components/DataError";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -45,12 +46,7 @@ const JuniorPage = () => {
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const { getProgress, isRead } = useReadingProgress();
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 700);
-    return () => clearTimeout(timer);
-  }, []);
+  const { data: dbJuniorModules, isLoading, error, refetch } = useJuniorModules({ published: true });
 
   const heroRef = useRef<HTMLDivElement>(null);
   const heroTextRef = useRef<HTMLDivElement>(null);
@@ -58,9 +54,6 @@ const JuniorPage = () => {
   const readingSectionRef = useRef<HTMLDivElement>(null);
   const videoCardsRef = useRef<HTMLDivElement>(null);
   const readingCardsRef = useRef<HTMLDivElement>(null);
-
-  const videoModules = DUMMY_JUNIOR_MODULES.filter((m) => m.contentType === "video");
-  const readingModules = DUMMY_JUNIOR_MODULES.filter((m) => m.contentType === "reading");
 
   // GSAP animations
   useEffect(() => {
@@ -116,7 +109,51 @@ const JuniorPage = () => {
     return () => ctx.revert();
   }, []);
 
-  const renderCard = (mod: typeof DUMMY_JUNIOR_MODULES[0]) => {
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Unable to Load Junior Modules"
+            message="We're having trouble loading the junior learning modules. Please try again later."
+            onRetry={() => refetch()} 
+          />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const juniorModules: JuniorModule[] = (dbJuniorModules || []).map((mod) => ({
+    id: mod.id,
+    title: mod.title,
+    description: mod.description,
+    image: mod.image,
+    tag: mod.tag,
+    contentType: mod.content_type,
+    chapters: (mod.chapters || []).map((ch): JuniorChapter => ({
+      id: ch.id,
+      title: ch.title,
+      contentType: ch.content_type,
+      content: ch.content,
+      videoUrl: ch.video_url,
+      duration: ch.duration,
+      readTime: ch.duration,
+      tags: ch.tags,
+      illustration: ch.illustration,
+      quizQuestions: ch.quiz_questions,
+    })),
+    totalReadTime: mod.total_duration,
+    totalDuration: mod.total_duration,
+    views: mod.views,
+    likes: mod.likes,
+  }));
+
+  const videoModules = juniorModules.filter((m) => m.contentType === "video");
+  const readingModules = juniorModules.filter((m) => m.contentType === "reading");
+
+  const renderCard = (mod: JuniorModule) => {
     const chapterCount = mod.chapters.length;
     const readChapters = isLoggedIn ? mod.chapters.filter((c) => isRead(`junior-${mod.id}-${c.id}`)).length : 0;
     const overallProgress = isLoggedIn && chapterCount > 0 ? Math.round((readChapters / chapterCount) * 100) : 0;
@@ -136,9 +173,26 @@ const JuniorPage = () => {
                 {isVideo ? t("junior.video") : t("junior.reading")}
               </Badge>
             </div>
-            {isLoggedIn && overallProgress === 100 && (
-              <div className="absolute top-3 right-3">
-                <Badge className="bg-green-500 text-white shadow-lg"><CheckCircle2 className="h-3 w-3 mr-1" /> {t("junior.done")}</Badge>
+            {isLoggedIn && overallProgress > 0 && (
+              <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-1 shadow-xl border border-secondary/20 flex items-center justify-center">
+                <div className="relative w-10 h-10">
+                  <svg className="w-10 h-10 -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--muted))" strokeWidth="12" />
+                    <circle cx="50" cy="50" r="42" fill="none"
+                      stroke={isVideo ? "hsl(var(--secondary))" : "hsl(var(--primary))"}
+                      strokeWidth="12" strokeLinecap="round" 
+                      strokeDasharray={`${overallProgress * 2.64} 264`} 
+                      className="transition-all duration-1000 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {overallProgress === 100 ? (
+                      <CheckCircle2 className={`h-5 w-5 ${isVideo ? "text-secondary" : "text-primary"}`} />
+                    ) : (
+                      <span className="text-[10px] font-black text-foreground">{overallProgress}%</span>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
             {/* Hover play icon for video */}
@@ -212,8 +266,8 @@ const JuniorPage = () => {
           {/* Fun stats bar */}
           <div className="mt-8 flex flex-wrap gap-4">
             {[
-              { icon: Rocket, label: `${DUMMY_JUNIOR_MODULES.length} Modules`, color: "text-secondary" },
-              { icon: Star, label: `${DUMMY_JUNIOR_MODULES.reduce((a, m) => a + m.chapters.length, 0)} Chapters`, color: "text-primary" },
+              { icon: Rocket, label: `${juniorModules.length} Modules`, color: "text-secondary" },
+              { icon: Star, label: `${juniorModules.reduce((a, m) => a + m.chapters.length, 0)} Chapters`, color: "text-primary" },
               { icon: Zap, label: "Interactive", color: "text-orange-500" },
             ].map((stat, i) => (
               <div key={i} className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-2 shadow-sm">
@@ -233,27 +287,23 @@ const JuniorPage = () => {
           </div>
           <div>
             <h2 className="font-display text-2xl font-bold text-foreground">{t("junior.videoModules")}</h2>
-            {!isLoading && <p className="text-sm text-muted-foreground">{videoModules.length} modules · Watch & learn</p>}
+            <p className="text-sm text-muted-foreground">{videoModules.length} modules · Watch & learn</p>
+          {isLoading && <div className="h-4 w-24 bg-muted animate-pulse rounded mt-1" />}
           </div>
         </div>
         <div ref={videoCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading
-            ? Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden border-border">
-                <Skeleton className="aspect-[16/10] w-full" />
-                <CardContent className="p-5 space-y-3">
-                  <Skeleton className="h-4 w-16 rounded-full" />
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                  <div className="flex gap-3 pt-1">
-                    <Skeleton className="h-3 w-16" />
-                    <Skeleton className="h-3 w-14" />
-                  </div>
-                </CardContent>
-              </Card>
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl overflow-hidden border border-border bg-card">
+                <div className="aspect-[16/10] bg-muted animate-pulse" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                  <div className="h-5 w-3/4 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                </div>
+              </div>
             ))
-            : videoModules.map(renderCard)}
+          ) : videoModules.map(renderCard)}
         </div>
       </section>
 
@@ -265,27 +315,23 @@ const JuniorPage = () => {
           </div>
           <div>
             <h2 className="font-display text-2xl font-bold text-foreground">{t("junior.readingModules")}</h2>
-            {!isLoading && <p className="text-sm text-muted-foreground">{readingModules.length} modules · Read & explore</p>}
+            <p className="text-sm text-muted-foreground">{readingModules.length} modules · Read & explore</p>
+          {isLoading && <div className="h-4 w-24 bg-muted animate-pulse rounded mt-1" />}
           </div>
         </div>
         <div ref={readingCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading
-            ? Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden border-border">
-                <Skeleton className="aspect-[16/10] w-full" />
-                <CardContent className="p-5 space-y-3">
-                  <Skeleton className="h-4 w-16 rounded-full" />
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                  <div className="flex gap-3 pt-1">
-                    <Skeleton className="h-3 w-16" />
-                    <Skeleton className="h-3 w-14" />
-                  </div>
-                </CardContent>
-              </Card>
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl overflow-hidden border border-border bg-card">
+                <div className="aspect-[16/10] bg-muted animate-pulse" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                  <div className="h-5 w-3/4 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                </div>
+              </div>
             ))
-            : readingModules.map(renderCard)}
+          ) : readingModules.map(renderCard)}
         </div>
       </section>
 

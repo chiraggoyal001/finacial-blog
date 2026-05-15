@@ -41,6 +41,7 @@ export interface User {
   lastName: string;
   email: string;
   isSubscribed: boolean;
+  onboardingCompleted: boolean;
   mailPreference: "intrusive" | "non-intrusive";
   notifyLaunches: boolean;
   age?: number;
@@ -50,6 +51,7 @@ export interface User {
   profession?: string;
   description?: string;
   avatarUrl?: string;
+  xp?: number;
 }
 
 export const FINANCE_INTERESTS = [
@@ -165,6 +167,7 @@ export interface BlogEvent {
   registrationUrl?: string;
   capacity?: number;
   registered?: number;
+  virtualLobbyUrl?: string;
 }
 
 export type JuniorContentType = "video" | "reading";
@@ -220,10 +223,15 @@ export interface DbArticle {
   tags: { name: string; type: 'major' | 'minor' }[];
   views: number;
   likes: number;
+  avg_rating: number;
+  rating_count: number;
   is_published: boolean;
   published_at: string;
   created_at: string;
   updated_at: string;
+  seo_title?: string;
+  seo_description?: string;
+  scheduled_for?: string;
 }
 
 export interface DbModule {
@@ -236,9 +244,14 @@ export interface DbModule {
   youtube_playlist: string;
   views: number;
   likes: number;
+  avg_rating: number;
+  rating_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;
+  seo_title?: string;
+  seo_description?: string;
+  scheduled_for?: string;
   chapters?: DbModuleChapter[];
 }
 
@@ -265,6 +278,8 @@ export interface DbVideoSeries {
   linked_module_id: string;
   views: number;
   likes: number;
+  avg_rating: number;
+  rating_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -300,6 +315,9 @@ export interface DbEvent {
   capacity: number;
   registered: number;
   is_published: boolean;
+  virtual_lobby_url?: string;
+  recording_url?: string;
+  scheduled_for?: string;
   created_at: string;
   updated_at: string;
 }
@@ -314,6 +332,8 @@ export interface DbJuniorModule {
   total_duration: string;
   views: number;
   likes: number;
+  avg_rating: number;
+  rating_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;

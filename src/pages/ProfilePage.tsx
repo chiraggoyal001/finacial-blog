@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { User, LogOut, Save, UserCircle, AlertCircle, CheckCircle2, Camera, X, Upload } from "lucide-react";
+import { User, LogOut, Save, UserCircle, AlertCircle, CheckCircle2, Camera, X, Upload, Bell, CreditCard, ChevronRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,16 +16,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { FINANCE_INTERESTS, INDIAN_STATES } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { processImage, uploadAvatar, deleteAvatar } from "@/lib/avatar";
 import Navbar from "@/components/Navbar";
+import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
+import { ProfilePageSkeleton } from "@/components/skeletons";
 
 const ProfilePage = () => {
-  const { user, logout, updateProfile, markOnboardingComplete, updateUserAvatar } = useAuth();
+  const { user, logout, updateProfile, markOnboardingComplete, updateUserAvatar, isAdmin } = useAuth();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -43,7 +45,8 @@ const ProfilePage = () => {
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const [completedFields, setCompletedFields] = useState(0);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  
+  const [activeTab, setActiveTab] = useState<"profile" | "subscription">("profile");
+
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -100,11 +103,6 @@ const ProfilePage = () => {
                                profile.profession && profile.hobbies && profile.description;
           setIsProfileComplete(hasAllFields || profile.onboarding_completed || false);
           
-          // Update AuthContext if profile is complete (removes navbar badge)
-          if (hasAllFields || profile.onboarding_completed) {
-            markOnboardingComplete();
-          }
-          
           // Count completed fields
           let count = 0;
           if (profile.age) count++;
@@ -137,7 +135,7 @@ const ProfilePage = () => {
     };
 
     fetchProfileData();
-  }, [user, markOnboardingComplete]);
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -269,6 +267,53 @@ const ProfilePage = () => {
     }
   };
 
+  const handleSubscriptionToggle = async () => {
+    if (!user) return;
+
+    const newSubscriptionStatus = !user.isSubscribed;
+
+    try {
+      // Update subscription in database
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          is_subscribed: newSubscriptionStatus,
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("Error updating subscription:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update subscription. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local user state
+      if (updateProfile) {
+        await updateProfile({
+          isSubscribed: newSubscriptionStatus,
+        });
+      }
+
+      toast({
+        title: newSubscriptionStatus ? "Subscribed!" : "Unsubscribed",
+        description: newSubscriptionStatus
+          ? "You're now subscribed to our newsletter."
+          : "You've been unsubscribed from our newsletter.",
+      });
+    } catch (error) {
+      console.error("Subscription error:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getInitials = () => {
     const first = formData.firstName?.[0] || "";
     const last = formData.lastName?.[0] || "";
@@ -381,298 +426,473 @@ const ProfilePage = () => {
     fileInputRef.current?.click();
   };
 
+  const navigate = useNavigate();
+
+  // Sidebar menu items
+  const sidebarItems = [
+    { id: "profile" as const, label: "Profile", icon: User },
+    { id: "subscription" as const, label: "Subscription", icon: Bell },
+  ];
+
+  if (isLoadingProfile) {
+    return <ProfilePageSkeleton />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1 container max-w-4xl py-8 px-4">
-        {/* Profile Completion Banner */}
-        {!isLoadingProfile && !isProfileComplete && (
-          <Alert className="mb-6 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            <AlertTitle className="text-amber-800 dark:text-amber-300">
-              Complete Your Profile
-            </AlertTitle>
-            <AlertDescription className="text-amber-700 dark:text-amber-400">
-              <p className="mt-1">
-                You've filled {completedFields} of 6 profile fields ({getCompletionPercentage()}%). 
-                Complete your profile below to get personalized content recommendations.
-              </p>
-              <div className="mt-3 h-2 bg-amber-200/50 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-amber-500 transition-all duration-500"
-                  style={{ width: `${getCompletionPercentage()}%` }}
-                />
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Profile Complete Success Banner */}
-        {!isLoadingProfile && isProfileComplete && completedFields >= 3 && (
-          <Alert className="mb-6 border-green-200 bg-green-50/50 dark:bg-green-950/20">
-            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <AlertTitle className="text-green-800 dark:text-green-300">
-              Profile Complete!
-            </AlertTitle>
-            <AlertDescription className="text-green-700 dark:text-green-400">
-              Thank you for completing your profile. You'll now receive personalized content recommendations.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Card>
-          <CardHeader className="text-center">
-            {/* Avatar Upload Section */}
-            <div className="flex justify-center mb-4">
-              <div className="relative">
-                <Avatar 
-                  className={`h-24 w-24 bg-primary cursor-pointer transition-all duration-200 ${
-                    isDragging ? "ring-4 ring-primary ring-offset-2" : ""
-                  } ${isUploadingAvatar ? "opacity-70" : ""}`}
-                  onClick={!avatarPreview ? triggerFileInput : undefined}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                >
-                  {avatarPreview ? (
-                    <img 
-                      src={avatarPreview} 
-                      alt="Profile" 
-                      className="h-full w-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <AvatarFallback className="text-3xl font-semibold text-primary-foreground bg-primary">
-                      {getInitials()}
-                    </AvatarFallback>
-                  )}
-                  
-                  {/* Upload overlay */}
-                  {!avatarPreview && !isUploadingAvatar && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 hover:opacity-100 transition-opacity">
-                      <Camera className="h-8 w-8 text-white" />
-                    </div>
-                  )}
-                  
-                  {/* Loading spinner */}
-                  {isUploadingAvatar && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full">
-                      <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  )}
-                </Avatar>
-                
-                {/* Remove button (only shown when avatar exists) */}
-                {avatarPreview && !isUploadingAvatar && (
-                  <button
-                    onClick={handleRemoveAvatar}
-                    className="absolute -top-1 -right-1 h-6 w-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors"
-                    title="Remove profile picture"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-                
-                {/* Camera button (shown when avatar exists) */}
-                {avatarPreview && !isUploadingAvatar && (
-                  <button
-                    onClick={triggerFileInput}
-                    className="absolute -bottom-1 -right-1 h-8 w-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
-                    title="Change profile picture"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handleFileInputChange}
-              className="hidden"
-            />
-            
-            {/* Upload hint */}
-            {!avatarPreview && (
-              <p className="text-sm text-muted-foreground mb-2">
-                Click or drag & drop an image (max 5MB)
-              </p>
-            )}
-            
-            <CardTitle className="text-2xl">Profile</CardTitle>
-            <CardDescription>
-              Manage your personal information and preferences
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Personal Information
-              </h3>
-              <Separator />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    placeholder="Enter your first name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    placeholder="Enter your last name"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    min="1"
-                    max="99"
-                    value={formData.age}
-                    onChange={(e) => handleInputChange("age", e.target.value)}
-                    placeholder="Enter your age"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="region">State/UT</Label>
-                  <Select
-                    value={formData.region}
-                    onValueChange={(value) => handleInputChange("region", value)}
-                  >
-                    <SelectTrigger id="region">
-                      <SelectValue placeholder="Select your state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDIAN_STATES.map((state) => (
-                        <SelectItem key={state} value={state}>
-                          {state}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Professional Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <UserCircle className="h-5 w-5" />
-                Professional Information
-              </h3>
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="profession">Profession</Label>
-                <Input
-                  id="profession"
-                  value={formData.profession}
-                  onChange={(e) => handleInputChange("profession", e.target.value)}
-                  placeholder="Enter your profession"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Finance Interests</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2">
-                  {FINANCE_INTERESTS.map((interest) => (
-                    <div key={interest} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={interest}
-                        checked={formData.interests.includes(interest)}
-                        onCheckedChange={() => handleInterestToggle(interest)}
+      <main className="flex-1 container max-w-6xl py-8 px-4">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Sidebar */}
+          <aside className="w-full md:w-64 flex-shrink-0">
+            <Card className="sticky top-24">
+              <CardContent className="p-4">
+                {/* User Info */}
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+                  <Avatar className="h-12 w-12 bg-primary">
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt="Profile"
+                        className="h-full w-full object-cover rounded-full"
                       />
-                      <Label
-                        htmlFor={interest}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {interest}
-                      </Label>
-                    </div>
-                  ))}
+                    ) : (
+                      <AvatarFallback className="text-lg font-semibold text-primary-foreground bg-primary">
+                        {getInitials()}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="overflow-hidden">
+                    <p className="font-semibold truncate">
+                      {formData.firstName} {formData.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.email}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="hobbies">Hobbies</Label>
-                <Input
-                  id="hobbies"
-                  value={formData.hobbies}
-                  onChange={(e) => handleInputChange("hobbies", e.target.value)}
-                  placeholder="Enter your hobbies"
-                />
-              </div>
-            </div>
+                {/* Navigation */}
+                <nav className="space-y-1">
+                  {sidebarItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                        {isActive && (
+                          <ChevronRight className="h-4 w-4 ml-auto" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </nav>
 
-            {/* About You */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">About You</h3>
-              <Separator />
+                {/* Admin Portal — only visible to admins */}
+                {isAdmin && (
+                  <>
+                    <Separator className="my-2" />
+                    <button
+                      onClick={() => navigate("/admin")}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors bg-primary/10 text-primary hover:bg-primary/20"
+                    >
+                      <Shield className="h-4 w-4" />
+                      Admin Portal
+                      <ChevronRight className="h-4 w-4 ml-auto" />
+                    </button>
+                  </>
+                )}
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  placeholder="Tell us a bit about yourself..."
-                  rows={4}
-                />
-              </div>
-            </div>
+                {/* Sign Out Button */}
+                <Separator className="my-4" />
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="w-full gap-2 justify-start"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+              </CardContent>
+            </Card>
+          </aside>
 
-            {/* Email (read-only) */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                value={user?.email}
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">
-                Email cannot be changed
-              </p>
-            </div>
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            {/* Profile Completion Banner */}
+            {!isLoadingProfile && !isProfileComplete && activeTab === "profile" && (
+              <Alert className="mb-6 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle className="text-amber-800 dark:text-amber-300">
+                  Complete Your Profile
+                </AlertTitle>
+                <AlertDescription className="text-amber-700 dark:text-amber-400">
+                  <p className="mt-1">
+                    You've filled {completedFields} of 6 profile fields ({getCompletionPercentage()}%).
+                    Complete your profile to get personalized content recommendations.
+                  </p>
+                  <div className="mt-3 h-2 bg-amber-200/50 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 transition-all duration-500"
+                      style={{ width: `${getCompletionPercentage()}%` }}
+                    />
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
-            {/* Action Buttons */}
-            <Separator />
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="w-full sm:w-auto gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="w-full sm:w-auto gap-2"
-              >
-                <Save className="h-4 w-4" />
-                {isSaving ? "Saving..." : "Save Profile"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Profile Complete Success Banner */}
+            {!isLoadingProfile && isProfileComplete && completedFields >= 3 && activeTab === "profile" && (
+              <Alert className="mb-6 border-green-200 bg-green-50/50 dark:bg-green-950/20">
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertTitle className="text-green-800 dark:text-green-300">
+                  Profile Complete!
+                </AlertTitle>
+                <AlertDescription className="text-green-700 dark:text-green-400">
+                  Thank you for completing your profile. You'll now receive personalized content recommendations.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {activeTab === "profile" ? (
+              <Card>
+                <CardHeader className="text-center">
+                  {/* Avatar Upload Section */}
+                  <div className="flex justify-center mb-4">
+                    <div className="relative">
+                      <Avatar
+                        className={`h-24 w-24 bg-primary cursor-pointer transition-all duration-200 ${
+                          isDragging ? "ring-4 ring-primary ring-offset-2" : ""
+                        } ${isUploadingAvatar ? "opacity-70" : ""}`}
+                        onClick={!avatarPreview ? triggerFileInput : undefined}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                      >
+                        {avatarPreview ? (
+                          <img
+                            src={avatarPreview}
+                            alt="Profile"
+                            className="h-full w-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <AvatarFallback className="text-3xl font-semibold text-primary-foreground bg-primary">
+                            {getInitials()}
+                          </AvatarFallback>
+                        )}
+
+                        {/* Upload overlay */}
+                        {!avatarPreview && !isUploadingAvatar && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+                            <Camera className="h-8 w-8 text-white" />
+                          </div>
+                        )}
+
+                        {/* Loading spinner */}
+                        {isUploadingAvatar && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full">
+                            <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                      </Avatar>
+
+                      {/* Remove button (only shown when avatar exists) */}
+                      {avatarPreview && !isUploadingAvatar && (
+                        <button
+                          onClick={handleRemoveAvatar}
+                          className="absolute -top-1 -right-1 h-6 w-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors"
+                          title="Remove profile picture"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+
+                      {/* Camera button (shown when avatar exists) */}
+                      {avatarPreview && !isUploadingAvatar && (
+                        <button
+                          onClick={triggerFileInput}
+                          className="absolute -bottom-1 -right-1 h-8 w-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+                          title="Change profile picture"
+                        >
+                          <Camera className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleFileInputChange}
+                    className="hidden"
+                  />
+
+                  {/* Upload hint */}
+                  {!avatarPreview && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Click or drag & drop an image (max 5MB)
+                    </p>
+                  )}
+
+                  <CardTitle className="text-2xl">Profile</CardTitle>
+                  <CardDescription>
+                    Manage your personal information and preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Personal Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Personal Information
+                    </h3>
+                    <Separator />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name</Label>
+                        <Input
+                          id="firstName"
+                          value={formData.firstName}
+                          onChange={(e) => handleInputChange("firstName", e.target.value)}
+                          placeholder="Enter your first name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input
+                          id="lastName"
+                          value={formData.lastName}
+                          onChange={(e) => handleInputChange("lastName", e.target.value)}
+                          placeholder="Enter your last name"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="age">Age</Label>
+                        <Input
+                          id="age"
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={formData.age}
+                          onChange={(e) => handleInputChange("age", e.target.value)}
+                          placeholder="Enter your age"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="region">State/UT</Label>
+                        <Select
+                          value={formData.region}
+                          onValueChange={(value) => handleInputChange("region", value)}
+                        >
+                          <SelectTrigger id="region">
+                            <SelectValue placeholder="Select your state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {INDIAN_STATES.map((state) => (
+                              <SelectItem key={state} value={state}>
+                                {state}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Professional Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <UserCircle className="h-5 w-5" />
+                      Professional Information
+                    </h3>
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label htmlFor="profession">Profession</Label>
+                      <Input
+                        id="profession"
+                        value={formData.profession}
+                        onChange={(e) => handleInputChange("profession", e.target.value)}
+                        placeholder="Enter your profession"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Finance Interests</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+                        {FINANCE_INTERESTS.map((interest) => (
+                          <div key={interest} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={interest}
+                              checked={formData.interests.includes(interest)}
+                              onCheckedChange={() => handleInterestToggle(interest)}
+                            />
+                            <Label
+                              htmlFor={interest}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {interest}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="hobbies">Hobbies</Label>
+                      <Input
+                        id="hobbies"
+                        value={formData.hobbies}
+                        onChange={(e) => handleInputChange("hobbies", e.target.value)}
+                        placeholder="Enter your hobbies"
+                      />
+                    </div>
+                  </div>
+
+                  {/* About You */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">About You</h3>
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => handleInputChange("description", e.target.value)}
+                        placeholder="Tell us a bit about yourself..."
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email (read-only) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      value={user?.email}
+                      disabled
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Email cannot be changed
+                    </p>
+                  </div>
+
+                  {/* Save Button */}
+                  <Separator />
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isSaving ? "Saving..." : "Save Profile"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              /* Subscription Tab */
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl flex items-center gap-2">
+                    <Bell className="h-6 w-6" />
+                    Subscription
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your newsletter subscription and email preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Subscription Status */}
+                  <div className="flex items-center justify-between p-4 bg-accent/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                        user?.isSubscribed ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"
+                      }`}>
+                        <Bell className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium">
+                          {user?.isSubscribed ? "Subscribed" : "Not Subscribed"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {user?.isSubscribed
+                            ? "You're receiving our newsletter"
+                            : "Subscribe to get the latest updates"}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant={user?.isSubscribed ? "outline" : "default"}
+                      onClick={handleSubscriptionToggle}
+                    >
+                      {user?.isSubscribed ? "Unsubscribe" : "Subscribe"}
+                    </Button>
+                  </div>
+
+                  {/* Subscription Benefits */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">What you'll get</h3>
+                    <Separator />
+                    <ul className="space-y-3">
+                      {[
+                        "Weekly financial insights and market updates",
+                        "Exclusive content and early access to new modules",
+                        "Personalized recommendations based on your interests",
+                        "Event notifications and webinar invites",
+                      ].map((benefit, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                          <span className="text-muted-foreground">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Mail Preferences (only shown when subscribed) */}
+                  {user?.isSubscribed && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Email Preferences</h3>
+                      <Separator />
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <CreditCard className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">Mail Frequency</p>
+                              <p className="text-sm text-muted-foreground">
+                                {user?.mailPreference === "intrusive" ? "Daily" : "Weekly"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </main>
       <Footer />
     </div>

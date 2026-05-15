@@ -1,25 +1,72 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Clock, Play, Eye, Heart, Film, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
 import { Badge } from "@/components/ui/badge";
-import { DUMMY_VIDEO_SERIES, DUMMY_MODULES } from "@/lib/data";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
-import { VideoCardSkeleton } from "@/components/skeletons";
+import { useVideoSeries, useModules } from "@/hooks/useContent";
+import { VideoSeries, Module } from "@/lib/types";
+import DataError from "@/components/DataError";
 
 const VideosPage = () => {
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: dbVideoSeries, isLoading: isLoadingVideos, error, refetch } = useVideoSeries({ published: true });
+  const { data: dbModules } = useModules({ published: true });
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Unable to Load Videos"
+            message="We're having trouble loading the video series. Please try again later."
+            onRetry={() => refetch()} 
+          />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const modules: Module[] = (dbModules || []).map((mod) => ({
+    id: mod.id,
+    title: mod.title,
+    description: mod.description,
+    image: mod.image,
+    tag: mod.tag,
+    chapters: [],
+    totalReadTime: mod.total_read_time,
+    youtubePlaylist: mod.youtube_playlist,
+    views: mod.views,
+    likes: mod.likes,
+  }));
+
+  const videoSeries: VideoSeries[] = (dbVideoSeries || []).map((series) => ({
+    id: series.id,
+    title: series.title,
+    description: series.description,
+    thumbnail: series.thumbnail,
+    tag: series.tag,
+    chapters: (series.chapters || []).map((ch) => ({
+      id: ch.id,
+      title: ch.title,
+      videoUrl: ch.video_url,
+      duration: ch.duration,
+      description: ch.description,
+      tags: ch.tags,
+      quizQuestions: ch.quiz_questions,
+    })),
+    totalDuration: series.total_duration,
+    linkedModuleId: series.linked_module_id,
+    views: series.views,
+    likes: series.likes,
+  }));
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -33,10 +80,24 @@ const VideosPage = () => {
       </section>
       <section className="py-10">
         <div className="container space-y-8">
-          {isLoading
-            ? Array.from({ length: 3 }).map((_, i) => <VideoCardSkeleton key={i} />)
-            : DUMMY_VIDEO_SERIES.map((series) => {
-            const linkedModule = series.linkedModuleId ? DUMMY_MODULES.find((m) => m.id === series.linkedModuleId) : null;
+          {isLoadingVideos ? (
+            <div className="space-y-8">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden border border-border bg-card">
+                  <div className="grid md:grid-cols-[320px_1fr] gap-0">
+                    <div className="aspect-video md:aspect-auto bg-muted animate-pulse" />
+                    <div className="p-6 space-y-3">
+                      <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                      <div className="h-6 w-3/4 bg-muted animate-pulse rounded" />
+                      <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                      <div className="h-4 w-2/3 bg-muted animate-pulse rounded" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : videoSeries.map((series) => {
+            const linkedModule = series.linkedModuleId ? modules.find((m) => m.id === series.linkedModuleId) : null;
             return (
               <Link key={series.id} to={`/videos/${series.id}`} className="group block">
                 <div className="rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg transition-all">

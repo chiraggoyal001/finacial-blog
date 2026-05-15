@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, Eye, EyeOff, Search, MoreHorizontal, Calendar, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Search, MoreHorizontal, Calendar, CheckCircle2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -13,12 +13,15 @@ import { toast } from 'sonner';
 import { useEvents, useDeleteEvent, useUpdateEvent } from '@/hooks/useContent';
 import type { DbEvent } from '@/lib/types';
 
+import AdminAttendeeList from './AdminAttendeeList';
+
 const EVENT_TYPES = { community: 'Community', quiz: 'Quiz', bootcamp: 'Bootcamp' };
 
 export default function AdminEvents() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [attendeeEvent, setAttendeeEvent] = useState<{ id: string, title: string } | null>(null);
 
   const { data: events, isLoading } = useEvents();
   const deleteMutation = useDeleteEvent();
@@ -89,7 +92,7 @@ export default function AdminEvents() {
                   <TableRow key={event.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        {event.image ? <img src={event.image} alt="" className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted flex items-center justify-center"><Calendar className="h-5 w-5 text-muted-foreground" /></div>}
+                        {event.image ? <img src={event.image} alt={event.title} className="h-10 w-10 rounded object-cover" /> : <div className="h-10 w-10 rounded bg-muted flex items-center justify-center"><Calendar className="h-5 w-5 text-muted-foreground" /></div>}
                         <div>
                           <div className="font-medium">{event.title}</div>
                           <div className="text-xs text-muted-foreground">{event.location} • {event.time}</div>
@@ -109,9 +112,18 @@ export default function AdminEvents() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/admin/events/${event.id}`)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleTogglePublish(event)}>{event.is_published ? <><EyeOff className="mr-2 h-4 w-4" />Unpublish</> : <><Eye className="mr-2 h-4 w-4" />Publish</>}</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDeleteConfirmId(event.id)} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setAttendeeEvent({ id: event.id, title: event.title })}>
+                            <Users className="mr-2 h-4 w-4" /> View Attendees
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/admin/events/${event.id}`)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleTogglePublish(event)}>
+                            {event.is_published ? <><EyeOff className="mr-2 h-4 w-4" />Unpublish</> : <><Eye className="mr-2 h-4 w-4" />Publish</>}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDeleteConfirmId(event.id)} className="text-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -122,6 +134,12 @@ export default function AdminEvents() {
           )}
         </CardContent>
       </Card>
+
+      <AdminAttendeeList 
+        eventId={attendeeEvent?.id || null} 
+        eventName={attendeeEvent?.title || ''} 
+        onClose={() => setAttendeeEvent(null)} 
+      />
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>

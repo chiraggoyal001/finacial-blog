@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -8,11 +8,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = true }: ProtectedRouteProps) {
-  const { isLoggedIn, isAdmin, isLoading, isCheckingRole, user } = useAuth();
+  const { isLoggedIn, isAdmin, isLoading, user } = useAuth();
   const location = useLocation();
 
   // Show loading while auth is initializing or role is being fetched
-  if (isLoading || isCheckingRole) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

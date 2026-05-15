@@ -8,8 +8,11 @@ import QuizSection from "@/components/QuizSection";
 import FeedbackSection from "@/components/FeedbackSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DUMMY_VIDEO_SERIES, DUMMY_MODULES, SOCIAL_LINKS } from "@/lib/data";
-import { useAuth } from "@/contexts/AuthContext";
+import { useVideoSeriesItem, useModules } from "@/hooks/useContent";
+import { SOCIAL_LINKS } from "@/lib/data";
+import { useAuth } from "@/hooks/useAuth";
+import { VideoSeries, Module } from "@/lib/types";
+import DataError from "@/components/DataError";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -22,31 +25,78 @@ const VideoArticlePage = () => {
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
 
-  const series = DUMMY_VIDEO_SERIES.find((s) => s.id === seriesId);
-  const activeChapterIndex = series
-    ? Math.max(0, series.chapters.findIndex((c) => c.id === chapterId))
-    : 0;
+  const { data: dbVideoSeries, isLoading, error, refetch } = useVideoSeriesItem(seriesId || "", { publishedOnly: true });
+  const { data: dbModules } = useModules({ published: true });
+
+  const series: VideoSeries | undefined = dbVideoSeries ? {
+    id: dbVideoSeries.id,
+    title: dbVideoSeries.title,
+    description: dbVideoSeries.description,
+    image: dbVideoSeries.image,
+    tag: dbVideoSeries.tag,
+    chapters: (dbVideoSeries.chapters || []).map((ch) => ({
+      id: ch.id,
+      title: ch.title,
+      description: ch.description,
+      videoUrl: ch.video_url,
+      duration: ch.duration,
+      quizQuestions: ch.quiz_questions,
+    })),
+    totalDuration: dbVideoSeries.total_duration,
+    linkedModuleId: dbVideoSeries.linked_module_id,
+  } : undefined;
+
+  const activeChapterIndex = Math.max(0, series?.chapters.findIndex((c) => c.id === chapterId) ?? 0);
   const chapter = series?.chapters[activeChapterIndex];
   const nextChapter = series?.chapters[activeChapterIndex + 1];
-  const linkedModule = series?.linkedModuleId
-    ? DUMMY_MODULES.find((m) => m.id === series.linkedModuleId)
-    : null;
+  const linkedModule = dbModules?.find((m) => m.id === series?.linkedModuleId);
 
+  // ALL hooks must be called BEFORE any early returns
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [chapterId]);
 
-  if (!series || !chapter) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
-            <h1 className="font-display text-2xl font-bold text-foreground">Video Not Found</h1>
-            <Link to="/videos">
-              <Button variant="outline">Back to Videos</Button>
-            </Link>
+            <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-muted-foreground animate-pulse">Loading video...</p>
           </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !dbVideoSeries) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Video Not Found"
+            message="The video series you are looking for might have been moved or is not yet published."
+            onRetry={() => refetch()} 
+          />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+
+  if (!series || !chapter) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Video Not Found"
+            message="The video you are looking for does not exist in this series."
+          />
         </div>
         <Footer />
       </div>

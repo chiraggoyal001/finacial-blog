@@ -4,8 +4,9 @@ import { Clock, Eye, Heart, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BlogPost } from "@/lib/types";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 interface ArticleCardProps {
   post: BlogPost;
@@ -31,12 +32,15 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
       <Link to={getPostLink(post)} className="group block">
         <div className="relative rounded-2xl overflow-hidden border border-border bg-card">
           <div className="grid md:grid-cols-2 gap-0">
-            <div className="aspect-video md:aspect-auto overflow-hidden">
+            <div className="aspect-video md:aspect-auto overflow-hidden relative">
               <img
                 src={post.image}
                 alt={post.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
+              <div className="absolute top-4 right-4 z-20">
+                <BookmarkButton contentType="article" contentId={post.id} className="bg-background/80 backdrop-blur-sm" />
+              </div>
             </div>
             <div className="p-6 md:p-8 flex flex-col justify-center space-y-4">
               <div className="flex flex-wrap gap-2">
@@ -87,11 +91,14 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
-          {isLoggedIn && isRead(post.id) && (
-            <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            </div>
-          )}
+          <div className="absolute top-2 right-2 z-20 flex gap-2">
+            {isLoggedIn && isRead(post.id) && (
+              <div className="bg-primary text-primary-foreground rounded-full p-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              </div>
+            )}
+            <BookmarkButton contentType="article" contentId={post.id} className="bg-background/80 backdrop-blur-sm h-7 w-7 p-0" />
+          </div>
         </div>
         <div className="p-4 space-y-2">
           <div className="flex flex-wrap gap-1.5">

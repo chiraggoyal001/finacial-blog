@@ -1,20 +1,10 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, X, Clock, Eye, Tag } from "lucide-react";
+import { Search, X, Clock, Eye, Tag, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { DUMMY_POSTS, DUMMY_MODULES, DUMMY_VIDEO_SERIES, DUMMY_EVENTS, DUMMY_JUNIOR_MODULES } from "@/lib/data";
+import { useSearchContent } from "@/hooks/useContent";
 import { useTranslation } from "@/hooks/useTranslation";
-
-interface SearchResult {
-  id: string;
-  title: string;
-  category: string;
-  tags: { name: string; type: string }[];
-  link: string;
-  readTime?: string;
-  views?: number;
-}
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -27,6 +17,8 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<(HTMLAnchorElement | null)[]>([]);
   const { t } = useTranslation();
+
+  const { data: searchResults, isLoading } = useSearchContent(query);
 
   useEffect(() => {
     if (isOpen) {
@@ -42,71 +34,17 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
     }
   }, [selectedIndex]);
 
-  const allResults = useMemo<SearchResult[]>(() => {
-    const results: SearchResult[] = [];
-
-    // Blog posts
-    DUMMY_POSTS.forEach((p) => {
-      results.push({
-        id: p.id, title: p.title, category: p.category,
-        tags: p.tags, link: p.category === "Newsletter" ? `/newsletter/${p.id}` : p.category === "Modules" ? `/modules/${p.id}` : p.category === "Videos" ? `/videos/${p.id}` : `/post/${p.id}`,
-        readTime: p.readTime, views: p.views,
-      });
-    });
-
-    // Modules + chapters
-    DUMMY_MODULES.forEach((m) => {
-      results.push({ id: m.id, title: m.title, category: "Modules", tags: [m.tag], link: `/modules/${m.id}`, readTime: m.totalReadTime, views: m.views });
-      m.chapters.forEach((c) => {
-        results.push({ id: c.id, title: `${m.title} → ${c.title}`, category: "Module Chapter", tags: c.tags, link: `/modules/${m.id}/${c.id}`, readTime: c.readTime });
-      });
-    });
-
-    // Video series + chapters
-    DUMMY_VIDEO_SERIES.forEach((v) => {
-      results.push({ id: v.id, title: v.title, category: "Videos", tags: [v.tag], link: `/videos/${v.id}`, readTime: v.totalDuration, views: v.views });
-      v.chapters.forEach((c) => {
-        results.push({ id: c.id, title: `${v.title} → ${c.title}`, category: "Video Chapter", tags: c.tags, link: `/videos/${v.id}/${c.id}`, readTime: c.duration });
-      });
-    });
-
-    // Events
-    DUMMY_EVENTS.forEach((e) => {
-      results.push({ id: e.id, title: e.title, category: "Events", tags: e.tags, link: `/events/${e.id}`, readTime: e.time });
-    });
-
-    // Junior modules + chapters
-    DUMMY_JUNIOR_MODULES.forEach((m) => {
-      results.push({ id: m.id, title: m.title, category: "Junior", tags: [m.tag], link: `/junior/${m.id}`, readTime: m.totalReadTime || m.totalDuration });
-      m.chapters.forEach((c) => {
-        results.push({ id: c.id, title: `${m.title} → ${c.title}`, category: "Junior Chapter", tags: c.tags, link: `/junior/${m.id}/${c.id}`, readTime: c.readTime || c.duration });
-      });
-    });
-
-    return results;
-  }, []);
-
-  const filtered = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return allResults.filter((r) =>
-      r.title.toLowerCase().includes(q) ||
-      r.category.toLowerCase().includes(q) ||
-      r.tags.some((tag) => tag.name.toLowerCase().includes(q))
-    ).slice(0, 12);
-  }, [query, allResults]);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
         return;
       }
-      if (!filtered.length) return;
+      if (!searchResults?.length) return;
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setSelectedIndex(prev => (prev < filtered.length - 1 ? prev + 1 : prev));
+          setSelectedIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : prev));
           break;
         case "ArrowUp":
           e.preventDefault();
@@ -116,7 +54,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
           e.preventDefault();
           if (selectedIndex >= 0 && resultsRef.current[selectedIndex]) {
             resultsRef.current[selectedIndex]?.click();
-          } else if (filtered.length > 0) {
+          } else if (searchResults && searchResults.length > 0) {
             resultsRef.current[0]?.click();
           }
           break;
@@ -124,7 +62,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, filtered, selectedIndex]);
+  }, [onClose, searchResults, selectedIndex]);
 
   if (!isOpen) return null;
 
@@ -141,43 +79,58 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
               placeholder={t("nav.search")}
               className="border-0 shadow-none focus-visible:ring-0 text-base"
             />
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-              <X className="h-5 w-5" />
-            </button>
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            ) : (
+              <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
 
-          {query.trim() && (
+          {query.length > 0 && query.length <= 2 && (
+            <div className="px-4 py-6 text-center text-xs text-muted-foreground italic">
+              Type at least 3 characters to search...
+            </div>
+          )}
+
+          {query.length > 2 && (
             <div className="max-h-[60vh] overflow-y-auto p-2">
-              {filtered.length === 0 ? (
+              {!isLoading && searchResults?.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8 text-sm">No results found for "{query}"</p>
               ) : (
                 <div className="space-y-1">
-                  {filtered.map((r, index) => (
+                  {searchResults?.map((r: any, index: number) => (
                     <Link
                       ref={(el) => { resultsRef.current[index] = el; }}
                       key={`${r.category}-${r.id}`}
                       to={r.link}
                       onClick={onClose}
-                      className={`flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors group ${
+                      className={`flex items-center gap-4 px-3 py-2.5 rounded-lg hover:bg-accent transition-colors group ${
                         index === selectedIndex ? "bg-accent ring-2 ring-primary ring-inset" : ""
                       }`}
                     >
+                      {r.image && (
+                        <div className="shrink-0 w-16 h-10 rounded-md overflow-hidden border border-border">
+                          <img src={r.image} alt={r.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                           {r.title}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{r.category}</Badge>
-                          {r.tags.slice(0, 2).map((tag) => (
-                            <span key={tag.name} className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="secondary" className="text-[9px] h-4 px-1.5 font-bold uppercase tracking-wider">{r.category}</Badge>
+                          {r.tags?.slice(0, 1).map((tag: any) => (
+                            <span key={tag.name} className="flex items-center gap-0.5 text-[10px] text-muted-foreground font-medium">
                               <Tag className="h-2.5 w-2.5" />{tag.name}
                             </span>
                           ))}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground shrink-0 mt-1">
-                        {r.readTime && <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{r.readTime}</span>}
-                        {r.views && <span className="flex items-center gap-0.5"><Eye className="h-2.5 w-2.5" />{r.views.toLocaleString()}</span>}
+                      <div className="flex flex-col items-end gap-1 text-[9px] text-muted-foreground font-mono shrink-0">
+                        {r.read_time && <span className="flex items-center gap-0.5 whitespace-nowrap"><Clock className="h-2.5 w-2.5" />{r.read_time}</span>}
+                        {r.views && <span className="flex items-center gap-0.5 whitespace-nowrap"><Eye className="h-2.5 w-2.5" />{r.views.toLocaleString()}</span>}
                       </div>
                     </Link>
                   ))}

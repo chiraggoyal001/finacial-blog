@@ -54,12 +54,18 @@ CREATE TABLE user_roles (
   UNIQUE(user_id, role_id)
 );
 
--- Function to auto-assign 'user' role on signup
+-- Function to auto-assign 'user' role on signup and create profile with OAuth data
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
   user_role_id UUID;
   admin_role_id UUID;
+  provider TEXT;
+  full_name TEXT;
+  first_name_val TEXT;
+  last_name_val TEXT;
+  avatar_val TEXT;
+  space_idx INTEGER;
 BEGIN
   -- Get role IDs
   SELECT id INTO user_role_id FROM roles WHERE name = 'user';
@@ -72,12 +78,55 @@ BEGIN
     INSERT INTO user_roles (user_id, role_id) VALUES (NEW.id, user_role_id);
   END IF;
   
-  -- Create profile
-  INSERT INTO profiles (id, first_name, last_name, email, created_at)
-  VALUES (NEW.id, 
-    COALESCE(NEW.raw_user_meta_data->>'firstName', ''),
-    COALESCE(NEW.raw_user_meta_data->>'lastName', ''),
+  -- Detect OAuth provider from identities or app_metadata
+  provider := COALESCE(NEW.raw_app_meta_data->>'provider', 'email');
+  
+  -- Extract full name from OAuth providers (Google, Twitter provide full_name)
+  full_name := COALESCE(
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'name',
+    ''
+  );
+  
+  -- Parse full_name into first_name and last_name
+  IF full_name <> '' THEN
+    space_idx := position(' ' in full_name);
+    IF space_idx > 0 THEN
+      first_name_val := substring(full_name from 1 for space_idx - 1);
+      last_name_val := substring(full_name from space_idx + 1);
+    ELSE
+      first_name_val := full_name;
+      last_name_val := '';
+    END IF;
+  ELSE
+    -- Fallback to separate firstName/lastName fields
+    first_name_val := COALESCE(NEW.raw_user_meta_data->>'firstName', '');
+    last_name_val := COALESCE(NEW.raw_user_meta_data->>'lastName', '');
+  END IF;
+  
+  -- Extract avatar URL from OAuth providers
+  avatar_val := COALESCE(
+    NEW.raw_user_meta_data->>'avatar_url',
+    NEW.raw_user_meta_data->>'picture',  -- Google sometimes uses 'picture'
+    NULL
+  );
+  
+  -- Create profile with OAuth data
+  INSERT INTO profiles (
+    id, 
+    first_name, 
+    last_name, 
+    email, 
+    avatar_url,
+    signup_method,
+    created_at
+  ) VALUES (
+    NEW.id, 
+    first_name_val,
+    last_name_val,
     NEW.email,
+    avatar_val,
+    provider,
     NOW()
   );
   
@@ -118,17 +167,18 @@ CREATE TABLE profiles (
   onboarding_completed BOOLEAN DEFAULT false,
   onboarding_skipped_at TIMESTAMP WITH TIME ZONE,
   
-  -- Technical metadata
+  -- Avatar (can be from OAuth providers)
+  avatar_url TEXT,
+  
+  -- Signup tracking
+  signup_method TEXT DEFAULT 'email',  -- 'email' | 'google' | 'twitter'
   signup_ip INET,
   signup_user_agent TEXT,
   signup_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
-  -- Avatar
-  avatar_url TEXT
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- =====================================================

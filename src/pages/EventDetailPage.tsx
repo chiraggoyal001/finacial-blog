@@ -1,16 +1,22 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Calendar as CalendarIcon, MapPin, Clock, Users, Filter, Share2, Brain, Tent, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, Clock, Users, Share2, Brain, Tent, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DUMMY_EVENTS, SOCIAL_LINKS } from "@/lib/data";
-import type { EventType } from "@/lib/types";
+import { useEvent, useEvents, useRegisterForEvent, useUnregisterFromEvent, useUserEventRegistration } from "@/hooks/useContent";
+import type { EventType, BlogEvent } from "@/lib/types";
+import { useAuth } from "@/hooks/useAuth";
+import { useSEO } from "@/hooks/useSEO";
+import { useTranslation } from "@/hooks/useTranslation";
+import { CountdownTimer } from "@/components/CountdownTimer";
+import { AddToCalendar } from "@/components/AddToCalendar";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import DataError from "@/components/DataError";
 
 const EVENT_TYPE_META: Record<EventType, { label: string; icon: React.ElementType; color: string; description: string }> = {
   community: { label: "Community", icon: Users, color: "bg-primary/10 text-primary", description: "Open meetups, workshops, and discussions with like-minded people." },
@@ -19,52 +25,100 @@ const EVENT_TYPE_META: Record<EventType, { label: string; icon: React.ElementTyp
 };
 
 const EventDetailPage = () => {
-  const { eventId } = useParams();
-  const event = DUMMY_EVENTS.find((e) => e.id === eventId);
+  const { eventId } = useParams<{ eventId: string }>();
+  const { data: dbEvent, isLoading, error, refetch } = useEvent(eventId || "", { publishedOnly: true });
+  const { data: dbEvents } = useEvents({ published: true });
+  const { user, isLoggedIn } = useAuth();
+  const { t } = useTranslation();
+  const { data: registration } = useUserEventRegistration(eventId || "", user?.id);
+  const registerMutation = useRegisterForEvent();
+  const unregisterMutation = useUnregisterFromEvent();
 
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [locationFilter, setLocationFilter] = useState<string>("all");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const event: BlogEvent | undefined = dbEvent ? {
+    id: dbEvent.id,
+    title: dbEvent.title,
+    description: dbEvent.description,
+    date: dbEvent.date,
+    time: dbEvent.time,
+    location: dbEvent.location,
+    image: dbEvent.image,
+    type: dbEvent.type as EventType,
+    capacity: dbEvent.capacity,
+    registered: dbEvent.registered,
+    tags: dbEvent.tags || [],
+    isUpcoming: new Date(dbEvent.date) > new Date(),
+    virtualLobbyUrl: dbEvent.virtual_lobby_url,
+  } : undefined;
 
-  const locations = useMemo(() => {
-    const locs = new Set(DUMMY_EVENTS.map((e) => e.location));
-    return Array.from(locs).sort();
-  }, []);
-
-  const eventDates = useMemo(() => {
-    return DUMMY_EVENTS.filter((e) => e.isUpcoming).map((e) => new Date(e.date));
-  }, []);
+  const isAttending = registration?.status === 'registered';
+  const isWaitlisted = registration?.status === 'waitlisted';
 
   const otherUpcoming = useMemo(() => {
-    return DUMMY_EVENTS.filter((e) => {
-      if (!e.isUpcoming || e.id === eventId) return false;
-      if (typeFilter !== "all" && e.type !== typeFilter) return false;
-      if (locationFilter !== "all" && e.location !== locationFilter) return false;
-      if (selectedDate) {
-        const evDate = new Date(e.date).toDateString();
-        if (evDate !== selectedDate.toDateString()) return false;
-      }
-      return true;
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [eventId, typeFilter, locationFilter, selectedDate]);
+    if (!dbEvents) return [];
+    return dbEvents
+      .filter(e => e.id !== eventId && new Date(e.date) > new Date())
+      .slice(0, 2);
+  }, [dbEvents, eventId]);
 
-  const clearFilters = () => {
-    setTypeFilter("all");
-    setLocationFilter("all");
-    setSelectedDate(undefined);
+  const isLobbyActive = useMemo(() => {
+    if (!event?.date) return false;
+    const eventTime = new Date(event.date);
+    const now = new Date();
+    const diff = eventTime.getTime() - now.getTime();
+    return diff <= 30 * 60 * 1000 && diff > -2 * 60 * 60 * 1000; // 30 mins before to 2 hours after
+  }, [event]);
+
+  const handleRegister = async () => {
+    if (!isLoggedIn) {
+      toast.error("Please login to register for events");
+      return;
+    }
+    try {
+      await registerMutation.mutateAsync(eventId!);
+      toast.success("Successfully registered for the event!");
+    } catch (err) {
+      toast.error("Failed to register for the event");
+    }
   };
 
-  const hasActiveFilters = typeFilter !== "all" || locationFilter !== "all" || selectedDate;
+  const handleUnregister = async () => {
+    try {
+      await unregisterMutation.mutateAsync(eventId!);
+      toast.success("Registration cancelled");
+    } catch (err) {
+      toast.error("Failed to cancel registration");
+    }
+  };
 
-  if (!event) {
+  useSEO({
+    title: event?.title || "Event",
+    description: event?.description || "Join our upcoming event",
+    image: event?.image,
+    type: 'event'
+  });
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="font-display text-2xl font-bold text-foreground">Event not found</h1>
-            <Link to="/events"><Button variant="link" className="mt-4">Back to Events</Button></Link>
-          </div>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !dbEvent) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 container py-20 flex items-center justify-center">
+          <DataError 
+            title="Event Not Found"
+            message="The event you are looking for might have been moved or is not yet published."
+            onRetry={() => refetch()} 
+          />
         </div>
         <Footer />
       </div>
@@ -99,144 +153,150 @@ const EventDetailPage = () => {
         </div>
       </section>
 
-      {/* Event Type Previews */}
-      <section className="container py-8">
-        <h2 className="font-display text-lg font-bold text-foreground mb-4">Explore Event Types</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(Object.keys(EVENT_TYPE_META) as EventType[]).map((type) => {
-            const m = EVENT_TYPE_META[type];
-            const I = m.icon;
-            return (
-              <Card key={type} className={`border-border ${event.type === type ? "ring-2 ring-primary" : ""}`}>
-                <CardContent className="p-4 flex items-start gap-3">
-                  <div className={`rounded-lg p-2.5 ${m.color}`}><I className="h-5 w-5" /></div>
-                  <div>
-                    <h3 className="font-display font-semibold text-sm text-foreground">{m.label}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{m.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
+      {/* Countdown Urgency */}
+      {event.isUpcoming && (
+        <section className="container py-6">
+          <CountdownTimer targetDate={event.date} />
+        </section>
+      )}
 
-      {/* Main content area */}
+      {/* Main Content */}
       <section className="container py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
-          {/* Left: Filters + Calendar */}
-          <div className="space-y-6">
-            <Card className="border-border overflow-hidden">
-              <CardContent className="p-3">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="pointer-events-auto"
-                  modifiers={{ event: eventDates }}
-                  modifiersClassNames={{ event: "bg-primary/20 text-primary font-bold rounded-full" }}
-                />
-              </CardContent>
-            </Card>
-            <div className="space-y-3">
-              <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2">
-                <Filter className="h-4 w-4" /> Filters
-              </h3>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="Event type" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="community">Community</SelectItem>
-                  <SelectItem value="quiz">Quizzes</SelectItem>
-                  <SelectItem value="bootcamp">Bootcamp</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="Location" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  {locations.map((loc) => (
-                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full text-muted-foreground">
-                  Clear filters
-                </Button>
+        <div className="max-w-3xl mx-auto space-y-8">
+          {/* Current Event Detail */}
+          <Card className="border-border overflow-hidden shadow-sm">
+            <div className="aspect-[16/9] overflow-hidden relative">
+              <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+              {isAttending && (
+                <div className="absolute top-4 left-4 bg-green-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-in fade-in zoom-in">
+                  ✓ You're Registered
+                </div>
               )}
             </div>
-          </div>
-
-          {/* Right: Event detail + upcoming */}
-          <div className="space-y-8">
-            {/* Current Event Detail */}
-            <Card className="border-border overflow-hidden">
-              <div className="aspect-[16/9] overflow-hidden">
-                <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
-              </div>
-              <CardContent className="p-6 space-y-4">
-                <p className="text-foreground leading-relaxed">{event.description}</p>
-                {spotsLeft !== null && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{event.registered} / {event.capacity} registered</span>
-                      <span className="font-mono text-primary font-semibold">{spotsLeft} spots left</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(event.registered! / event.capacity!) * 100}%` }} />
-                    </div>
-                  </div>
-                )}
-                {event.isUpcoming && event.registrationUrl && (
-                  <Button className="w-full sm:w-auto">
-                    <ExternalLink className="h-4 w-4 mr-2" /> Register Now
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Social Links */}
-            <div className="flex items-center gap-3">
-              <Share2 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Share:</span>
-              <a href={`https://x.com/intent/tweet?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">X</a>
-              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">LinkedIn</a>
-              <a href={`https://wa.me/?text=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">WhatsApp</a>
-              <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">Facebook</a>
-            </div>
-
-            {/* Other Upcoming Events */}
-            {otherUpcoming.length > 0 && (
-              <div>
-                <h2 className="font-display text-lg font-bold text-foreground mb-4">More Upcoming Events</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {otherUpcoming.map((ev) => {
-                    const m = EVENT_TYPE_META[ev.type];
-                    const I = m.icon;
-                    return (
-                      <Link key={ev.id} to={`/events/${ev.id}`}>
-                        <Card className="overflow-hidden hover:shadow-md transition-shadow border-border h-full">
-                          <div className="aspect-[16/9] overflow-hidden">
-                            <img src={ev.image} alt={ev.title} className="w-full h-full object-cover" />
-                          </div>
-                          <CardContent className="p-4 space-y-2">
-                            <Badge variant="outline" className={m.color}><I className="h-3 w-3 mr-1" /> {m.label}</Badge>
-                            <h3 className="font-display font-semibold text-sm text-foreground">{ev.title}</h3>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <CalendarIcon className="h-3 w-3" /> {new Date(ev.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                              <span className="mx-1">·</span>
-                              <MapPin className="h-3 w-3" /> {ev.location}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    );
-                  })}
+            <CardContent className="p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-bold tracking-tight">{event.title}</h2>
+                  <p className="text-muted-foreground">{event.location} · {event.time}</p>
+                </div>
+                <div className="flex gap-2">
+                  <AddToCalendar 
+                    title={event.title}
+                    description={event.description}
+                    location={event.location}
+                    startDate={event.date}
+                    time={event.time}
+                  />
                 </div>
               </div>
-            )}
+
+              <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">{event.description}</p>
+              
+              {/* Capacity & Social Proof */}
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-bold">{event.registered} {t("events.registered")}</span>
+                  </div>
+                  {spotsLeft !== null && spotsLeft > 0 && (
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                      {spotsLeft} spots remaining
+                    </Badge>
+                  )}
+                </div>
+                {spotsLeft !== null && (
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${(event.registered! / event.capacity!) * 100}%` }} />
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground italic">
+                  Join {event.registered} other learners who are interested in this topic!
+                </p>
+              </div>
+
+              {/* Dynamic Actions */}
+              <div className="flex flex-wrap gap-3">
+                {event.isUpcoming ? (
+                  <>
+                    {isAttending ? (
+                      <>
+                        {isLobbyActive && event.virtualLobbyUrl ? (
+                          <a href={event.virtualLobbyUrl} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-initial">
+                            <Button className="w-full bg-green-600 hover:bg-green-700 animate-pulse">
+                              <ExternalLink className="h-4 w-4 mr-2" /> Join Virtual Lobby
+                            </Button>
+                          </a>
+                        ) : (
+                          <Button variant="outline" className="flex-1 sm:flex-initial text-destructive border-destructive hover:bg-destructive/10" 
+                            onClick={handleUnregister} disabled={unregisterMutation.isPending}>
+                            Cancel Registration
+                          </Button>
+                        )}
+                      </>
+                    ) : isWaitlisted ? (
+                      <Button variant="secondary" className="flex-1 sm:flex-initial" disabled>
+                        On Waitlist
+                      </Button>
+                    ) : spotsLeft !== null && spotsLeft <= 0 ? (
+                      <Button className="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-600" onClick={handleRegister}>
+                        Join Waitlist
+                      </Button>
+                    ) : (
+                      <Button className="flex-1 sm:flex-initial h-12 px-8 text-base font-bold shadow-lg shadow-primary/20" 
+                        onClick={handleRegister} disabled={registerMutation.isPending}>
+                        {registerMutation.isPending ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+                        Register Now
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <Button variant="secondary" className="w-full" disabled>Event Ended</Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Social Links */}
+          <div className="flex items-center gap-3">
+            <Share2 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Share:</span>
+            <a href={`https://x.com/intent/tweet?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">X</a>
+            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">LinkedIn</a>
+            <a href={`https://wa.me/?text=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">WhatsApp</a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">Facebook</a>
           </div>
+
+          {/* Other Upcoming Events */}
+          {otherUpcoming.length > 0 && (
+            <div>
+              <h2 className="font-display text-lg font-bold text-foreground mb-4">More Upcoming Events</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {otherUpcoming.map((ev) => {
+                  const m = EVENT_TYPE_META[ev.type];
+                  const I = m.icon;
+                  return (
+                    <Link key={ev.id} to={`/events/${ev.id}`}>
+                      <Card className="overflow-hidden hover:shadow-md transition-shadow border-border h-full">
+                        <div className="aspect-[16/9] overflow-hidden">
+                          <img src={ev.image} alt={ev.title} className="w-full h-full object-cover" />
+                        </div>
+                        <CardContent className="p-4 space-y-2">
+                          <Badge variant="outline" className={m.color}><I className="h-3 w-3 mr-1" /> {m.label}</Badge>
+                          <h3 className="font-display font-semibold text-sm text-foreground">{ev.title}</h3>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" /> {new Date(ev.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                            <span className="mx-1">·</span>
+                            <MapPin className="h-3 w-3" /> {ev.location}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
