@@ -567,20 +567,56 @@ export const useEventAttendees = (eventId: string) => {
   });
 };
 
+// In-memory LRU cache for instant repeat queries (faster than React Query's network cache)
+const searchCache = new Map<string, { data: any[]; timestamp: number }>();
+const SEARCH_CACHE_MAX = 50;
+const SEARCH_CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
+function getCachedSearch(key: string): any[] | null {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > SEARCH_CACHE_TTL) {
+    searchCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedSearch(key: string, data: any[]) {
+  if (searchCache.size >= SEARCH_CACHE_MAX) {
+    // Delete oldest entry
+    const oldest = searchCache.entries().next().value;
+    if (oldest) searchCache.delete(oldest[0]);
+  }
+  searchCache.set(key, { data, timestamp: Date.now() });
+}
+
 export const useSearchContent = (query: string, limit: number = 12) => {
   return useQuery({
     queryKey: ['search', query, limit],
     queryFn: async () => {
       if (!query.trim()) return [];
+      
+      // Check in-memory cache first for instant response
+      const cacheKey = `${query}_${limit}`;
+      const cached = getCachedSearch(cacheKey);
+      if (cached) return cached;
+      
       const { data, error } = await supabase.rpc('search_content', {
         p_query: query,
         p_limit: limit
       });
       if (error) throw error;
-      return data as any[];
+      
+      // Store in in-memory cache
+      setCachedSearch(cacheKey, data || []);
+      return (data || []) as any[];
     },
-    enabled: query.length > 2, // Only search if more than 2 chars
-    staleTime: 1000 * 60 * 5, // Cache results for 5 mins
+    enabled: !!query.trim(),
+    staleTime: 1000 * 10, // 10s - fresh for 10s, then refetch in background
+    gcTime: 1000 * 60 * 5, // 5min garbage collection
+    placeholderData: (previousData) => previousData,
+    refetchOnWindowFocus: false, // Don't refetch on tab switch for search
   });
 };
 
