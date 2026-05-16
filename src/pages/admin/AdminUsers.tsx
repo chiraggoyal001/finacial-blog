@@ -28,6 +28,17 @@ import {
   Award,
   BookOpen,
   Hash,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
+  CircleDot,
+  UserCheck,
+  UserX,
+  LogIn,
+  Globe,
+  Baby,
+  Timer,
+  Heart,
 } from 'lucide-react';
 import { 
   Card, 
@@ -98,6 +109,12 @@ function getRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+function getDateDaysAgo(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
 export default function AdminUsers() {
   const { data: users, isLoading, refetch } = useProfiles();
   const updateSubscription = useUpdateUserSubscription();
@@ -113,6 +130,59 @@ export default function AdminUsers() {
   const [suspendTarget, setSuspendTarget] = useState<ExtendedProfile | null>(null);
   const [showToggleSubDialog, setShowToggleSubDialog] = useState(false);
   const [toggleSubTarget, setToggleSubTarget] = useState<ExtendedProfile | null>(null);
+  
+  // Advanced filter states
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [onboardingFilter, setOnboardingFilter] = useState<string>('all');
+  const [signupMethodFilter, setSignupMethodFilter] = useState<string>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [professionFilter, setProfessionFilter] = useState<string>('all');
+  const [ageGroupFilter, setAgeGroupFilter] = useState<string>('all');
+  const [activityFilter, setActivityFilter] = useState<string>('all');
+  const [interestFilter, setInterestFilter] = useState<string>('all');
+
+  // Derive unique values for dynamic filters
+  const uniqueRegions = useMemo(() => {
+    if (!users) return [];
+    const regions = new Set(users.map(u => u.region).filter(Boolean) as string[]);
+    return Array.from(regions).sort();
+  }, [users]);
+
+  const uniqueProfessions = useMemo(() => {
+    if (!users) return [];
+    const professions = new Set(users.map(u => u.profession).filter(Boolean) as string[]);
+    return Array.from(professions).sort();
+  }, [users]);
+
+  const uniqueSignupMethods = useMemo(() => {
+    if (!users) return [];
+    const methods = new Set(users.map(u => u.signup_method).filter(Boolean) as string[]);
+    return Array.from(methods).sort();
+  }, [users]);
+
+  const uniqueInterests = useMemo(() => {
+    if (!users) return [];
+    const interests = new Set<string>();
+    users.forEach(u => {
+      if (u.interests && Array.isArray(u.interests)) {
+        u.interests.forEach(i => interests.add(i));
+      }
+    });
+    return Array.from(interests).sort();
+  }, [users]);
+
+  // Count active filters for badge
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (onboardingFilter !== 'all') count++;
+    if (signupMethodFilter !== 'all') count++;
+    if (regionFilter !== 'all') count++;
+    if (professionFilter !== 'all') count++;
+    if (ageGroupFilter !== 'all') count++;
+    if (activityFilter !== 'all') count++;
+    if (interestFilter !== 'all') count++;
+    return count;
+  }, [onboardingFilter, signupMethodFilter, regionFilter, professionFilter, ageGroupFilter, activityFilter, interestFilter]);
 
   const filteredUsers = useMemo(() => {
     let list = users || [];
@@ -124,7 +194,9 @@ export default function AdminUsers() {
         u.email.toLowerCase().includes(q) ||
         `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
         u.region?.toLowerCase().includes(q) ||
-        u.profession?.toLowerCase().includes(q)
+        u.profession?.toLowerCase().includes(q) ||
+        u.interests?.some(i => i.toLowerCase().includes(q)) ||
+        u.signup_method?.toLowerCase().includes(q)
       );
     }
     
@@ -139,9 +211,69 @@ export default function AdminUsers() {
     } else if (subFilter === 'free') {
       list = list.filter(u => !u.is_subscribed);
     }
+
+    // Onboarding filter
+    if (onboardingFilter === 'completed') {
+      list = list.filter(u => u.onboarding_completed);
+    } else if (onboardingFilter === 'pending') {
+      list = list.filter(u => !u.onboarding_completed);
+    }
+
+    // Signup method filter
+    if (signupMethodFilter !== 'all') {
+      list = list.filter(u => u.signup_method === signupMethodFilter);
+    }
+
+    // Region filter
+    if (regionFilter !== 'all') {
+      list = list.filter(u => u.region === regionFilter);
+    }
+
+    // Profession filter
+    if (professionFilter !== 'all') {
+      list = list.filter(u => u.profession === professionFilter);
+    }
+
+    // Age group filter
+    if (ageGroupFilter !== 'all') {
+      list = list.filter(u => {
+        if (!u.age) return false;
+        switch (ageGroupFilter) {
+          case '18-25': return u.age >= 18 && u.age <= 25;
+          case '26-35': return u.age >= 26 && u.age <= 35;
+          case '36-50': return u.age >= 36 && u.age <= 50;
+          case '50+': return u.age > 50;
+          default: return true;
+        }
+      });
+    }
+
+    // Activity filter (based on last_active_at)
+    if (activityFilter !== 'all') {
+      const now = new Date();
+      list = list.filter(u => {
+        if (!u.last_active_at) return activityFilter === 'inactive-90';
+        const lastActive = new Date(u.last_active_at);
+        const diffDays = (now.getTime() - lastActive.getTime()) / 86400000;
+        switch (activityFilter) {
+          case 'active-7': return diffDays <= 7;
+          case 'active-30': return diffDays <= 30;
+          case 'active-90': return diffDays <= 90;
+          case 'inactive-90': return diffDays > 90;
+          default: return true;
+        }
+      });
+    }
+
+    // Interest filter
+    if (interestFilter !== 'all') {
+      list = list.filter(u => 
+        u.interests && Array.isArray(u.interests) && u.interests.includes(interestFilter)
+      );
+    }
     
     return list;
-  }, [users, searchQuery, roleFilter, subFilter]);
+  }, [users, searchQuery, roleFilter, subFilter, onboardingFilter, signupMethodFilter, regionFilter, professionFilter, ageGroupFilter, activityFilter, interestFilter]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
@@ -186,6 +318,20 @@ export default function AdminUsers() {
     }
   };
 
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setRoleFilter('all');
+    setSubFilter('all');
+    setOnboardingFilter('all');
+    setSignupMethodFilter('all');
+    setRegionFilter('all');
+    setProfessionFilter('all');
+    setAgeGroupFilter('all');
+    setActivityFilter('all');
+    setInterestFilter('all');
+    setCurrentPage(1);
+  };
+
   const getOnboardingColor = (user: ExtendedProfile) => {
     if (user.onboarding_completed) return 'bg-green-100 text-green-800 border-green-200';
     return 'bg-amber-100 text-amber-800 border-amber-200';
@@ -198,6 +344,28 @@ export default function AdminUsers() {
         {interest}
       </Badge>
     ));
+  };
+
+  const getActivityLabel = (user: ExtendedProfile): string => {
+    if (!user.last_active_at) return 'Never';
+    const now = new Date();
+    const lastActive = new Date(user.last_active_at);
+    const diffDays = (now.getTime() - lastActive.getTime()) / 86400000;
+    if (diffDays <= 7) return 'Active (7d)';
+    if (diffDays <= 30) return 'Active (30d)';
+    if (diffDays <= 90) return 'Active (90d)';
+    return 'Inactive (90d+)';
+  };
+
+  const getActivityColor = (user: ExtendedProfile): string => {
+    if (!user.last_active_at) return 'bg-gray-100 text-gray-800 border-gray-200';
+    const now = new Date();
+    const lastActive = new Date(user.last_active_at);
+    const diffDays = (now.getTime() - lastActive.getTime()) / 86400000;
+    if (diffDays <= 7) return 'bg-green-100 text-green-800 border-green-200';
+    if (diffDays <= 30) return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (diffDays <= 90) return 'bg-amber-100 text-amber-800 border-amber-200';
+    return 'bg-red-100 text-red-800 border-red-200';
   };
 
   return (
@@ -224,45 +392,293 @@ export default function AdminUsers() {
       {/* Filters Card */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, region..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
-                  <SelectTrigger className="w-[130px] h-9">
-                    <SelectValue placeholder="Role" />
+          <div className="flex flex-col gap-3">
+            {/* Primary Filters Row */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, region, profession, interests..."
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setCurrentPage(1); }}>
+                    <SelectTrigger className="w-[130px] h-9">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Select value={subFilter} onValueChange={(v) => { setSubFilter(v); setCurrentPage(1); }}>
+                  <SelectTrigger className="w-[150px] h-9">
+                    <SelectValue placeholder="Subscription" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="all">All Tiers</SelectItem>
+                    <SelectItem value="subscribed">Subscribed (Pro)</SelectItem>
+                    <SelectItem value="free">Free Tier</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button
+                  variant={showAdvancedFilters ? "secondary" : "outline"}
+                  size="sm"
+                  className="h-9 gap-1.5"
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span className="hidden sm:inline">Advanced</span>
+                  {activeFilterCount > 0 && (
+                    <Badge variant="default" className="h-5 min-w-5 px-1.5 text-[10px] ml-0.5">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                  {showAdvancedFilters ? (
+                    <ChevronUp className="h-3.5 w-3.5 ml-0.5" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5 ml-0.5" />
+                  )}
+                </Button>
               </div>
-              <Select value={subFilter} onValueChange={(v) => { setSubFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[150px] h-9">
-                  <SelectValue placeholder="Subscription" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Tiers</SelectItem>
-                  <SelectItem value="subscribed">Subscribed (Pro)</SelectItem>
-                  <SelectItem value="free">Free Tier</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
+
+            {/* Advanced Filters Section */}
+            {showAdvancedFilters && (
+              <div className="border rounded-lg p-4 bg-muted/30 mt-1 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Advanced Filters</span>
+                    {activeFilterCount > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ({activeFilterCount} active)
+                      </span>
+                    )}
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={clearAllFilters}>
+                      <X className="h-3 w-3" /> Clear All
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                  {/* Onboarding Filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <UserCheck className="h-3 w-3" /> Onboarding
+                    </label>
+                    <Select value={onboardingFilter} onValueChange={(v) => { setOnboardingFilter(v); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Signup Method Filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <LogIn className="h-3 w-3" /> Signup Method
+                    </label>
+                    <Select value={signupMethodFilter} onValueChange={(v) => { setSignupMethodFilter(v); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        {uniqueSignupMethods.map(method => (
+                          <SelectItem key={method} value={method} className="capitalize">
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Region Filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Globe className="h-3 w-3" /> Region
+                    </label>
+                    <Select value={regionFilter} onValueChange={(v) => { setRegionFilter(v); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        {uniqueRegions.map(region => (
+                          <SelectItem key={region} value={region}>
+                            {region}
+                          </SelectItem>
+                        ))}
+                        {uniqueRegions.length === 0 && (
+                          <SelectItem value="__none__" disabled>No regions</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Profession Filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Briefcase className="h-3 w-3" /> Profession
+                    </label>
+                    <Select value={professionFilter} onValueChange={(v) => { setProfessionFilter(v); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        {uniqueProfessions.map(profession => (
+                          <SelectItem key={profession} value={profession}>
+                            {profession}
+                          </SelectItem>
+                        ))}
+                        {uniqueProfessions.length === 0 && (
+                          <SelectItem value="__none__" disabled>No professions</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Age Group Filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Baby className="h-3 w-3" /> Age Group
+                    </label>
+                    <Select value={ageGroupFilter} onValueChange={(v) => { setAgeGroupFilter(v); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Ages</SelectItem>
+                        <SelectItem value="18-25">18 - 25</SelectItem>
+                        <SelectItem value="26-35">26 - 35</SelectItem>
+                        <SelectItem value="36-50">36 - 50</SelectItem>
+                        <SelectItem value="50+">50+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Activity Filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Timer className="h-3 w-3" /> Activity
+                    </label>
+                    <Select value={activityFilter} onValueChange={(v) => { setActivityFilter(v); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="active-7">Active (last 7 days)</SelectItem>
+                        <SelectItem value="active-30">Active (last 30 days)</SelectItem>
+                        <SelectItem value="active-90">Active (last 90 days)</SelectItem>
+                        <SelectItem value="inactive-90">Inactive (90d+)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Interest Filter */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Heart className="h-3 w-3" /> Interests
+                    </label>
+                    <Select value={interestFilter} onValueChange={(v) => { setInterestFilter(v); setCurrentPage(1); }}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Interests</SelectItem>
+                        {uniqueInterests.map(interest => (
+                          <SelectItem key={interest} value={interest}>
+                            {interest}
+                          </SelectItem>
+                        ))}
+                        {uniqueInterests.length === 0 && (
+                          <SelectItem value="__none__" disabled>No interests</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Active Filter Badges */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <span className="text-xs text-muted-foreground mr-1">Filters:</span>
+              {onboardingFilter !== 'all' && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                  <UserCheck className="h-3 w-3" />
+                  Onboarding: {onboardingFilter}
+                  <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => { setOnboardingFilter('all'); setCurrentPage(1); }} />
+                </Badge>
+              )}
+              {signupMethodFilter !== 'all' && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1 capitalize">
+                  <LogIn className="h-3 w-3" />
+                  Signup: {signupMethodFilter}
+                  <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => { setSignupMethodFilter('all'); setCurrentPage(1); }} />
+                </Badge>
+              )}
+              {regionFilter !== 'all' && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Region: {regionFilter}
+                  <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => { setRegionFilter('all'); setCurrentPage(1); }} />
+                </Badge>
+              )}
+              {professionFilter !== 'all' && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                  <Briefcase className="h-3 w-3" />
+                  Profession: {professionFilter}
+                  <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => { setProfessionFilter('all'); setCurrentPage(1); }} />
+                </Badge>
+              )}
+              {ageGroupFilter !== 'all' && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                  <Baby className="h-3 w-3" />
+                  Age: {ageGroupFilter}
+                  <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => { setAgeGroupFilter('all'); setCurrentPage(1); }} />
+                </Badge>
+              )}
+              {activityFilter !== 'all' && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                  <Timer className="h-3 w-3" />
+                  {activityFilter === 'active-7' && 'Active (7d)'}
+                  {activityFilter === 'active-30' && 'Active (30d)'}
+                  {activityFilter === 'active-90' && 'Active (90d)'}
+                  {activityFilter === 'inactive-90' && 'Inactive (90d+)'}
+                  <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => { setActivityFilter('all'); setCurrentPage(1); }} />
+                </Badge>
+              )}
+              {interestFilter !== 'all' && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                  <Heart className="h-3 w-3" />
+                  Interest: {interestFilter}
+                  <X className="h-2.5 w-2.5 cursor-pointer" onClick={() => { setInterestFilter('all'); setCurrentPage(1); }} />
+                </Badge>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           <div className="rounded-md border">
@@ -273,6 +689,7 @@ export default function AdminUsers() {
                   <TableHead>Role</TableHead>
                   <TableHead>Subscription</TableHead>
                   <TableHead>Onboarding</TableHead>
+                  <TableHead>Activity</TableHead>
                   <TableHead>Activities</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -286,6 +703,7 @@ export default function AdminUsers() {
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-12" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
@@ -293,11 +711,11 @@ export default function AdminUsers() {
                   ))
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
+                    <TableCell colSpan={8} className="h-32 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Users className="h-8 w-8" />
                         <span>No users found matching your filters.</span>
-                        <Button variant="link" size="sm" onClick={() => { setSearchQuery(''); setRoleFilter('all'); setSubFilter('all'); }}>
+                        <Button variant="link" size="sm" onClick={clearAllFilters}>
                           Clear all filters
                         </Button>
                       </div>
@@ -350,6 +768,12 @@ export default function AdminUsers() {
                       <TableCell>
                         <Badge variant="outline" className={cn("text-[10px]", getOnboardingColor(user))}>
                           {user.onboarding_completed ? 'Completed' : 'Pending'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("text-[10px]", getActivityColor(user))}>
+                          <CircleDot className="mr-1 h-3 w-3" />
+                          {getActivityLabel(user)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -483,6 +907,10 @@ export default function AdminUsers() {
                     )}
                     <Badge variant="outline" className={getOnboardingColor(selectedUser)}>
                       Onboarding: {selectedUser.onboarding_completed ? 'Complete' : 'Pending'}
+                    </Badge>
+                    <Badge variant="outline" className={cn("text-[10px]", getActivityColor(selectedUser))}>
+                      <CircleDot className="mr-1 h-3 w-3" />
+                      {getActivityLabel(selectedUser)}
                     </Badge>
                   </div>
 

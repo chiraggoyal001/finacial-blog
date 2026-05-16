@@ -1,7 +1,7 @@
 -- =====================================================
 -- CONSOLIDATED AUTHORITATIVE SCHEMA
 -- =====================================================
--- Includes all migrations up to 20240519
+-- Includes all migrations up to 20240522
 -- Admin emails: goyalchirag721@gmail.com, anuraggoyal231@gmail.com
 -- =====================================================
 
@@ -24,6 +24,7 @@ DROP TABLE IF EXISTS ab_test_variants CASCADE;
 DROP TABLE IF EXISTS ab_tests CASCADE;
 DROP TABLE IF EXISTS user_likes CASCADE;
 DROP TABLE IF EXISTS analytics_events CASCADE;
+DROP TABLE IF EXISTS content_ratings CASCADE;
 DROP TABLE IF EXISTS module_chapters CASCADE;
 DROP TABLE IF EXISTS modules CASCADE;
 DROP TABLE IF EXISTS articles CASCADE;
@@ -51,6 +52,9 @@ DROP FUNCTION IF EXISTS increment_variant_views CASCADE;
 DROP FUNCTION IF EXISTS increment_variant_clicks CASCADE;
 DROP FUNCTION IF EXISTS increment_variant_conversions CASCADE;
 DROP FUNCTION IF EXISTS increment CASCADE;
+DROP FUNCTION IF EXISTS rate_content CASCADE;
+DROP FUNCTION IF EXISTS track_content_view CASCADE;
+DROP FUNCTION IF EXISTS get_chatbot_affiliates CASCADE;
 
 -- =====================================================
 -- HELPER FUNCTIONS
@@ -405,6 +409,20 @@ CREATE TABLE junior_chapters (
 );
 
 -- =====================================================
+-- RATINGS SYSTEM
+-- =====================================================
+
+CREATE TABLE content_ratings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  content_type TEXT NOT NULL,
+  content_id UUID NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, content_type, content_id)
+);
+
+-- =====================================================
 -- INTERACTION & TRACKING TABLES
 -- =====================================================
 
@@ -490,6 +508,12 @@ CREATE TABLE affiliate_links (
   category TEXT DEFAULT 'Other',
   is_active BOOLEAN DEFAULT true,
   click_count INTEGER DEFAULT 0,
+  -- Visibility & targeting rules
+  visibility_rules JSONB DEFAULT '{}',
+  scheduling JSONB DEFAULT '{}',
+  targeting_rules JSONB DEFAULT '{}',
+  chatbot_controlled BOOLEAN DEFAULT false,
+  chatbot_prompt TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -873,6 +897,118 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 8. Rate content RPC
+CREATE OR REPLACE FUNCTION rate_content(
+  p_content_type TEXT,
+  p_content_id UUID,
+  p_rating INTEGER
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_avg DECIMAL(3,2);
+  v_count INTEGER;
+  v_result JSONB;
+BEGIN
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_rating < 1 OR p_rating > 5 THEN
+    RAISE EXCEPTION 'Rating must be between 1 and 5';
+  END IF;
+
+  -- Upsert the rating
+  INSERT INTO content_ratings (user_id, content_type, content_id, rating)
+  VALUES (v_user_id, p_content_type, p_content_id, p_rating)
+  ON CONFLICT (user_id, content_type, content_id)
+  DO UPDATE SET rating = p_rating, created_at = NOW();
+
+  -- Recalculate average and count
+  SELECT ROUND(AVG(rating)::numeric, 2), COUNT(*)
+  INTO v_avg, v_count
+  FROM content_ratings
+  WHERE content_type = p_content_type AND content_id = p_content_id;
+
+  -- Update the appropriate content table
+  IF p_content_type = 'article' THEN
+    UPDATE articles SET avg_rating = v_avg, rating_count = v_count WHERE id = p_content_id;
+  ELSIF p_content_type = 'module' THEN
+    UPDATE modules SET avg_rating = v_avg, rating_count = v_count WHERE id = p_content_id;
+  ELSIF p_content_type = 'video' THEN
+    UPDATE video_series SET avg_rating = v_avg, rating_count = v_count WHERE id = p_content_id;
+  ELSIF p_content_type = 'junior' THEN
+    UPDATE junior_modules SET avg_rating = v_avg, rating_count = v_count WHERE id = p_content_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'avg_rating', v_avg,
+    'rating_count', v_count,
+    'user_rating', p_rating
+  );
+END;
+$$;
+
+-- 9. Track content view RPC
+CREATE OR REPLACE FUNCTION track_content_view(
+  p_content_type TEXT,
+  p_content_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_table_name TEXT;
+BEGIN
+  v_table_name := CASE p_content_type
+    WHEN 'article' THEN 'articles'
+    WHEN 'module' THEN 'modules'
+    WHEN 'video' THEN 'video_series'
+    WHEN 'junior' THEN 'junior_modules'
+    ELSE NULL
+  END;
+
+  IF v_table_name IS NULL THEN
+    RAISE EXCEPTION 'Invalid content type: %', p_content_type;
+  END IF;
+
+  EXECUTE format('UPDATE %I SET views = views + 1 WHERE id = $1', v_table_name)
+  USING p_content_id;
+END;
+$$;
+
+-- 10. Chatbot affiliate fetching
+CREATE OR REPLACE FUNCTION get_chatbot_affiliates()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_result JSONB;
+BEGIN
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'id', al.id,
+      'name', al.name,
+      'url', al.url,
+      'logo_url', al.logo_url,
+      'description', al.description,
+      'category', al.category,
+      'chatbot_prompt', al.chatbot_prompt
+    )
+  ) INTO v_result
+  FROM affiliate_links al
+  WHERE al.is_active = true AND al.chatbot_controlled = true;
+  
+  RETURN COALESCE(v_result, '[]'::jsonb);
+END;
+$$;
+
 -- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
@@ -900,6 +1036,7 @@ ALTER TABLE affiliate_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_bookmarks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE content_ratings ENABLE ROW LEVEL SECURITY;
 
 -- Profiles
 CREATE POLICY "Users can read own profile" ON profiles FOR SELECT USING (auth.uid() = id);
@@ -944,6 +1081,8 @@ CREATE POLICY "Users can manage own progress" ON user_progress FOR ALL USING (au
 CREATE POLICY "Users can read own quiz results" ON quiz_results FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own quiz results" ON quiz_results FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can view their own registrations" ON event_registrations FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own ratings" ON content_ratings FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admins can read all ratings" ON content_ratings FOR SELECT USING (is_admin(auth.uid()));
 
 -- A/B Testing
 CREATE POLICY "Admins can manage AB tests" ON ab_tests FOR ALL USING (is_admin(auth.uid()));
