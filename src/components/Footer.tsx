@@ -61,9 +61,9 @@ const Footer = () => {
           <div className="space-y-6">
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-foreground">{t("footer.contactUs")}</h4>
-              <a href="mailto:hello@blog.com" className="block text-sm text-muted-foreground hover:text-primary transition-colors">hello@blog.com</a>
+              <a href="mailto:goyalchirag721@gmail.com" className="block text-sm text-muted-foreground hover:text-primary transition-colors">goyalchirag721@gmail.com</a>
               <a href="https://maps.google.com/?q=123+Finance+Street,+Mumbai" target="_blank" rel="noopener noreferrer" className="block text-sm text-muted-foreground hover:text-primary transition-colors">123 Finance Street, Mumbai</a>
-              <a href="tel:+919876543210" className="block text-sm text-muted-foreground hover:text-primary transition-colors">+91 98765 43210</a>
+              <a href="tel:+919871963032" className="block text-sm text-muted-foreground hover:text-primary transition-colors">9871963032</a>
             </div>
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-foreground">{t("footer.getApp")}</h4>
