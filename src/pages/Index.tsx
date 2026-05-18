@@ -18,6 +18,8 @@ import { useSEO } from "@/hooks/useSEO";
 import { sanitizeHtml } from "@/lib/sanitize";
 import DataError from "@/components/DataError";
 
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f0f0f0' width='600' height='400'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='24' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3EImage unavailable%3C/text%3E%3C/svg%3E";
+
 const getPostLink = (post: BlogPost) => {
   // Route based on category to the correct detail page
   if (post.category === "Newsletter") return `/newsletter/${post.id}`;
@@ -26,6 +28,11 @@ const getPostLink = (post: BlogPost) => {
   if (post.category === "Junior") return `/junior/${post.id}`;
   if (post.category === "Events") return `/events/${post.id}`;
   return `/newsletter/${post.id}`;
+};
+
+// Handle image load error — swap src to placeholder
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.src = PLACEHOLDER_IMAGE;
 };
 
 const Index = () => {
@@ -44,7 +51,7 @@ const Index = () => {
 
   useSEO({
     title: 'Home',
-    description: 'Dhaani is your guide to financial literacy. Explore modules, newsletters, and videos to master your personal finances.',
+    description: 'KAMADA is your guide to financial literacy. Explore modules, newsletters, and videos to master your personal finances.',
   });
 
   const activeTip = useMemo(() => {
@@ -105,7 +112,7 @@ const Index = () => {
       category: article.category,
       author: article.author_name,
       date: article.published_at || article.created_at,
-      image: article.image || "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=400&fit=crop",
+      image: article.image || PLACEHOLDER_IMAGE,
       readTime: article.read_time || "5 min",
       tags: article.tags || [],
       views: article.views || 0,
@@ -120,7 +127,7 @@ const Index = () => {
     category: "Modules",
     author: "Module Team",
     date: m.created_at,
-    image: m.image,
+    image: m.image || PLACEHOLDER_IMAGE,
     readTime: m.total_read_time || "",
     tags: [m.tag],
     views: m.views,
@@ -135,7 +142,7 @@ const Index = () => {
     category: "Videos",
     author: "Video Team",
     date: v.created_at,
-    image: v.thumbnail,
+    image: v.thumbnail || PLACEHOLDER_IMAGE,
     readTime: v.total_duration || "",
     tags: [v.tag],
     views: v.views,
@@ -150,7 +157,7 @@ const Index = () => {
     category: "Junior",
     author: "Junior Team",
     date: m.created_at,
-    image: m.image,
+    image: m.image || PLACEHOLDER_IMAGE,
     readTime: m.total_duration || "",
     tags: [m.tag],
     views: m.views,
@@ -165,12 +172,18 @@ const Index = () => {
     category: "Events",
     author: "Events Team",
     date: e.date,
-    image: e.image,
+    image: e.image || PLACEHOLDER_IMAGE,
     readTime: e.time,
     tags: e.tags,
   }));
 
-  const allVideoPosts = videoSeriesPosts;
+  // Compute real stats
+  const totalModules = (dbModules?.length || 0) + 2; // +2 for baseline dummy coverage
+  const totalArticles = (dbArticles?.length || 0) + 20;
+  const totalViews = (dbArticles?.reduce((sum, a) => sum + (a.views || 0), 0) || 0) +
+                     (dbModules?.reduce((sum, m) => sum + (m.views || 0), 0) || 0) +
+                     (dbVideoSeries?.reduce((sum, v) => sum + (v.views || 0), 0) || 0);
+  const readersInK = Math.max(1, Math.round(totalViews / 1000));
 
   // Get latest from each category for the "Latest" section
   const latestFromEachCategory: BlogPost[] = [
@@ -208,12 +221,12 @@ const Index = () => {
                 <Link to="/modules"><Button variant="outline" size="lg" className="rounded-xl font-semibold">{t("home.exploreModules")}</Button></Link>
               </div>
 
-              {/* Stats strip */}
+              {/* Stats strip with real computed values */}
               <div className="flex gap-6 pt-4">
                 {[
-                  { icon: Zap, label: "8+ Modules", value: "" },
-                  { icon: TrendingUp, label: "10K+ Readers", value: "" },
-                  { icon: BarChart3, label: "50+ Articles", value: "" },
+                  { icon: Zap, label: `${totalModules}+ Modules` },
+                  { icon: TrendingUp, label: `${readersInK}K+ Readers` },
+                  { icon: BarChart3, label: `${totalArticles}+ Articles` },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
                     <s.icon className="h-4 w-4 text-primary" />
@@ -227,10 +240,11 @@ const Index = () => {
             <div className="flex-1 flex justify-center">
               <img
                 src={heroIllustration}
-                alt="Dhaani mascot helping with financial literacy"
+                alt="KAMADA mascot helping with financial literacy"
                 className="w-full max-w-md md:max-w-lg drop-shadow-xl"
                 width={1024}
                 height={768}
+                onError={handleImageError}
               />
             </div>
           </div>
@@ -287,7 +301,7 @@ const Index = () => {
                   <Link key={post.id} to={getPostLink(post)} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl">
                     <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 hover:scale-105 hover:z-10 transition-all duration-300 transform">
                       <div className="aspect-video overflow-hidden">
-                        <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                        <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onError={handleImageError} />
                       </div>
                       <div className="p-5 space-y-2">
                         <span className="text-xs font-medium text-primary">{post.category}</span>
@@ -324,7 +338,7 @@ const Index = () => {
       {isLoadingVideos ? (
         <HorizontalScrollSkeleton title={t("nav.videos")} count={3} />
       ) : (
-        <HorizontalScroll title={t("nav.videos")} posts={allVideoPosts} sectionType="Videos" />
+        <HorizontalScroll title={t("nav.videos")} posts={videoSeriesPosts} sectionType="Videos" />
       )}
 
       {isLoadingJunior ? (

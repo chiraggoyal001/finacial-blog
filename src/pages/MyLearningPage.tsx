@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { SyntheticEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, 
@@ -23,6 +23,12 @@ import { Badge } from '@/components/ui/badge';
 import ArticleCard from '@/components/ArticleCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f0f0f0' width='600' height='400'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='24' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3EImage unavailable%3C/text%3E%3C/svg%3E";
+
+const handleImageError = (e: SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.src = PLACEHOLDER_IMAGE;
+};
 
 export default function MyLearningPage() {
   const { user, isLoggedIn } = useAuth();
@@ -180,7 +186,7 @@ export default function MyLearningPage() {
                     className="flex gap-4 p-3 rounded-xl border bg-card hover:shadow-md transition-shadow group"
                   >
                     <div className="shrink-0 w-24 h-16 rounded-lg overflow-hidden">
-                      <img src={rec.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={rec.title} />
+                      <img src={rec.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={rec.title} onError={handleImageError} />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <Badge variant="outline" className="w-fit text-[8px] uppercase tracking-tighter h-4 px-1 mb-1">{rec.category}</Badge>
@@ -256,7 +262,7 @@ export default function MyLearningPage() {
                     <div key={link.id} className="flex items-center gap-3 p-2 rounded-lg bg-background border border-border/50">
                       <div className="shrink-0 h-8 w-8 rounded border bg-muted/30 flex items-center justify-center overflow-hidden">
                         {link.logo_url ? (
-                          <img src={link.logo_url} alt={`${link.name} logo`} className="h-full w-full object-contain p-1" />
+                          <img src={link.logo_url} alt={`${link.name} logo`} className="h-full w-full object-contain p-1" onError={handleImageError} />
                         ) : (
                           <LayoutDashboard className="h-3 w-3 text-muted-foreground" />
                         )}

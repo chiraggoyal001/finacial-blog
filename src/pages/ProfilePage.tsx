@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { FINANCE_INTERESTS, INDIAN_STATES } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { processImage, uploadAvatar, deleteAvatar } from "@/lib/avatar";
@@ -28,7 +28,6 @@ import { ProfilePageSkeleton } from "@/components/skeletons";
 
 const ProfilePage = () => {
   const { user, logout, updateProfile, markOnboardingComplete, updateUserAvatar, isAdmin } = useAuth();
-  const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -64,7 +63,7 @@ const ProfilePage = () => {
           .from("profiles")
           .select("first_name, last_name, onboarding_completed, age, region, interests, profession, hobbies, description, avatar_url")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching profile:", error);
@@ -152,11 +151,7 @@ const ProfilePage = () => {
 
   const handleSave = async () => {
     if (!updateProfile) {
-      toast({
-        title: "Error",
-        description: "Profile update is not available",
-        variant: "destructive",
-      });
+      toast.error("Profile update is not available");
       return;
     }
 
@@ -164,11 +159,7 @@ const ProfilePage = () => {
     if (formData.age) {
       const ageNum = parseInt(formData.age);
       if (isNaN(ageNum) || ageNum < 1 || ageNum > 99) {
-        toast({
-          title: "Invalid Age",
-          description: "Please enter a valid age between 1 and 99",
-          variant: "destructive",
-        });
+        toast.error("Please enter a valid age between 1 and 99");
         return;
       }
     }
@@ -229,23 +220,12 @@ const ProfilePage = () => {
       }
 
       if (result.success) {
-        toast({
-          title: "Success",
-          description: "Profile updated successfully",
-        });
+        toast.success("Profile updated successfully");
       } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to update profile",
-          variant: "destructive",
-        });
+        toast.error(result.error || "Failed to update profile");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast.error("An unexpected error occurred");
     } finally {
       setIsSaving(false);
     }
@@ -259,11 +239,7 @@ const ProfilePage = () => {
       // the full page reload transition
       window.location.href = "/";
     } catch (error: any) {
-      toast({
-        title: "Sign Out Failed",
-        description: error.message || "Unable to sign out. Please try again.",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Unable to sign out. Please try again.");
     }
   };
 
@@ -283,11 +259,7 @@ const ProfilePage = () => {
 
       if (error) {
         console.error("Error updating subscription:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update subscription. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Failed to update subscription. Please try again.");
         return;
       }
 
@@ -298,19 +270,14 @@ const ProfilePage = () => {
         });
       }
 
-      toast({
-        title: newSubscriptionStatus ? "Subscribed!" : "Unsubscribed",
-        description: newSubscriptionStatus
-          ? "You're now subscribed to our newsletter."
-          : "You've been unsubscribed from our newsletter.",
-      });
+      if (newSubscriptionStatus) {
+        toast.success("Subscribed! You're now subscribed to our newsletter.");
+      } else {
+        toast.success("Unsubscribed. You've been unsubscribed from our newsletter.");
+      }
     } catch (error) {
       console.error("Subscription error:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("An error occurred. Please try again.");
     }
   };
 
@@ -333,11 +300,7 @@ const ProfilePage = () => {
     const result = await processImage(file);
     
     if (result.error) {
-      toast({
-        title: "Error",
-        description: result.error,
-        variant: "destructive",
-      });
+      toast.error(result.error);
       setIsUploadingAvatar(false);
       return;
     }
@@ -349,11 +312,7 @@ const ProfilePage = () => {
     const uploadResult = await uploadAvatar(user.id, result.blob);
     
     if (uploadResult.error) {
-      toast({
-        title: "Upload Failed",
-        description: uploadResult.error,
-        variant: "destructive",
-      });
+      toast.error(uploadResult.error);
       setAvatarPreview(user.avatarUrl || null);
     } else {
       // Use permanent Supabase URL and update AuthContext
@@ -361,10 +320,7 @@ const ProfilePage = () => {
         setAvatarPreview(uploadResult.url);
         updateUserAvatar(uploadResult.url);
       }
-      toast({
-        title: "Success",
-        description: "Profile picture updated successfully",
-      });
+      toast.success("Profile picture updated successfully");
     }
     
     setIsUploadingAvatar(false);
@@ -405,18 +361,11 @@ const ProfilePage = () => {
     const result = await deleteAvatar(user.id);
     
     if (result.error) {
-      toast({
-        title: "Error",
-        description: result.error,
-        variant: "destructive",
-      });
+      toast.error(result.error);
     } else {
       setAvatarPreview(null);
       updateUserAvatar(null);
-      toast({
-        title: "Success",
-        description: "Profile picture removed",
-      });
+      toast.success("Profile picture removed");
     }
     
     setIsUploadingAvatar(false);
@@ -528,39 +477,38 @@ const ProfilePage = () => {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Profile Completion Banner */}
-            {!isLoadingProfile && !isProfileComplete && activeTab === "profile" && (
-              <Alert className="mb-6 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertTitle className="text-amber-800 dark:text-amber-300">
-                  Complete Your Profile
-                </AlertTitle>
-                <AlertDescription className="text-amber-700 dark:text-amber-400">
-                  <p className="mt-1">
-                    You've filled {completedFields} of 6 profile fields ({getCompletionPercentage()}%).
-                    Complete your profile to get personalized content recommendations.
-                  </p>
-                  <div className="mt-3 h-2 bg-amber-200/50 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-amber-500 transition-all duration-500"
-                      style={{ width: `${getCompletionPercentage()}%` }}
-                    />
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Profile Complete Success Banner */}
-            {!isLoadingProfile && isProfileComplete && completedFields >= 3 && activeTab === "profile" && (
-              <Alert className="mb-6 border-green-200 bg-green-50/50 dark:bg-green-950/20">
-                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <AlertTitle className="text-green-800 dark:text-green-300">
-                  Profile Complete!
-                </AlertTitle>
-                <AlertDescription className="text-green-700 dark:text-green-400">
-                  Thank you for completing your profile. You'll now receive personalized content recommendations.
-                </AlertDescription>
-              </Alert>
+            {/* Profile Completion or Success Banner — mutually exclusive */}
+            {!isLoadingProfile && activeTab === "profile" && (
+              isProfileComplete ? (
+                <Alert className="mb-6 border-green-200 bg-green-50/50 dark:bg-green-950/20">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <AlertTitle className="text-green-800 dark:text-green-300">
+                    Profile Complete!
+                  </AlertTitle>
+                  <AlertDescription className="text-green-700 dark:text-green-400">
+                    Thank you for completing your profile. You'll now receive personalized content recommendations.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="mb-6 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertTitle className="text-amber-800 dark:text-amber-300">
+                    Complete Your Profile
+                  </AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-400">
+                    <p className="mt-1">
+                      You've filled {completedFields} of 6 profile fields ({getCompletionPercentage()}%).
+                      Complete your profile to get personalized content recommendations.
+                    </p>
+                    <div className="mt-3 h-2 bg-amber-200/50 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-amber-500 transition-all duration-500"
+                        style={{ width: `${getCompletionPercentage()}%` }}
+                      />
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )
             )}
 
             {activeTab === "profile" ? (

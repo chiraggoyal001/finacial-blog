@@ -243,30 +243,36 @@ INSERT INTO system_settings (key, value) VALUES
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 -- 10. Affiliate Links
-INSERT INTO affiliate_links (name, url, logo_url, description, category, is_active) VALUES
+INSERT INTO affiliate_links (
+  name, url, logo_url, description, category, is_active, 
+  visibility_rules, scheduling, targeting_rules, chatbot_controlled, chatbot_prompt
+) VALUES
 (
   'Trusted Broker A',
   'https://example.com/broker-a?ref=dhaani',
-  'https://placeholder.svg',
+  '/placeholder.svg',
   'A reliable platform for stock market investments with low fees.',
   'Investing',
-  true
+  true,
+  '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, false, NULL
 ),
 (
   'Savings App B',
   'https://example.com/savings-b?ref=dhaani',
-  'https://placeholder.svg',
+  '/placeholder.svg',
   'Automate your savings and earn better interest rates.',
   'Banking',
-  true
+  true,
+  '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, false, NULL
 ),
 (
   'Tax Planner C',
   'https://example.com/tax-c?ref=dhaani',
-  'https://placeholder.svg',
+  '/placeholder.svg',
   'Simplify your annual tax filings with expert guidance.',
   'Planning',
-  true
+  true,
+  '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, false, NULL
 );
 
 -- =====================================================

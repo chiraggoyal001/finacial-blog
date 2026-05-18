@@ -10,11 +10,10 @@ import ScrollToTop from "@/components/ScrollToTop";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ProtectedRoute as AdminProtectedRoute } from "@/components/admin/ProtectedRoute";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
-import { CalculatorsSidebar } from "@/components/CalculatorsSidebar";
 import Index from "./pages/Index";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // Lazy load ChatbotWidget to reduce initial bundle size
 const ChatbotWidget = lazy(() => import("@/components/ChatbotWidget"));
@@ -60,6 +59,7 @@ import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProfilePage from "./pages/ProfilePage";
+import CalculatorsPage from "./pages/CalculatorsPage";
 import SubscribePage from "./pages/SubscribePage";
 import NewsletterPage from "./pages/NewsletterPage";
 import NewsletterArticlePage from "./pages/NewsletterArticlePage";
@@ -93,15 +93,25 @@ const queryClient = new QueryClient({
   },
 });
 
+// Component to dynamically set <html lang> attribute
+const HtmlLangSetter = () => {
+  const { language } = useTheme();
+  useEffect(() => {
+    document.documentElement.lang = language === "hi" ? "hi" : "en";
+  }, [language]);
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
         <ReadingProgressProvider>
           <TooltipProvider>
+            <HtmlLangSetter />
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <ScrollToTop />
               <ErrorBoundary>
                 <Routes>
@@ -141,6 +151,7 @@ const App = () => (
                     }
                   />
                   <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/calculators" element={<CalculatorsPage />} />
                   <Route path="/subscribe" element={<SubscribePage />} />
                   <Route path="/newsletter" element={<NewsletterPage />} />
                   <Route
@@ -220,9 +231,6 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </ErrorBoundary>
-              <LocalErrorBoundary componentName="Financial Tools">
-                <CalculatorsSidebar />
-              </LocalErrorBoundary>
               <ChatbotWrapper />
             </BrowserRouter>
           </TooltipProvider>

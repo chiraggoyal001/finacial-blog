@@ -70,6 +70,7 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
   const updateMutation = useUpdateAffiliate();
   
   const [activeTab, setActiveTab] = useState('basic');
+  const [contentIdsRaw, setContentIdsRaw] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     url: '',
@@ -103,6 +104,11 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
     hasScheduling: false,
     hasRecurrence: false,
   });
+
+  // Sync the raw input when content_ids array changes (e.g. from initialData)
+  useEffect(() => {
+    setContentIdsRaw(formData.visibility_rules.content_ids.join(', '));
+  }, [JSON.stringify(formData.visibility_rules.content_ids)]);
 
   useEffect(() => {
     if (initialData) {
@@ -160,7 +166,9 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
         hasRecurrence: false,
       });
     }
-  }, [initialData, isOpen]);
+  // Use JSON.stringify to deep-compare initialData so re-opening the same link resets the form
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(initialData), isOpen]);
 
   const toggleArrayItem = (field: string, value: string) => {
     setFormData(prev => {
@@ -184,8 +192,13 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
     // Build clean scheduling object
     const scheduling: AffiliateScheduling = {};
     if (formData.hasScheduling) {
-      if (formData.scheduling.start_at) scheduling.start_at = formData.scheduling.start_at;
-      if (formData.scheduling.end_at) scheduling.end_at = formData.scheduling.end_at;
+      // Convert datetime-local to proper ISO string for PostgreSQL
+      if (formData.scheduling.start_at) {
+        scheduling.start_at = new Date(formData.scheduling.start_at).toISOString();
+      }
+      if (formData.scheduling.end_at) {
+        scheduling.end_at = new Date(formData.scheduling.end_at).toISOString();
+      }
       scheduling.timezone = formData.scheduling.timezone;
       if (formData.hasRecurrence && formData.scheduling.recurrence) {
         scheduling.recurrence = formData.scheduling.recurrence;
@@ -475,14 +488,18 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
                     <Label htmlFor="content-ids">Specific Content IDs (optional)</Label>
                     <Input 
                       id="content-ids" 
-                      value={formData.visibility_rules.content_ids.join(', ')}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        visibility_rules: {
-                          ...formData.visibility_rules,
-                          content_ids: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                        }
-                      })}
+                      value={contentIdsRaw}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setContentIdsRaw(raw);
+                        setFormData({
+                          ...formData,
+                          visibility_rules: {
+                            ...formData.visibility_rules,
+                            content_ids: raw.split(',').map(s => s.trim()).filter(Boolean)
+                          }
+                        });
+                      }}
                       placeholder="uuid1, uuid2, uuid3" 
                       className="font-mono text-xs"
                     />

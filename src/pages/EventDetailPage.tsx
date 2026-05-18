@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, SyntheticEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Calendar as CalendarIcon, MapPin, Clock, Users, Share2, Brain, Tent, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -17,6 +17,12 @@ import { AddToCalendar } from "@/components/AddToCalendar";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import DataError from "@/components/DataError";
+
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f0f0f0' width='600' height='400'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='24' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3EImage unavailable%3C/text%3E%3C/svg%3E";
+
+const handleImageError = (e: SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.src = PLACEHOLDER_IMAGE;
+};
 
 const EVENT_TYPE_META: Record<EventType, { label: string; icon: React.ElementType; color: string; description: string }> = {
   community: { label: "Community", icon: Users, color: "bg-primary/10 text-primary", description: "Open meetups, workshops, and discussions with like-minded people." },
@@ -166,7 +172,7 @@ const EventDetailPage = () => {
           {/* Current Event Detail */}
           <Card className="border-border overflow-hidden shadow-sm">
             <div className="aspect-[16/9] overflow-hidden relative">
-              <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+              <img src={event.image} alt={event.title} className="w-full h-full object-cover" onError={handleImageError} />
               {isAttending && (
                 <div className="absolute top-4 left-4 bg-green-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg animate-in fade-in zoom-in">
                   ✓ You're Registered
@@ -279,7 +285,7 @@ const EventDetailPage = () => {
                     <Link key={ev.id} to={`/events/${ev.id}`}>
                       <Card className="overflow-hidden hover:shadow-md transition-shadow border-border h-full">
                         <div className="aspect-[16/9] overflow-hidden">
-                          <img src={ev.image} alt={ev.title} className="w-full h-full object-cover" />
+                          <img src={ev.image} alt={ev.title} className="w-full h-full object-cover" onError={handleImageError} />
                         </div>
                         <CardContent className="p-4 space-y-2">
                           <Badge variant="outline" className={m.color}><I className="h-3 w-3 mr-1" /> {m.label}</Badge>

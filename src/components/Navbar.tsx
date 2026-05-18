@@ -35,13 +35,12 @@ const NAV_LABEL_KEYS: Record<string, string> = {
 
 const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
-  const { isLoggedIn, user, needsOnboarding, isAdmin } = useAuth();
+  const { isLoggedIn, user, needsOnboarding, isAdmin, logout } = useAuth();
   const { isDark, toggleTheme, language, toggleLanguage } = useTheme();
   const { t } = useTranslation();
   const location = useLocation();
 
   const navigate = useNavigate();
-  const { logout } = useAuth();
 
   // Keyboard shortcut: Cmd+K or Ctrl+K to open search
   useEffect(() => {
@@ -72,7 +71,7 @@ const Navbar = () => {
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2">
-            <span className="font-display text-2xl font-bold text-primary">Blog</span>
+            <span className="font-display text-2xl font-bold text-primary">KAMADA</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
@@ -182,7 +181,7 @@ const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="left" className="w-72">
                 <div className="flex flex-col gap-4 mt-8">
-                  <Link to="/" className="font-display text-2xl font-bold text-primary mb-4">Blog</Link>
+                  <Link to="/" className="font-display text-2xl font-bold text-primary mb-4">KAMADA</Link>
                   {NAV_ITEMS.map((item) => (
                     <Link
                       key={item.label}

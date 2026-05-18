@@ -42,7 +42,7 @@ export default function AuthCallback() {
         .from('profiles')
         .select('onboarding_completed, signup_method, first_name')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error || !profile) {
         // If no profile exists, create one for OAuth users
@@ -52,7 +52,7 @@ export default function AuthCallback() {
           if (created) {
             // New OAuth profile created, redirect to onboarding
             toast.success('Welcome! Please complete your profile.');
-            navigate('/profile');
+            navigate('/onboarding');
             return;
           }
         }
@@ -65,14 +65,14 @@ export default function AuthCallback() {
       const needsOnboarding = !profile.onboarding_completed || !profile.first_name;
 
       if (needsOnboarding) {
-        // New OAuth user or incomplete profile - redirect to profile completion
+        // New OAuth user or incomplete profile - redirect to onboarding
         const method = profile.signup_method || 'email';
         if (method !== 'email') {
           toast.success(`Welcome! Please complete your profile.`);
         } else {
           toast.success('Please complete your profile to continue.');
         }
-        navigate('/profile');
+        navigate('/onboarding');
       } else {
         // Existing complete profile - go home
         toast.success('Logged in successfully!');

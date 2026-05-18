@@ -12,11 +12,18 @@ interface SearchOverlayProps {
   onClose: () => void;
 }
 
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f0f0f0' width='600' height='400'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='24' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3EImage unavailable%3C/text%3E%3C/svg%3E";
+
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.src = PLACEHOLDER_IMAGE;
+};
+
 const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<(HTMLAnchorElement | null)[]>([]);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
   // Debounce the raw query by 100ms - fast enough to prevent API spam,
@@ -59,6 +66,33 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
     }
   }, [selectedIndex]);
 
+  // Focus trap: cycle Tab within the dialog
+  useEffect(() => {
+    if (!isOpen) return;
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const focusableElements = overlay.querySelectorAll<HTMLElement>(
+      'input, button, [href], [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+
+    const trapFocus = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", trapFocus);
+    return () => document.removeEventListener("keydown", trapFocus);
+  }, [isOpen]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -92,7 +126,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm" onClick={onClose}>
+    <div ref={overlayRef} className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm" onClick={onClose}>
       <div className="container max-w-2xl pt-20" onClick={(e) => e.stopPropagation()}>
         <div className="bg-card rounded-2xl border border-border shadow-2xl overflow-hidden">
           {/* Search input bar */}
@@ -149,7 +183,7 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                         >
                           {r.image && (
                             <div className="shrink-0 w-16 h-10 rounded-md overflow-hidden border border-border">
-                              <img src={r.image} alt={r.title} className="w-full h-full object-cover" />
+                              <img src={r.image} alt={r.title} className="w-full h-full object-cover" onError={handleImageError} />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">

@@ -42,12 +42,19 @@ export default function EventEditor() {
     recording_url: '',
   });
 
+  // Compute is_upcoming from the event date
+  const computedIsUpcoming = formData.date
+    ? new Date(formData.date) >= new Date(new Date().toDateString())
+    : true;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (existingEvent) {
+      // Only spread editable fields, not metadata
+      const { id, created_at, updated_at, registered, ...editableFields } = existingEvent;
       setFormData({
-        ...existingEvent,
+        ...editableFields,
         date: existingEvent.date ? new Date(existingEvent.date).toISOString().split('T')[0] : '',
         tags: existingEvent.tags || [],
       });
@@ -58,9 +65,12 @@ export default function EventEditor() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Auto-convert plain text description to HTML
+      // Auto-compute is_upcoming from the event date
+      // Strip out any metadata fields that may have been spread into formData
+      const { id, created_at, updated_at, registered, ...cleanData } = formData;
       const processedData = {
-        ...formData,
+        ...cleanData,
+        is_upcoming: computedIsUpcoming,
         description: formData.description && !formData.description.includes('<')
           ? plainTextToHtml(formData.description)
           : formData.description,
@@ -189,10 +199,18 @@ export default function EventEditor() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Upcoming Event</Label>
-                <p className="text-sm text-muted-foreground">Mark as upcoming (vs past event)</p>
+                <Label>Event Status</Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatically determined from the event date
+                </p>
               </div>
-              <Switch checked={formData.is_upcoming} onCheckedChange={checked => setFormData({ ...formData, is_upcoming: checked })} />
+              <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                computedIsUpcoming 
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' 
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+              }`}>
+                {computedIsUpcoming ? 'Upcoming' : 'Past'}
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">

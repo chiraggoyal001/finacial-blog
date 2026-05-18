@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   
   const hasCompletedInitialAuth = useRef(false);
+  const isProcessingLogin = useRef(false);
   const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Profile data fetcher (Consolidated) with fallback when no profile row exists
@@ -73,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       const [{ data: profile }, { data: roleData }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', supabaseUser.id).single(),
+        supabase.from('profiles').select('*').eq('id', supabaseUser.id).maybeSingle(),
         supabase.from('user_roles').select('*, roles(*)').eq('user_id', supabaseUser.id).maybeSingle()
       ]);
 
@@ -161,6 +162,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Skip the initial SIGNED_IN event that fires for an existing session -
       // initSession() already fetched the profile above
       if (event === 'SIGNED_IN' && hasCompletedInitialAuth.current) {
+        // Skip if login() already eagerly called fetchProfileAndSetUser
+        if (isProcessingLogin.current) {
+          isProcessingLogin.current = false;
+          return;
+        }
         // This is a new sign-in (not the initial one), fetch the profile
         if (session?.user) {
           await fetchProfileAndSetUser(session.user);
@@ -203,7 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             
             // Fetch full profile + role to rebuild the state properly
             Promise.all([
-              supabase.from('profiles').select('*').eq('id', up.id).single(),
+              supabase.from('profiles').select('*').eq('id', up.id).maybeSingle(),
               supabase.from('user_roles').select('*, roles(*)').eq('user_id', up.id).maybeSingle()
             ]).then(([{ data: freshProfile }, { data: roleData }]) => {
               if (freshProfile) {
@@ -244,12 +250,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.id]);
 
   const login = async (email: string, password: string) => {
+    isProcessingLogin.current = true;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, error: error.message };
+    if (error) { isProcessingLogin.current = false; return { success: false, error: error.message }; }
     
     try {
       const [{ data: profile }, { data: roleData }] = await Promise.all([
-        supabase.from('profiles').select('onboarding_completed').eq('id', data.user.id).single(),
+        supabase.from('profiles').select('onboarding_completed').eq('id', data.user.id).maybeSingle(),
         supabase.from('user_roles').select('*, roles(*)').eq('user_id', data.user.id).maybeSingle()
       ]);
       const isAdmin = getEffectiveRole((roleData as any)?.roles?.name, data.user.email) === 'admin';
@@ -258,12 +265,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Eagerly set local user state before the onAuthStateChange event fires,
       // preventing a flash where ProtectedRoute redirects to /login
       // after a successful login.
-      fetchProfileAndSetUser(data.user);
+      await fetchProfileAndSetUser(data.user);
       
       return { success: true, isAdmin, needsOnboarding: needsOnboardingVal };
     } catch {
       // Even if profile/role fetch fails, eagerly set state from auth data
-      fetchProfileAndSetUser(data.user);
+      await fetchProfileAndSetUser(data.user);
       return { success: true };
     }
   };

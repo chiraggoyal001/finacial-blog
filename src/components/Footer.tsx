@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Youtube, Instagram, Facebook, Linkedin, MessageCircle } from "lucide-react";
+import { Youtube, Instagram, Facebook, Linkedin, MessageCircle, Calculator } from "lucide-react";
 import { NAV_ITEMS, SOCIAL_LINKS, OTHER_PRODUCTS } from "@/lib/data";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -20,6 +20,18 @@ const XIcon = () => (
   </svg>
 );
 
+const AppStoreIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-label="App Store">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+  </svg>
+);
+
+const GooglePlayIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-label="Google Play">
+    <path d="M3 2l18 10-18 10V2zm3 4v12l9-6-9-6z"/>
+  </svg>
+);
+
 const Footer = () => {
   const { t } = useTranslation();
 
@@ -28,15 +40,15 @@ const Footer = () => {
       <div className="container py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 space-y-4">
-            <Link to="/" className="font-display text-2xl font-bold text-primary">Blog</Link>
+            <Link to="/" className="font-display text-2xl font-bold text-primary">KAMADA</Link>
             <p className="text-sm text-muted-foreground max-w-xs">{t("footer.desc")}</p>
             <div className="flex items-center gap-3 pt-2">
-              <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Youtube className="h-5 w-5" /></a>
-              <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Instagram className="h-5 w-5" /></a>
-              <a href={SOCIAL_LINKS.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><XIcon /></a>
-              <a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Linkedin className="h-5 w-5" /></a>
-              <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><Facebook className="h-5 w-5" /></a>
-              <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors"><MessageCircle className="h-5 w-5" /></a>
+              <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="YouTube"><Youtube className="h-5 w-5" /></a>
+              <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Instagram"><Instagram className="h-5 w-5" /></a>
+              <a href={SOCIAL_LINKS.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="X (Twitter)"><XIcon /></a>
+              <a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="LinkedIn"><Linkedin className="h-5 w-5" /></a>
+              <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="Facebook"><Facebook className="h-5 w-5" /></a>
+              <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" aria-label="WhatsApp"><MessageCircle className="h-5 w-5" /></a>
             </div>
           </div>
 
@@ -47,6 +59,12 @@ const Footer = () => {
                 {t(NAV_LABEL_KEYS[item.label] || item.label)}
               </Link>
             ))}
+            <Link to="/calculators" className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+              <span className="flex items-center gap-1.5">
+                <Calculator className="h-3.5 w-3.5" />
+                Calculators
+              </span>
+            </Link>
           </div>
 
           <div className="space-y-3">
@@ -68,8 +86,14 @@ const Footer = () => {
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-foreground">{t("footer.getApp")}</h4>
               <div className="flex gap-2">
-                <a href="#" className="inline-block rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">App Store</a>
-                <a href="#" className="inline-block rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">Google Play</a>
+                <a href="https://apps.apple.com/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">
+                  <AppStoreIcon />
+                  App Store
+                </a>
+                <a href="https://play.google.com/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg bg-foreground text-background text-xs font-medium px-3 py-2 hover:opacity-90 transition-opacity">
+                  <GooglePlayIcon />
+                  Google Play
+                </a>
               </div>
             </div>
           </div>
@@ -90,7 +114,7 @@ const Footer = () => {
 
         <Separator className="mb-6" />
         <p className="text-xs text-muted-foreground text-center">
-          © {new Date().getFullYear()} Blog. {t("footer.rights")}
+          © {new Date().getFullYear()} KAMADA. {t("footer.rights")}
         </p>
       </div>
     </footer>

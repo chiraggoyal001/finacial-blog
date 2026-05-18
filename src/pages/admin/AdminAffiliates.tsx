@@ -94,6 +94,8 @@ export default function AdminAffiliates() {
   const [editingLink, setEditingLink] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [statusToggleTarget, setStatusToggleTarget] = useState<any>(null);
 
   const filteredLinks = useMemo(() => {
     let list = links || [];
@@ -146,6 +148,18 @@ export default function AdminAffiliates() {
     } catch {
       toast.error('Failed to update link status');
     }
+  };
+
+  const confirmStatusToggle = (link: any) => {
+    setStatusToggleTarget(link);
+    setShowStatusDialog(true);
+  };
+
+  const handleConfirmStatusToggle = async () => {
+    if (!statusToggleTarget) return;
+    await handleToggleActive(statusToggleTarget);
+    setShowStatusDialog(false);
+    setStatusToggleTarget(null);
   };
 
   const handleCopyLink = (url: string) => {
@@ -418,7 +432,7 @@ export default function AdminAffiliates() {
                                   </Tooltip>
                                 </TooltipProvider>
                               )}
-                              {(!link.visibility_rules?.pages?.length && (!link.targeting_rules || Object.keys(link.targeting_rules).length === 0) && (!link.scheduling || !Object.keys(link.scheduling).some(k => k !== 'timezone' && !!link.scheduling[k as keyof typeof link.scheduling]))) && (
+                              {!link.chatbot_controlled && !link.visibility_rules?.pages?.length && !link.visibility_rules?.sections?.length && !link.visibility_rules?.content_ids?.length && !link.visibility_rules?.content_categories?.length && (!link.targeting_rules || Object.keys(link.targeting_rules).length === 0) && (!link.scheduling || !Object.keys(link.scheduling).some(k => k !== 'timezone' && !!link.scheduling[k as keyof typeof link.scheduling])) && (
                                 <span className="text-[10px] text-muted-foreground italic">None</span>
                               )}
                             </>
@@ -429,7 +443,7 @@ export default function AdminAffiliates() {
                         <div className="flex items-center gap-2">
                           <Switch
                             checked={link.is_active}
-                            onCheckedChange={() => handleToggleActive(link)}
+                            onCheckedChange={() => confirmStatusToggle(link)}
                             className="data-[state=checked]:bg-green-500"
                           />
                           <span className={`text-xs font-medium ${link.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
@@ -454,7 +468,7 @@ export default function AdminAffiliates() {
                             <DropdownMenuItem onClick={() => openEditor(link)}>
                               <Edit2 className="mr-2 h-4 w-4" /> Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleActive(link)}>
+                            <DropdownMenuItem onClick={() => confirmStatusToggle(link)}>
                               {link.is_active ? (
                                 <><EyeOff className="mr-2 h-4 w-4" /> Deactivate</>
                               ) : (
@@ -512,9 +526,49 @@ export default function AdminAffiliates() {
       {/* Edit/Create Dialog */}
       <AffiliateEditor 
         isOpen={isEditorOpen} 
-        onClose={() => setIsEditorOpen(false)} 
+        onClose={() => {
+          setIsEditorOpen(false);
+          // Clear editing link after dialog closes to prevent stale data issues
+          setEditingLink(null);
+        }} 
         initialData={editingLink} 
       />
+
+      {/* Status Toggle Confirmation Dialog */}
+      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {statusToggleTarget?.is_active ? (
+                <><EyeOff className="h-5 w-5 text-amber-500" /> Deactivate Affiliate Link</>
+              ) : (
+                <><Eye className="h-5 w-5 text-green-500" /> Activate Affiliate Link</>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {statusToggleTarget?.is_active ? (
+                <>Are you sure you want to deactivate <strong>{statusToggleTarget?.name}</strong>? 
+                It will no longer appear on the website until reactivated.</>
+              ) : (
+                <>Are you sure you want to activate <strong>{statusToggleTarget?.name}</strong>? 
+                It will become visible on the website according to its visibility rules.</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setShowStatusDialog(false); setStatusToggleTarget(null); }}>
+              Cancel
+            </Button>
+            <Button 
+              variant={statusToggleTarget?.is_active ? "secondary" : "default"}
+              onClick={handleConfirmStatusToggle}
+              disabled={updateAffiliate.isPending}
+            >
+              {updateAffiliate.isPending ? 'Updating...' : statusToggleTarget?.is_active ? 'Deactivate' : 'Activate'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

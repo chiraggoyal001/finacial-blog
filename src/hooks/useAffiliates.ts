@@ -74,9 +74,15 @@ export const useAffiliateLinks = (options?: { activeOnly?: boolean }) => {
       let query = supabase.from('affiliate_links').select('*');
       if (options?.activeOnly) query = query.eq('is_active', true);
       const { data, error } = await query.order('name');
-      if (error) throw error;
-      return data as DbAffiliateLink[];
+      if (error) {
+        console.error('Error fetching affiliate links:', error);
+        return [] as DbAffiliateLink[];
+      }
+      return (data || []) as DbAffiliateLink[];
     },
+    retry: 1,
+    staleTime: 0, // Always refetch after mutations to ensure latest state
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -96,11 +102,17 @@ export const useUpdateAffiliate = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<DbAffiliateLink> & { id: string }) => {
-      const { data, error } = await supabase.from('affiliate_links').update(updates).eq('id', id).select().single();
-      if (error) throw error;
+      const { data, error } = await supabase.from('affiliate_links').update(updates).eq('id', id).select().maybeSingle();
+      if (error) {
+        console.error('Error updating affiliate link:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['affiliate-links'] }),
+    onError: (error: any) => {
+      console.error('Failed to update affiliate link:', error?.message || error);
+    },
   });
 };
 
@@ -134,29 +146,44 @@ export const useTrackAffiliateClick = () => {
 function isWithinSchedule(scheduling: AffiliateScheduling): boolean {
   if (!scheduling || Object.keys(scheduling).length === 0) return true;
 
+  const timezone = scheduling.timezone || 'UTC';
   const now = new Date();
+
+  // Convert "now" to the target timezone for accurate comparison
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(now);
+  const getPart = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0', 10);
+  const tzNow = new Date(
+    getPart('year'), getPart('month') - 1, getPart('day'),
+    getPart('hour'), getPart('minute'), getPart('second')
+  );
 
   // Check start_at
   if (scheduling.start_at) {
     const start = new Date(scheduling.start_at);
-    if (now < start) return false;
+    if (tzNow < start) return false;
   }
 
   // Check end_at
   if (scheduling.end_at) {
     const end = new Date(scheduling.end_at);
-    if (now > end) return false;
+    if (tzNow > end) return false;
   }
 
   // Check recurrence
   if (scheduling.recurrence) {
     const rec = scheduling.recurrence;
     if (rec.type === 'weekly' && rec.days && rec.days.length > 0) {
-      const currentDay = now.getDay(); // 0=Sun
+      const currentDay = tzNow.getDay(); // 0=Sun
       if (!rec.days.includes(currentDay)) return false;
     }
     if (rec.time_start && rec.time_end) {
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const currentMinutes = tzNow.getHours() * 60 + tzNow.getMinutes();
       const [startH, startM] = rec.time_start.split(':').map(Number);
       const [endH, endM] = rec.time_end.split(':').map(Number);
       const startMinutes = startH * 60 + startM;

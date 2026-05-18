@@ -11,7 +11,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useEvents, useDeleteEvent, useUpdateEvent } from '@/hooks/useContent';
-import type { DbEvent } from '@/lib/types';
+import type { DbEvent, EventType } from '@/lib/types';
+
+// Helper to compute event status from date rather than relying on stored is_upcoming
+function computeEventStatus(date: string): 'upcoming' | 'past' | 'happening' {
+  const eventDate = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  eventDate.setHours(0, 0, 0, 0);
+  
+  if (eventDate > today) return 'upcoming';
+  if (eventDate < today) return 'past';
+  return 'happening'; // today
+}
 
 import AdminAttendeeList from './AdminAttendeeList';
 
@@ -104,7 +116,12 @@ export default function AdminEvents() {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         {event.is_published ? <Badge className="bg-green-100 text-green-800 w-fit"><Eye className="mr-1 h-3 w-3" />Published</Badge> : <Badge variant="secondary" className="w-fit"><EyeOff className="mr-1 h-3 w-3" />Draft</Badge>}
-                        {event.is_upcoming ? <Badge variant="outline" className="w-fit text-blue-600">Upcoming</Badge> : <Badge variant="outline" className="w-fit text-gray-500">Past</Badge>}
+                        {(() => {
+                          const status = computeEventStatus(event.date);
+                          if (status === 'upcoming') return <Badge variant="outline" className="w-fit text-blue-600">Upcoming</Badge>;
+                          if (status === 'happening') return <Badge className="bg-green-100 text-green-700 border-green-200 w-fit">Happening Today</Badge>;
+                          return <Badge variant="outline" className="w-fit text-gray-500">Past</Badge>;
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">{event.registered}{event.capacity && `/${event.capacity}`}</TableCell>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, SyntheticEvent } from "react";
 import { Link } from "react-router-dom";
 import { Calendar as CalendarIcon, MapPin, Clock, Users, Filter, Sparkles, Brain, Tent } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -13,6 +13,12 @@ import type { EventType, BlogEvent } from "@/lib/types";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useEvents } from "@/hooks/useContent";
 import DataError from "@/components/DataError";
+
+const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f0f0f0' width='600' height='400'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='24' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3EImage unavailable%3C/text%3E%3C/svg%3E";
+
+const handleImageError = (e: SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.src = PLACEHOLDER_IMAGE;
+};
 
 const EventsPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -159,7 +165,7 @@ const EventsPage = () => {
                   return (
                     <Link key={event.id} to={`/events/${event.id}`}>
                       <Card className="relative overflow-hidden hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:z-10 transition-all duration-300 transform border-border h-full">
-                        <div className="aspect-[16/9] overflow-hidden"><img src={event.image} alt={event.title} className="w-full h-full object-cover" /></div>
+                        <div className="aspect-[16/9] overflow-hidden"><img src={event.image} alt={event.title} className="w-full h-full object-cover" onError={handleImageError} /></div>
                         <CardContent className="p-5 space-y-3">
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className={meta.color}><Icon className="h-3 w-3 mr-1" /> {meta.label}</Badge>
@@ -199,7 +205,7 @@ const EventsPage = () => {
               return (
                 <Link key={event.id} to={`/events/${event.id}`}>
                   <Card className="overflow-hidden border-border opacity-75 hover:opacity-100 transition-opacity">
-                    <div className="aspect-[16/9] overflow-hidden grayscale"><img src={event.image} alt={event.title} className="w-full h-full object-cover" /></div>
+                    <div className="aspect-[16/9] overflow-hidden grayscale"><img src={event.image} alt={event.title} className="w-full h-full object-cover" onError={handleImageError} /></div>
                     <CardContent className="p-4 space-y-2">
                       <Badge variant="outline" className={meta.color}><Icon className="h-3 w-3 mr-1" /> {meta.label}</Badge>
                       <h3 className="font-display font-semibold text-foreground text-sm">{event.title}</h3>

@@ -55,7 +55,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <Link to="/" className="font-display text-3xl font-bold text-primary">Blog</Link>
+          <Link to="/" className="font-display text-3xl font-bold text-primary">KAMADA</Link>
           <h1 className="text-2xl font-bold text-foreground mt-4">{t("login.welcome")}</h1>
           <p className="text-sm text-muted-foreground">{t("login.signInAccount")}</p>
         </div>
