@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useReadingProgress } from "@/contexts/ReadingProgressContext";
 import DataError from "@/components/DataError";
 import { SOCIAL_LINKS } from "@/lib/data";
+import { initArticleTracking } from "@/lib/sessionTracker";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -71,6 +72,14 @@ const NewsletterArticlePage = () => {
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [id, isLoggedIn, setProgress]);
+
+  // Chatbot session tracking — sends browsing signals for the proactive nudge engine
+  useEffect(() => {
+    if (!id || !dbArticle) return;
+    const tags = (dbArticle.tags || []).map((t: any) => typeof t === 'string' ? t : t.name || '');
+    const cleanup = initArticleTracking(user?.id || null, id, tags);
+    return cleanup;
+  }, [id, dbArticle, user?.id]);
 
   if (isLoading) {
     return <ArticlePageSkeleton />;

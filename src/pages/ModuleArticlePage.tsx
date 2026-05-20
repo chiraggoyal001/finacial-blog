@@ -18,6 +18,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { sanitizeHtml } from "@/lib/sanitize";
 import DataError from "@/components/DataError";
+import { initArticleTracking } from "@/lib/sessionTracker";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -107,6 +108,14 @@ const ModuleArticlePage = () => {
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [chapter, isLoggedIn, setProgress]);
+
+  // Chatbot session tracking
+  useEffect(() => {
+    if (!chapter || !mod) return;
+    const tags = chapter.tags ? chapter.tags.map((t: any) => typeof t === 'string' ? t : t.name || '') : [];
+    const cleanup = initArticleTracking(user?.id || null, chapter.id, tags);
+    return cleanup;
+  }, [chapter, mod, user?.id]);
 
   useEffect(() => {
     window.scrollTo(0, 0);

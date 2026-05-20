@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: financial-chatbot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        value: https://jvucpnlgfvgulhgthhix.supabase.co
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: http://localhost:5173,https://your-domain.com
+      - key: PYTHON_VERSION
+        value: "3.12"

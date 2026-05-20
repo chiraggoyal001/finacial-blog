@@ -13,6 +13,7 @@ import { SOCIAL_LINKS } from "@/lib/data";
 import { useAuth } from "@/hooks/useAuth";
 import { VideoSeries, Module } from "@/lib/types";
 import DataError from "@/components/DataError";
+import { initArticleTracking } from "@/lib/sessionTracker";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -55,6 +56,13 @@ const VideoArticlePage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [chapterId]);
+
+  // Chatbot session tracking
+  useEffect(() => {
+    if (!chapter || !series) return;
+    const cleanup = initArticleTracking(user?.id || null, chapter.id, [series.tag?.name || '']);
+    return cleanup;
+  }, [chapter, series, user?.id]);
 
   if (isLoading) {
     return (

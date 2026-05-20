@@ -1,0 +1,334 @@
+# Financial Chatbot — Full Architecture Implementation Plan
+
+## Current State Analysis
+
+Your existing setup:
+- **Frontend**: Vite + React + TypeScript + TailwindCSS + Supabase
+- **Backend**: Supabase Edge Function (`chat/index.ts`) using Gemini API (gemma-4-31b-it)
+- **Database**: PostgreSQL via Supabase (profiles, articles, modules, etc.)
+- **Chat Widget**: `ChatbotWidget.tsx` — fully featured UI with streaming, drag, resize, accessibility
+
+### What We're Building
+A **Python backend** (FastAPI + LangChain + LangGraph) that replaces the current Supabase Edge Function with the full architecture from your diagram.
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **API Server** | FastAPI (async, SSE streaming) |
+| **Orchestration** | LangGraph (stateful agent graph) |
+| **LLM Integration** | LangChain (Claude Sonnet 4 primary, Haiku fallback, GPT-4o-mini tertiary) |
+| **Embeddings** | OpenAI `text-embedding-3-small` (1536 dims) |
+| **Vector DB** | pgvector (Supabase) → Pinecone at 1M+ chunks |
+| **Reranker** | Cohere Rerank API (Phase 1) → Self-hosted MiniLM (Phase 4) |
+| **Database** | PostgreSQL (Supabase) — extended schema |
+| **Task Queue** | Celery + Redis (ingestion pipeline) |
+| **Caching** | Redis (session cache, rate limiting) |
+| **Deployment** | Docker Compose (dev) → Railway/Fly.io (prod) |
+
+---
+
+## Project Structure
+
+```
+chatbot-backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                    # FastAPI app entry
+│   ├── config.py                  # Settings & env vars
+│   ├── dependencies.py            # Dependency injection
+│   │
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── chat.py                # POST /api/chat (SSE streaming)
+│   │   ├── nudge.py               # POST /api/nudge-dismiss, GET /api/nudge
+│   │   ├── session.py             # POST /api/session-signal
+│   │   └── health.py              # GET /api/health
+│   │
+│   ├── graph/                     # LangGraph orchestration
+│   │   ├── __init__.py
+│   │   ├── nodes.py               # Graph nodes (functions)
+│   │   ├── state.py               # Graph state definition
+│   │   ├── builder.py             # Graph construction
+│   │   └── edges.py               # Conditional edges
+│   │
+│   ├── compliance/                # Layer 3: Compliance & Safety
+│   │   ├── __init__.py
+│   │   ├── sebi.py                # SEBI disclaimer injection
+│   │   ├── hallucination.py       # Claim verification
+│   │   ├── dpdpa.py               # Consent checking
+│   │   └── escalation.py          # Complexity/distress detection
+│   │
+│   ├── memory/                    # Layer 5: Memory
+│   │   ├── __init__.py
+│   │   ├── working.py             # Token budget management
+│   │   ├── persona.py             # Persona engine
+│   │   └── semantic.py            # Semantic memory (vector queries)
+│   │
+│   ├── rag/                       # Layer 6: RAG Pipeline
+│   │   ├── __init__.py
+│   │   ├── query_expand.py        # HyDE + multi-query
+│   │   ├── embed_search.py        # Embedding + HNSW search
+│   │   ├── rerank.py              # Cross-encoder reranking
+│   │   └── inject.py              # Prompt assembly + LLM call
+│   │
+│   ├── session/                   # Layer 1: Session Context
+│   │   ├── __init__.py
+│   │   ├── bridge.py              # Session context builder
+│   │   └── signals.py             # Signal collection/validation
+│   │
+│   ├── proactive/                 # Layer 2: Bot Initiation
+│   │   ├── __init__.py
+│   │   ├── engine.py              # Nudge scoring
+│   │   └── suppressors.py         # Rate limiting, cooldowns
+│   │
+│   ├── ingestion/                 # Layer 8: Ingestion Pipeline
+│   │   ├── __init__.py
+│   │   ├── sources.py             # Crawlers, RSS, CMS webhook
+│   │   ├── clean.py               # PDF/HTML parsing
+│   │   ├── chunk.py               # Text splitting
+│   │   ├── embed.py               # Batch embedding
+│   │   └── upsert.py              # Vector DB upsert
+│   │
+│   ├── models/                    # Pydantic models
+│   │   ├── __init__.py
+│   │   ├── chat.py                # Chat request/response
+│   │   ├── persona.py             # Persona schema
+│   │   ├── session.py             # Session schema
+│   │   └── compliance.py          # Compliance result schema
+│   │
+│   └── db/                        # Database layer
+│       ├── __init__.py
+│       ├── connection.py          # Async PG connection pool
+│       ├── repositories.py        # CRUD operations
+│       └── migrations/            # Alembic migrations
+│
+├── workers/
+│   ├── __init__.py
+│   ├── celery_app.py              # Celery configuration
+│   └── tasks.py                   # Background tasks (ingestion, persona updates)
+│
+├── tests/
+│   ├── test_chat.py
+│   ├── test_compliance.py
+│   ├── test_rag.py
+│   └── test_persona.py
+│
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+├── .env.example
+└── README.md
+```
+
+---
+
+## Database Schema Additions
+
+New tables needed (added to existing Supabase PostgreSQL):
+
+```sql
+-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- 1. Chat sessions & messages (replaces ad-hoc storage)
+CREATE TABLE chat_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    session_type TEXT DEFAULT 'reactive', -- reactive | proactive
+    initiation_type TEXT, -- user_message | nudge_article | nudge_calc | nudge_return
+    started_at TIMESTAMPTZ DEFAULT NOW(),
+    ended_at TIMESTAMPTZ,
+    message_count INT DEFAULT 0,
+    metadata JSONB DEFAULT '{}'
+);
+
+CREATE TABLE chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES chat_sessions(id) ON DELETE CASCADE,
+    role TEXT NOT NULL, -- user | assistant | system
+    content TEXT NOT NULL,
+    tokens_used INT,
+    model_used TEXT,
+    rag_chunks_used UUID[],
+    compliance_flags JSONB DEFAULT '{}',
+    feedback TEXT, -- like | dislike | null
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. User personas (persistent, versioned)
+CREATE TABLE user_personas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    version INT DEFAULT 1,
+    data JSONB NOT NULL DEFAULT '{}',
+    -- data includes: goals[], risk_profile, literacy_level, life_stage,
+    -- income_bracket, investment_experience, preferred_products[]
+    confidence_scores JSONB DEFAULT '{}',
+    last_enriched_at TIMESTAMPTZ,
+    consent_version TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Vector chunks for RAG
+CREATE TABLE document_chunks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    doc_id UUID NOT NULL,
+    namespace TEXT NOT NULL, -- regulations | concepts | news | tax | products
+    content TEXT NOT NULL,
+    content_hash TEXT UNIQUE NOT NULL,
+    embedding vector(1536),
+    metadata JSONB DEFAULT '{}',
+    -- metadata: {source_url, source_date, author, doc_title, chunk_index}
+    source_date TIMESTAMPTZ,
+    ttl_days INT, -- NULL = no expiry (regs), 90 = news
+    superseded_by UUID REFERENCES document_chunks(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- HNSW index for fast vector search
+CREATE INDEX ON document_chunks 
+    USING hnsw (embedding vector_cosine_ops) 
+    WITH (m = 16, ef_construction = 128);
+
+-- 4. Source documents registry
+CREATE TABLE source_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    url TEXT UNIQUE,
+    title TEXT,
+    namespace TEXT NOT NULL,
+    doc_hash TEXT, -- detect changes on re-crawl
+    last_crawled_at TIMESTAMPTZ,
+    chunk_count INT DEFAULT 0,
+    trust_level INT DEFAULT 3, -- 1-5 (5 = internal, 1 = user-generated)
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Nudge log
+CREATE TABLE nudge_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    nudge_type TEXT NOT NULL, -- article_goal | calc_use | return_visit | deadline
+    score FLOAT NOT NULL,
+    opener_text TEXT,
+    shown_at TIMESTAMPTZ DEFAULT NOW(),
+    dismissed BOOLEAN DEFAULT FALSE,
+    engaged BOOLEAN DEFAULT FALSE,
+    session_id UUID REFERENCES chat_sessions(id),
+    metadata JSONB DEFAULT '{}'
+);
+
+-- 6. Session signals (browsing context)
+CREATE TABLE session_signals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    signal_type TEXT NOT NULL, -- page_view | scroll_depth | calc_use | search
+    payload JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for 48h window queries
+CREATE INDEX idx_session_signals_user_time 
+    ON session_signals(user_id, created_at DESC);
+
+-- 7. Consent log (DPDPA compliance)
+CREATE TABLE consent_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    data_category TEXT NOT NULL, -- browsing | financial | personal | behavioral
+    consent_given BOOLEAN NOT NULL,
+    purpose TEXT,
+    version TEXT,
+    granted_at TIMESTAMPTZ DEFAULT NOW(),
+    withdrawn_at TIMESTAMPTZ
+);
+
+-- 8. Compliance audit log
+CREATE TABLE compliance_audit (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES chat_sessions(id),
+    check_type TEXT NOT NULL, -- sebi | hallucination | dpdpa | escalation
+    result TEXT NOT NULL, -- pass | block | warn | escalate
+    details JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## Phased Build Plan
+
+### Phase 1 — Foundation (6 weeks) ← **START HERE**
+> RAG + Reactive Bot + Flat Persona
+
+**Deliverables:**
+1. ✅ FastAPI server with `/api/chat` SSE endpoint
+2. ✅ LangGraph orchestration (linear: validate → fetch context → RAG → generate → stream)
+3. ✅ RAG pipeline: query expansion (HyDE) → embed → search (pgvector) → rerank (Cohere) → inject
+4. ✅ Working memory with token budgeting (10,600 tok / 32k ctx)
+5. ✅ Basic persona (flat JSON from profile table)
+6. ✅ Basic compliance: SEBI disclaimer injection + blocked-word list
+7. ✅ Rate limiting (60s window)
+8. ✅ Circuit breaker (Claude → Haiku → static FAQ)
+9. ✅ Frontend integration: update `ChatbotWidget.tsx` to call FastAPI with SSE
+10. ✅ Ingestion pipeline: manual article ingestion from your existing CMS
+
+### Phase 2 — Intelligence (3 months)
+> Reranker + AA + Proactive Types A/C
+
+- Cross-encoder reranker (Cohere API)
+- Account Aggregator integration (Setu/Finvu)
+- Proactive nudge engine (article→goal, calculator use triggers)
+- Session Context Bridge (48h behavior window)
+- Adaptive nudge thresholds
+
+### Phase 3 — Safety (6 months)
+> Behavioral Risk + Literacy + Compliance Gate
+
+- Full hallucination guard (claim extraction + chunk provenance)
+- DPDPA granular consent checker
+- Escalation detector (distress keywords, complexity matching)
+- Persona enrichment (literacy calibration, behavioral risk scoring)
+- Goal classification (vague → committed spectrum)
+
+### Phase 4 — Scale (12 months)
+> Self-hosted Reranker + Granular Consent + Adaptive Threshold
+
+- Self-hosted MiniLM reranker
+- DPDPA granular field-level consent
+- Adaptive nudge thresholds per user segment
+- Pinecone migration for 1M+ chunks
+- A/B test cohort tracking for nudges
+
+---
+
+## Key Decisions Needed
+
+> [!IMPORTANT]
+> Before I start building, please confirm:
+
+1. **LLM Provider**: Your diagram shows Claude Sonnet as primary. Your current code uses Gemini (Gemma 4 31B). Which should be primary?
+   - Option A: Keep Gemini as primary (free tier available)
+   - Option B: Switch to Claude Sonnet (better quality, paid)
+   - Option C: Use both with circuit breaker fallback
+
+2. **Deployment Target**: Where will the Python backend run?
+   - Option A: Railway / Render (easiest)
+   - Option B: Fly.io (good for SSE)
+   - Option C: Self-hosted VPS
+   - Option D: Docker on your local machine for now
+
+3. **Redis**: Needed for Celery task queue + caching. Should I:
+   - Option A: Use Upstash Redis (serverless, free tier)
+   - Option B: Include Redis in Docker Compose (self-hosted)
+
+4. **Embedding/Reranker API keys**: Do you have API keys for:
+   - OpenAI (for embeddings)?
+   - Cohere (for reranking)?
+   - Anthropic (for Claude)?
+
+5. **Start with Phase 1 immediately?** I'll build the full FastAPI backend with RAG pipeline and update your frontend to connect to it.

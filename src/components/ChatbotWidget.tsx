@@ -167,6 +167,48 @@ const ChatbotWidget = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const swipeRef = useRef<{ startY: number; startTime: number } | null>(null);
 
+  // Proactive nudge state
+  const [nudgeBubble, setNudgeBubble] = useState<{ text: string; nudgeId: string; type: string } | null>(null);
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Poll for proactive nudges when chat is closed
+  useEffect(() => {
+    if (isOpen || !user?.id) return;
+
+    const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
+    let cancelled = false;
+
+    const checkNudge = async () => {
+      try {
+        const resp = await fetch(`${CHATBOT_API_URL}/api/nudge/${user.id}`);
+        if (!resp.ok || cancelled) return;
+        const data = await resp.json();
+        if (data.should_nudge && data.opener_text && !cancelled) {
+          setNudgeBubble({
+            text: data.opener_text,
+            nudgeId: data.nudge_id,
+            type: data.nudge_type,
+          });
+          setUnreadCount(1);
+          // Auto-hide after 15 seconds
+          nudgeTimerRef.current = setTimeout(() => {
+            if (!cancelled) setNudgeBubble(null);
+          }, 15000);
+        }
+      } catch {
+        // Silently fail — nudges are optional
+      }
+    };
+
+    // Check after 30 seconds of browsing
+    const timer = setTimeout(checkNudge, 30000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+    };
+  }, [isOpen, user?.id]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping, streamingId]);
@@ -349,31 +391,114 @@ const ChatbotWidget = () => {
         content: m.content
       }));
 
-      const { data, error } = await supabase.functions.invoke('chat', {
-        body: { 
-          message: text,
-          history: chatHistory
-        }
-      });
-
-      if (error) throw error;
-
-      const aiResponse = data.response;
+      // Use FastAPI backend with SSE streaming
+      const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
       
       const botMsgId = (Date.now() + 1).toString();
       const botMsg: Message = { id: botMsgId, role: "bot", content: "", time: now() };
+
+      const response = await fetch(`${CHATBOT_API_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          user_id: user?.id || null,
+          session_id: sessionIdRef.current,
+          history: chatHistory,
+          article_slug: window.location.pathname,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      // Set up for streaming
       setMessages((prev) => [...prev, botMsg]);
       setIsTyping(false);
       setStreamingId(botMsgId);
-      streamText(botMsgId, aiResponse, "🦉");
-      
-      // We can also ask the AI for follow-ups in the future, 
-      // but for now let's keep it simple or use a default set
-      setSuggestedFollowUps(["Tell me more", "What else can you do?", "Help me with finance"]);
+
+      // Read SSE stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = "";
+      let buffer = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Parse SSE events from buffer
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              const eventType = line.slice(7).trim();
+              // Next data line will have the payload
+              continue;
+            }
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              
+              // Try to parse as JSON (for done/error events)
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.session_id) {
+                  // "done" event — streaming complete, store session
+                  sessionIdRef.current = parsed.session_id;
+                  setSuggestedFollowUps(["Tell me more", "What else can you do?", "Help me with finance"]);
+                  continue;
+                }
+                if (parsed.error) {
+                  throw new Error(parsed.error);
+                }
+              } catch {
+                // Not JSON — it's a text token
+                fullResponse += data;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === botMsgId ? { ...m, content: fullResponse } : m
+                  )
+                );
+              }
+            }
+          }
+        }
+      }
+
+      setStreamingId(null);
+
+      // If no tokens were received, use sync fallback
+      if (!fullResponse) {
+        const syncResp = await fetch(`${CHATBOT_API_URL}/api/chat/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            user_id: user?.id || null,
+            history: chatHistory,
+          }),
+        });
+        const syncData = await syncResp.json();
+        if (syncData.response) {
+          fullResponse = syncData.response;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === botMsgId ? { ...m, content: fullResponse } : m
+            )
+          );
+        }
+        setSuggestedFollowUps(["Tell me more", "What else can you do?", "Help me with finance"]);
+      }
       
     } catch (err) {
-      console.error("Error calling chatbot function:", err);
+      console.error("Error calling chatbot:", err);
       setIsTyping(false);
+      setStreamingId(null);
       const errorMsgId = Date.now().toString();
       setMessages((prev) => [...prev, {
         id: errorMsgId,
@@ -384,7 +509,7 @@ const ChatbotWidget = () => {
       }]);
       setFailedMessageId(errorMsgId);
     }
-  }, [streamText, isOpen]);
+  }, [streamText, isOpen, user]);
 
   const handleRetry = useCallback(() => {
     // Find the last user message
@@ -397,6 +522,35 @@ const ChatbotWidget = () => {
       sendMessage(lastUserMessage.content, true);
     }
   }, [messages, failedMessageId, sendMessage]);
+
+  // Session persistence — keep session_id across messages
+  const sessionIdRef = useRef<string | null>(null);
+
+  // Feedback handler — like/dislike bot responses
+  const handleFeedback = useCallback((messageId: string, type: "like" | "dislike") => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, feedback: m.feedback === type ? null : type }
+          : m
+      )
+    );
+
+    // Send feedback to backend (fire-and-forget)
+    const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
+    fetch(`${CHATBOT_API_URL}/api/chat/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message_id: messageId,
+        session_id: sessionIdRef.current,
+        feedback: type,
+        user_id: user?.id || null,
+      }),
+    }).catch(() => {
+      // Silently fail — feedback is best-effort
+    });
+  }, [user?.id]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isOpen) return;
@@ -912,6 +1066,48 @@ const ChatbotWidget = () => {
               <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Proactive Nudge Bubble */}
+      {nudgeBubble && !isOpen && (
+        <div className="absolute bottom-20 right-0 w-64 bg-card border border-border rounded-xl shadow-xl p-3 animate-fade-in">
+          <button
+            onClick={() => {
+              // Dismiss nudge
+              const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
+              fetch(`${CHATBOT_API_URL}/api/nudge-dismiss`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nudge_id: nudgeBubble.nudgeId, user_id: user?.id }),
+              }).catch(() => {});
+              setNudgeBubble(null);
+            }}
+            className="absolute top-1 right-1 p-0.5 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="h-3 w-3" />
+          </button>
+          <p className="text-sm text-foreground pr-4">{nudgeBubble.text}</p>
+          <button
+            onClick={() => {
+              // Engage with nudge — open chat with the opener
+              const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
+              fetch(`${CHATBOT_API_URL}/api/nudge-engage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nudge_id: nudgeBubble.nudgeId, user_id: user?.id }),
+              }).catch(() => {});
+              setIsOpen(true);
+              setMessages([{ id: Date.now().toString(), role: "bot", content: nudgeBubble.text, time: new Date() }]);
+              setNudgeBubble(null);
+            }}
+            className="mt-2 text-xs text-primary hover:underline font-medium"
+          >
+            Let's chat →
+          </button>
+          {/* Speech bubble tail */}
+          <div className="absolute -bottom-2 right-6 w-4 h-4 bg-card border-r border-b border-border transform rotate-45" />
         </div>
       )}
 

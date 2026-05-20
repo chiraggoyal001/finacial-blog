@@ -18,6 +18,7 @@ import { useReadingProgress } from "@/contexts/ReadingProgressContext";
 import { JuniorModule, JuniorChapter } from "@/lib/types";
 import { sanitizeHtml } from "@/lib/sanitize";
 import DataError from "@/components/DataError";
+import { initArticleTracking } from "@/lib/sessionTracker";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -60,6 +61,14 @@ const JuniorArticlePage = () => {
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [moduleId, chapterId, isLoggedIn, setProgress]);
+
+  // Chatbot session tracking
+  useEffect(() => {
+    if (!chapterId || !dbJuniorModule) return;
+    const tags = dbJuniorModule.tag ? [typeof dbJuniorModule.tag === 'string' ? dbJuniorModule.tag : dbJuniorModule.tag.name || ''] : [];
+    const cleanup = initArticleTracking(user?.id || null, `junior-${moduleId}-${chapterId}`, tags);
+    return cleanup;
+  }, [chapterId, dbJuniorModule, moduleId, user?.id]);
 
   if (isLoading) {
     return (
