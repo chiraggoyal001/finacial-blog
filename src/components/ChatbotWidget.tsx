@@ -311,13 +311,7 @@ const ChatbotWidget = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  const handleFeedback = useCallback((messageId: string, type: "like" | "dislike") => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === messageId ? { ...m, feedback: m.feedback === type ? null : type } : m
-      )
-    );
-  }, []);
+
 
   const startNewChat = useCallback(() => {
     setMessages([]);
@@ -509,7 +503,7 @@ const ChatbotWidget = () => {
       }]);
       setFailedMessageId(errorMsgId);
     }
-  }, [streamText, isOpen, user]);
+  }, [streamText, isOpen, user, messages]);
 
   const handleRetry = useCallback(() => {
     // Find the last user message

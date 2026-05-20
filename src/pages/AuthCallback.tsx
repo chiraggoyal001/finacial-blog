@@ -9,7 +9,7 @@ export default function AuthCallback() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Helper to create profile for OAuth users (uses upsert to handle existing profiles)
-  const createOAuthProfile = async (user: any) => {
+  const createOAuthProfile = useCallback(async (user: any) => {
     try {
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
@@ -33,10 +33,10 @@ export default function AuthCallback() {
       console.error('Error creating OAuth profile:', err);
       return false;
     }
-  };
+  }, []);
 
   // Helper to check if user needs onboarding
-  const checkAndRedirect = async (userId: string) => {
+  const checkAndRedirect = useCallback(async (userId: string) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -82,7 +82,7 @@ export default function AuthCallback() {
       toast.success('Logged in successfully!');
       navigate('/');
     }
-  };
+  }, [navigate, createOAuthProfile]);
 
   useEffect(() => {
     // Guard against double-execution in StrictMode
@@ -140,7 +140,7 @@ export default function AuthCallback() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [navigate]);
+  }, [navigate, checkAndRedirect]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">

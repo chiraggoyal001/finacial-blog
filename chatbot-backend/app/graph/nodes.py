@@ -143,6 +143,13 @@ async def fetch_context(state: ChatState) -> dict[str, Any]:
         # Process persona
         if not isinstance(results[0], Exception) and results[0]:
             persona = results[0]
+            # Apply DPDPA consent filtering
+            if user_id:
+                try:
+                    from app.compliance.dpdpa import check_and_filter_persona
+                    persona = await check_and_filter_persona(user_id, persona)
+                except Exception as e:
+                    logger.debug(f"DPDPA filter skipped: {e}")
 
         # Process system prompt
         if not isinstance(results[1], Exception) and results[1]:
@@ -218,7 +225,31 @@ async def rag_search(state: ChatState) -> dict[str, Any]:
                 )
                 query_count = 1
 
-        logger.info(f"RAG found {len(chunks)} relevant chunks (from {query_count} queries)")
+        logger.info(f"RAG found {len(chunks)} raw chunks (from {query_count} queries)")
+
+        # Phase 2: Rerank + diversity filter
+        try:
+            from app.rag.reranker import rerank_chunks, diversify_chunks
+
+            # Rerank with multi-signal scoring
+            reranked = rerank_chunks(
+                query=message,
+                chunks=chunks,
+                top_k=settings.rag_max_chunks * 2,  # Keep more for diversity pass
+            )
+            # Apply diversity filter
+            final_chunks = diversify_chunks(reranked, max_per_source=2)
+            # Trim to budget
+            final_chunks = final_chunks[:settings.rag_max_chunks]
+
+            logger.info(
+                f"Reranker: {len(chunks)} → {len(reranked)} → {len(final_chunks)} chunks"
+            )
+            chunks = final_chunks
+        except Exception as rr_err:
+            logger.warning(f"Reranker failed, using raw chunks: {rr_err}")
+            chunks = chunks[:settings.rag_max_chunks]
+
         return {
             "rag_chunks": chunks,
             "rag_query_count": query_count,

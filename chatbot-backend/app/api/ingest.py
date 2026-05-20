@@ -44,20 +44,22 @@ def strip_html(text: str) -> str:
 
 def chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> list[str]:
     """Split text into overlapping chunks."""
-    if not text:
+    if not text or not text.strip():
         return []
 
     words_per_chunk = int(chunk_size / 1.3)
     overlap_words = int(overlap / 1.3)
 
     words = text.split()
+    if not words:
+        return []
     if len(words) <= words_per_chunk:
-        return [text]
+        return [text.strip()]
 
     chunks = []
     start = 0
     while start < len(words):
-        end = start + words_per_chunk
+        end = min(start + words_per_chunk, len(words))
         chunk_words = words[start:end]
         chunk = " ".join(chunk_words)
 
@@ -66,12 +68,17 @@ def chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> list[str]
         if last_period > len(chunk) * 0.5:
             chunk = chunk[:last_period + 1]
             actual_words = len(chunk.split())
-            end = start + actual_words
+            # Only use sentence boundary if it advances meaningfully
+            if start + actual_words > start + overlap_words:
+                end = start + actual_words
 
         chunks.append(chunk.strip())
-        start = end - overlap_words
-        if start <= 0 and end > 0:
-            start = end
+
+        # Advance with overlap, but always move forward
+        next_start = end - overlap_words
+        if next_start <= start:
+            next_start = start + max(1, overlap_words)  # Force forward progress
+        start = next_start
 
     return [c for c in chunks if len(c.split()) >= 10]
 

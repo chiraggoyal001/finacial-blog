@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { User, LogOut, Save, UserCircle, AlertCircle, CheckCircle2, Camera, X, Upload, Bell, CreditCard, ChevronRight, Shield } from "lucide-react";
+import DataPrivacyPanel from "@/components/DataPrivacyPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +45,7 @@ const ProfilePage = () => {
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const [completedFields, setCompletedFields] = useState(0);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [activeTab, setActiveTab] = useState<"profile" | "subscription">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "subscription" | "privacy">("profile");
 
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -381,6 +382,7 @@ const ProfilePage = () => {
   const sidebarItems = [
     { id: "profile" as const, label: "Profile", icon: User },
     { id: "subscription" as const, label: "Subscription", icon: Bell },
+    { id: "privacy" as const, label: "AI Privacy", icon: Shield },
   ];
 
   if (isLoadingProfile) {
@@ -757,7 +759,7 @@ const ProfilePage = () => {
                   </div>
                 </CardContent>
               </Card>
-            ) : (
+            ) : activeTab === "subscription" ? (
               /* Subscription Tab */
               <Card>
                 <CardHeader>
@@ -838,7 +840,9 @@ const ProfilePage = () => {
                   )}
                 </CardContent>
               </Card>
-            )}
+            ) : activeTab === "privacy" ? (
+              <DataPrivacyPanel />
+            ) : null}
           </div>
         </div>
       </main>

@@ -49,7 +49,7 @@ async function sendSignal(userId: string, signalType: string, payload: Record<st
  */
 export function trackScrollDepth(userId: string, slug: string) {
   let maxDepth = 0;
-  let startTime = Date.now();
+  const startTime = Date.now();
   let lastReportedDepth = 0;
 
   const handleScroll = debounce(() => {
