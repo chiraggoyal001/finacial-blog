@@ -107,6 +107,9 @@ export const useUpdateAffiliate = () => {
         console.error('Error updating affiliate link:', error);
         throw error;
       }
+      if (!data) {
+        throw new Error('Update affected 0 rows - RLS blocked or ID not found');
+      }
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['affiliate-links'] }),

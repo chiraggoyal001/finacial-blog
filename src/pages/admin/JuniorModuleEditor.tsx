@@ -60,6 +60,54 @@ export default function JuniorModuleEditor() {
   const [chapters, setChapters] = useState<ChapterForm[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteChapterId, setDeleteChapterId] = useState<string | null>(null);
+  const [lastAutoSaved, setLastAutoSaved] = useState<Date | null>(null);
+
+  const DRAFT_KEY = `draft_junior_${id || 'new'}`;
+
+  // Auto-save logic
+  useEffect(() => {
+    if (isSubmitting || !formData.title) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ 
+        formData, 
+        chapters,
+        updatedAt: new Date().toISOString()
+      }));
+      setLastAutoSaved(new Date());
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData, chapters, DRAFT_KEY, isSubmitting]);
+
+  // Check for draft on mount
+  useEffect(() => {
+    const savedDraftStr = localStorage.getItem(DRAFT_KEY);
+    if (!savedDraftStr || existingModule) return;
+
+    try {
+      const { formData: draftData, updatedAt } = JSON.parse(savedDraftStr);
+      const draftDate = new Date(updatedAt);
+      const isRecent = (new Date().getTime() - draftDate.getTime()) < 1000 * 60 * 60 * 24; // 24 hours
+
+      if (isRecent && draftData.title) {
+        toast("Unsaved draft found", {
+          description: `Saved ${draftDate.toLocaleTimeString()} - would you like to restore it?`,
+          action: {
+            label: "Restore",
+            onClick: () => {
+              const { formData: restoredData, chapters: restoredChapters } = JSON.parse(savedDraftStr);
+              setFormData(prev => ({ ...prev, ...restoredData }));
+              setChapters(restoredChapters || []);
+              toast.success("Draft restored!");
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing junior module draft", e);
+    }
+  }, [DRAFT_KEY, existingModule]);
 
   useEffect(() => {
     if (existingModule) {
@@ -78,8 +126,9 @@ export default function JuniorModuleEditor() {
           isNew: false, isExpanded: false,
         })));
       }
+      localStorage.removeItem(DRAFT_KEY);
     }
-  }, [existingModule]);
+  }, [existingModule, DRAFT_KEY]);
 
   const addChapter = () => {
     setChapters(prev => [...prev, {
@@ -130,38 +179,39 @@ export default function JuniorModuleEditor() {
 
       if (isEditing && id) {
         await updateMutation.mutateAsync({ id, ...formData });
-        for (const ch of processedChapters) {
+        await Promise.all(processedChapters.map(ch => {
           if (ch.id && !ch.isNew) {
-            await updateChapterMutation.mutateAsync({
+            return updateChapterMutation.mutateAsync({
               id: ch.id, module_id: id, title: ch.title, content_type: ch.content_type,
               content: ch.content, video_url: ch.video_url, duration: ch.duration,
               tags: ch.tags, illustration: ch.illustration, sort_order: ch.sort_order,
               quiz_questions: ch.quiz_questions,
             });
           } else {
-            await createChapterMutation.mutateAsync({
+            return createChapterMutation.mutateAsync({
               module_id: id, title: ch.title, content_type: ch.content_type,
               content: ch.content, video_url: ch.video_url, duration: ch.duration,
               tags: ch.tags, illustration: ch.illustration, sort_order: ch.sort_order,
               quiz_questions: ch.quiz_questions,
             });
           }
-        }
+        }));
         toast.success('Module updated');
       } else {
         const newModule = await createMutation.mutateAsync(
           formData as Omit<DbJuniorModule, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes' | 'chapters'>
         );
-        for (const ch of processedChapters) {
-          await createChapterMutation.mutateAsync({
+        await Promise.all(processedChapters.map(ch => 
+          createChapterMutation.mutateAsync({
             module_id: newModule.id, title: ch.title, content_type: ch.content_type,
             content: ch.content, video_url: ch.video_url, duration: ch.duration,
             tags: ch.tags, illustration: ch.illustration, sort_order: ch.sort_order,
             quiz_questions: ch.quiz_questions,
-          });
-        }
+          })
+        ));
         toast.success('Module created');
       }
+      localStorage.removeItem(DRAFT_KEY);
       navigate('/admin/junior');
     } catch { toast.error(isEditing ? 'Failed to update' : 'Failed to create'); }
     finally { setIsSubmitting(false); }
@@ -321,11 +371,20 @@ export default function JuniorModuleEditor() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isSubmitting} className="flex-1">
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Module' : 'Create Module'}</>}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/admin/junior')} disabled={isSubmitting}>Cancel</Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isSubmitting} className="flex-1">
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Module' : 'Create Module'}</>}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/admin/junior')} disabled={isSubmitting}>Cancel</Button>
+          </div>
+          <div className="h-5">
+            {lastAutoSaved && (
+              <p className="text-[10px] text-muted-foreground text-center">
+                Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
       </form>
 

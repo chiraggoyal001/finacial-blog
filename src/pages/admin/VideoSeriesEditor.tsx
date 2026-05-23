@@ -55,6 +55,54 @@ export default function VideoSeriesEditor() {
   const [chapters, setChapters] = useState<ChapterForm[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteChapterId, setDeleteChapterId] = useState<string | null>(null);
+  const [lastAutoSaved, setLastAutoSaved] = useState<Date | null>(null);
+
+  const DRAFT_KEY = `draft_video_${id || 'new'}`;
+
+  // Auto-save logic
+  useEffect(() => {
+    if (isSubmitting || !formData.title) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ 
+        formData, 
+        chapters,
+        updatedAt: new Date().toISOString()
+      }));
+      setLastAutoSaved(new Date());
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData, chapters, DRAFT_KEY, isSubmitting]);
+
+  // Check for draft on mount
+  useEffect(() => {
+    const savedDraftStr = localStorage.getItem(DRAFT_KEY);
+    if (!savedDraftStr || existingSeries) return;
+
+    try {
+      const { formData: draftData, updatedAt } = JSON.parse(savedDraftStr);
+      const draftDate = new Date(updatedAt);
+      const isRecent = (new Date().getTime() - draftDate.getTime()) < 1000 * 60 * 60 * 24; // 24 hours
+
+      if (isRecent && draftData.title) {
+        toast("Unsaved draft found", {
+          description: `Saved ${draftDate.toLocaleTimeString()} - would you like to restore it?`,
+          action: {
+            label: "Restore",
+            onClick: () => {
+              const { formData: restoredData, chapters: restoredChapters } = JSON.parse(savedDraftStr);
+              setFormData(prev => ({ ...prev, ...restoredData }));
+              setChapters(restoredChapters || []);
+              toast.success("Draft restored!");
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing series draft", e);
+    }
+  }, [DRAFT_KEY, existingSeries]);
 
   useEffect(() => {
     if (existingSeries) {
@@ -71,8 +119,9 @@ export default function VideoSeriesEditor() {
           quiz_questions: ch.quiz_questions || [], isNew: false, isExpanded: false,
         })));
       }
+      localStorage.removeItem(DRAFT_KEY);
     }
-  }, [existingSeries]);
+  }, [existingSeries, DRAFT_KEY]);
 
   const addChapter = () => {
     setChapters(prev => [...prev, {
@@ -116,35 +165,36 @@ export default function VideoSeriesEditor() {
     try {
       if (isEditing && id) {
         await updateMutation.mutateAsync({ id, ...formData });
-        for (const ch of chapters) {
+        await Promise.all(chapters.map(ch => {
           if (ch.id && !ch.isNew) {
-            await updateChapterMutation.mutateAsync({
+            return updateChapterMutation.mutateAsync({
               id: ch.id, series_id: id, title: ch.title, video_url: ch.video_url,
               duration: ch.duration, description: ch.description, tags: ch.tags,
               sort_order: ch.sort_order, quiz_questions: ch.quiz_questions,
             });
           } else {
-            await createChapterMutation.mutateAsync({
+            return createChapterMutation.mutateAsync({
               series_id: id, title: ch.title, video_url: ch.video_url,
               duration: ch.duration, description: ch.description, tags: ch.tags,
               sort_order: ch.sort_order, quiz_questions: ch.quiz_questions,
             });
           }
-        }
+        }));
         toast.success('Video series updated');
       } else {
         const newSeries = await createMutation.mutateAsync(
           formData as Omit<DbVideoSeries, 'id' | 'created_at' | 'updated_at' | 'views' | 'likes' | 'chapters'>
         );
-        for (const ch of chapters) {
-          await createChapterMutation.mutateAsync({
+        await Promise.all(chapters.map(ch => 
+          createChapterMutation.mutateAsync({
             series_id: newSeries.id, title: ch.title, video_url: ch.video_url,
             duration: ch.duration, description: ch.description, tags: ch.tags,
             sort_order: ch.sort_order, quiz_questions: ch.quiz_questions,
-          });
-        }
+          })
+        ));
         toast.success('Video series created');
       }
+      localStorage.removeItem(DRAFT_KEY);
       navigate('/admin/videos');
     } catch { toast.error(isEditing ? 'Failed to update' : 'Failed to create'); }
     finally { setIsSubmitting(false); }
@@ -276,11 +326,20 @@ export default function VideoSeriesEditor() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isSubmitting} className="flex-1">
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Series' : 'Create Series'}</>}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/admin/videos')} disabled={isSubmitting}>Cancel</Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isSubmitting} className="flex-1">
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Series' : 'Create Series'}</>}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/admin/videos')} disabled={isSubmitting}>Cancel</Button>
+          </div>
+          <div className="h-5">
+            {lastAutoSaved && (
+              <p className="text-[10px] text-muted-foreground text-center">
+                Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
       </form>
 

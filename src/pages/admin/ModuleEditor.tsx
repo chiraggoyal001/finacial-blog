@@ -226,9 +226,9 @@ export default function ModuleEditor() {
         await updateMutation.mutateAsync({ id, ...formData });
 
         // Update / Create chapters
-        for (const chapter of processedChapters) {
+        await Promise.all(processedChapters.map(chapter => {
           if (chapter.id && !chapter.isNew) {
-            await updateChapterMutation.mutateAsync({
+            return updateChapterMutation.mutateAsync({
               id: chapter.id,
               module_id: id,
               title: chapter.title,
@@ -239,7 +239,7 @@ export default function ModuleEditor() {
               quiz_questions: chapter.quiz_questions,
             });
           } else {
-            await createChapterMutation.mutateAsync({
+            return createChapterMutation.mutateAsync({
               module_id: id,
               title: chapter.title,
               content: chapter.content,
@@ -249,7 +249,7 @@ export default function ModuleEditor() {
               quiz_questions: chapter.quiz_questions,
             });
           }
-        }
+        }));
         toast.success('Module updated successfully');
       } else {
         const newModule = await createMutation.mutateAsync(
@@ -257,8 +257,8 @@ export default function ModuleEditor() {
         );
         moduleId = newModule.id;
 
-        for (const chapter of processedChapters) {
-          await createChapterMutation.mutateAsync({
+        await Promise.all(processedChapters.map(chapter => 
+          createChapterMutation.mutateAsync({
             module_id: newModule.id,
             title: chapter.title,
             content: chapter.content,
@@ -266,8 +266,8 @@ export default function ModuleEditor() {
             tags: chapter.tags,
             sort_order: chapter.sort_order,
             quiz_questions: chapter.quiz_questions,
-          });
-        }
+          })
+        ));
         toast.success('Module created successfully');
       }
       localStorage.removeItem(DRAFT_KEY);
@@ -552,11 +552,13 @@ export default function ModuleEditor() {
               Cancel
             </Button>
           </div>
-          {lastAutoSaved && (
-            <p className="text-[10px] text-muted-foreground text-center">
-              Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
-            </p>
-          )}
+          <div className="h-5">
+            {lastAutoSaved && (
+              <p className="text-[10px] text-muted-foreground text-center">
+                Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
       </form>
 

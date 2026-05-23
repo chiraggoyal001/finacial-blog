@@ -10,22 +10,35 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem("theme");
-    return saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  });
-  const [language, setLanguage] = useState<"en" | "hi">(() => {
-    const saved = localStorage.getItem("language");
-    return (saved === "hi" ? "hi" : "en") as "en" | "hi";
-  });
+  const [isDark, setIsDark] = useState(false);
+  const [language, setLanguage] = useState<"en" | "hi">("en");
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [isDark]);
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+      setIsDark(true);
+    }
+    
+    const savedLang = localStorage.getItem("language");
+    if (savedLang === "hi") {
+      setLanguage("hi");
+    }
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem("language", language);
-  }, [language]);
+    if (isMounted) {
+      document.documentElement.classList.toggle("dark", isDark);
+    }
+  }, [isDark, isMounted]);
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem("language", language);
+    }
+  }, [language, isMounted]);
 
   const toggleTheme = () => {
     setIsDark((p) => {

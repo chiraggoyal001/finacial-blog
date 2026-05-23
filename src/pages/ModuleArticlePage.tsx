@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useLoaderData } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -19,6 +21,26 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { sanitizeHtml } from "@/lib/sanitize";
 import DataError from "@/components/DataError";
 import { initArticleTracking } from "@/lib/sessionTracker";
+import { supabase } from "@/lib/supabase";
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  const { moduleId } = params;
+  if (!moduleId) return { initialDbModule: null };
+
+  // Fetch from supabase server-side for SSR SEO
+  let query = supabase.from('modules').select('*').eq('id', moduleId).eq('is_published', true);
+  const { data: moduleData } = await query.single();
+  
+  if (!moduleData) return { initialDbModule: null };
+
+  const { data: chapters } = await supabase
+    .from('module_chapters')
+    .select('*')
+    .eq('module_id', moduleId)
+    .order('sort_order', { ascending: true });
+
+  return { initialDbModule: { ...moduleData, chapters } };
+}
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -28,6 +50,7 @@ const XIcon = () => (
 
 const ModuleArticlePage = () => {
   const { moduleId, chapterId } = useParams<{ moduleId: string; chapterId?: string }>();
+  const { initialDbModule } = useLoaderData() as any;
 
   // Track views for both module and chapter
   useTrackView('module', moduleId);
@@ -36,10 +59,12 @@ const ModuleArticlePage = () => {
   const isSubscribed = isLoggedIn && user?.isSubscribed;
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
-  const { data: dbModule, isLoading, error, refetch } = useModule(moduleId || '', { publishedOnly: true });
+  const { data: fetchedModule, isLoading, error, refetch } = useModule(moduleId || '', { publishedOnly: true });
+
+  const dbModule = fetchedModule || initialDbModule;
 
   // Derive data safely before hooks — use null-safe defaults for loading/error states
-  const mod = dbModule ? {
+  const mod = React.useMemo(() => dbModule ? {
     id: dbModule.id,
     title: dbModule.title,
     description: dbModule.description,
@@ -59,7 +84,7 @@ const ModuleArticlePage = () => {
     likes: dbModule.likes,
     seoTitle: dbModule.seo_title,
     seoDescription: dbModule.seo_description,
-  } : null;
+  } : null, [dbModule]);
 
   const activeChapterIndex = Math.max(0, mod?.chapters?.findIndex((c) => c.id === chapterId) ?? -1);
   const chapter = mod?.chapters ? mod.chapters[activeChapterIndex] : undefined;
@@ -143,18 +168,14 @@ const ModuleArticlePage = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nextChapter, activeChapterIndex, mod]);
 
-  if (isLoading) {
+  if (isLoading && !dbModule) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <div className="flex-1 flex items-center justify-center" role="status" aria-live="polite">
-          <div className="text-center space-y-4">
-            <span className="sr-only">Loading chapter content...</span>
-            <div className="h-8 w-48 bg-muted animate-pulse rounded mx-auto" />
-            <div className="h-4 w-32 bg-muted animate-pulse rounded mx-auto" />
-          </div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <span className="sr-only">Loading module content...</span>
         </div>
-        <Footer />
       </div>
     );
   }

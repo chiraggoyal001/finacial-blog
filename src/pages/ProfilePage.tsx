@@ -40,6 +40,7 @@ const ProfilePage = () => {
     profession: "",
     description: "",
   });
+  const [initialFormData, setInitialFormData] = useState(formData);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
@@ -69,7 +70,7 @@ const ProfilePage = () => {
         if (error) {
           console.error("Error fetching profile:", error);
           // Fall back to auth user data
-          setFormData({
+          const fallbackData = {
             firstName: user.firstName || "",
             lastName: user.lastName || "",
             age: user.age?.toString() || "",
@@ -78,11 +79,13 @@ const ProfilePage = () => {
             hobbies: user.hobbies || "",
             profession: user.profession || "",
             description: user.description || "",
-          });
+          };
+          setFormData(fallbackData);
+          setInitialFormData(fallbackData);
           setIsProfileComplete(false);
         } else if (profile) {
           // Use database data (includes onboarding fields)
-          setFormData({
+          const dbData = {
             firstName: profile.first_name || user.firstName || "",
             lastName: profile.last_name || user.lastName || "",
             age: profile.age?.toString() || "",
@@ -91,7 +94,9 @@ const ProfilePage = () => {
             hobbies: profile.hobbies || "",
             profession: profile.profession || "",
             description: profile.description || "",
-          });
+          };
+          setFormData(dbData);
+          setInitialFormData(dbData);
           
           // Set avatar preview if available
           if (profile.avatar_url) {
@@ -114,7 +119,7 @@ const ProfilePage = () => {
           setCompletedFields(count);
         } else {
           // No profile row exists
-          setFormData({
+          const emptyData = {
             firstName: user.firstName || "",
             lastName: user.lastName || "",
             age: "",
@@ -123,7 +128,9 @@ const ProfilePage = () => {
             hobbies: "",
             profession: "",
             description: "",
-          });
+          };
+          setFormData(emptyData);
+          setInitialFormData(emptyData);
           setIsProfileComplete(false);
         }
       } catch (error) {
@@ -222,6 +229,7 @@ const ProfilePage = () => {
 
       if (result.success) {
         toast.success("Profile updated successfully");
+        setInitialFormData(formData);
       } else {
         toast.error(result.error || "Failed to update profile");
       }
@@ -325,7 +333,7 @@ const ProfilePage = () => {
     }
     
     setIsUploadingAvatar(false);
-  }, [user, toast]);
+  }, [user, updateUserAvatar]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -750,7 +758,7 @@ const ProfilePage = () => {
                   <div className="flex justify-end">
                     <Button
                       onClick={handleSave}
-                      disabled={isSaving}
+                      disabled={isSaving || JSON.stringify(formData) === JSON.stringify(initialFormData)}
                       className="gap-2"
                     >
                       <Save className="h-4 w-4" />

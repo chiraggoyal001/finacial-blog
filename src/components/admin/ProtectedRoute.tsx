@@ -1,18 +1,30 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   requireAdmin?: boolean;
 }
 
 export function ProtectedRoute({ children, requireAdmin = true }: ProtectedRouteProps) {
   const { isLoggedIn, isAdmin, isLoading, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // Show loading while auth is initializing or role is being fetched
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isLoggedIn || !user) {
+        navigate('/login', { state: { from: location }, replace: true });
+      } else if (requireAdmin && !isAdmin) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [isLoading, isLoggedIn, user, isAdmin, requireAdmin, navigate, location]);
+
+  // Show loading while auth is initializing or before navigation happens
+  if (isLoading || !isLoggedIn || !user || (requireAdmin && !isAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -23,17 +35,8 @@ export function ProtectedRoute({ children, requireAdmin = true }: ProtectedRoute
     );
   }
 
-  // Not logged in - redirect to login
-  if (!isLoggedIn || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Logged in but not admin - redirect to home
-  // (We removed the email fallback since we wait for role check to complete)
-  if (requireAdmin && !isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
   // All checks passed
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 }
+
+export default ProtectedRoute;

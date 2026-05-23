@@ -503,7 +503,7 @@ const ChatbotWidget = () => {
       }]);
       setFailedMessageId(errorMsgId);
     }
-  }, [streamText, isOpen, user, messages]);
+  }, [user, messages]);
 
   const handleRetry = useCallback(() => {
     // Find the last user message

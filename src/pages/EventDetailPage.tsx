@@ -1,5 +1,7 @@
 import React, { useMemo, SyntheticEvent } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useLoaderData } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Calendar as CalendarIcon, MapPin, Clock, Users, Share2, Brain, Tent, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,6 +19,21 @@ import { AddToCalendar } from "@/components/AddToCalendar";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import DataError from "@/components/DataError";
+import { supabase } from "@/lib/supabase";
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  const { eventId } = params;
+  if (!eventId) return { initialDbEvent: null };
+
+  const { data: eventData } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', eventId)
+    .eq('is_published', true)
+    .single();
+
+  return { initialDbEvent: eventData };
+}
 
 const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f0f0f0' width='600' height='400'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='24' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3EImage unavailable%3C/text%3E%3C/svg%3E";
 
@@ -32,7 +49,10 @@ const EVENT_TYPE_META: Record<EventType, { label: string; icon: React.ElementTyp
 
 const EventDetailPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
-  const { data: dbEvent, isLoading, error, refetch } = useEvent(eventId || "", { publishedOnly: true });
+  const { initialDbEvent } = useLoaderData() as any;
+  const { data: fetchedEvent, isLoading, error, refetch } = useEvent(eventId || "", { publishedOnly: true });
+  
+  const dbEvent = fetchedEvent || initialDbEvent;
   const { data: dbEvents } = useEvents({ published: true });
   const { user, isLoggedIn } = useAuth();
   const { t } = useTranslation();
@@ -40,21 +60,23 @@ const EventDetailPage = () => {
   const registerMutation = useRegisterForEvent();
   const unregisterMutation = useUnregisterFromEvent();
 
-  const event: BlogEvent | undefined = dbEvent ? {
-    id: dbEvent.id,
-    title: dbEvent.title,
-    description: dbEvent.description,
-    date: dbEvent.date,
-    time: dbEvent.time,
-    location: dbEvent.location,
-    image: dbEvent.image,
-    type: dbEvent.type as EventType,
-    capacity: dbEvent.capacity,
-    registered: dbEvent.registered,
-    tags: dbEvent.tags || [],
-    isUpcoming: new Date(dbEvent.date) > new Date(),
-    virtualLobbyUrl: dbEvent.virtual_lobby_url,
-  } : undefined;
+  const event: BlogEvent | undefined = useMemo(() => {
+    return dbEvent ? {
+      id: dbEvent.id,
+      title: dbEvent.title,
+      description: dbEvent.description,
+      date: dbEvent.date,
+      time: dbEvent.time,
+      location: dbEvent.location,
+      image: dbEvent.image,
+      type: dbEvent.type as EventType,
+      capacity: dbEvent.capacity,
+      registered: dbEvent.registered,
+      tags: dbEvent.tags || [],
+      isUpcoming: new Date(dbEvent.date) > new Date(),
+      virtualLobbyUrl: dbEvent.virtual_lobby_url,
+    } : undefined;
+  }, [dbEvent]);
 
   const isAttending = registration?.status === 'registered';
   const isWaitlisted = registration?.status === 'waitlisted';
@@ -103,7 +125,7 @@ const EventDetailPage = () => {
     type: 'event'
   });
 
-  if (isLoading) {
+  if (isLoading && !dbEvent) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
@@ -152,7 +174,7 @@ const EventDetailPage = () => {
           </div>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">{event.title}</h1>
           <div className="flex flex-wrap gap-4 mt-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" /> {new Date(event.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
+            <span className="flex items-center gap-1" suppressHydrationWarning><CalendarIcon className="h-4 w-4" /> {new Date(event.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
             <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {event.time}</span>
             <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {event.location}</span>
           </div>
@@ -290,11 +312,14 @@ const EventDetailPage = () => {
                         <CardContent className="p-4 space-y-2">
                           <Badge variant="outline" className={m.color}><I className="h-3 w-3 mr-1" /> {m.label}</Badge>
                           <h3 className="font-display font-semibold text-sm text-foreground">{ev.title}</h3>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <CalendarIcon className="h-3 w-3" /> {new Date(ev.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                            <span className="mx-1">·</span>
-                            <MapPin className="h-3 w-3" /> {ev.location}
-                          </p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1" suppressHydrationWarning>
+                              <CalendarIcon className="h-3 w-3" /> {new Date(ev.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" /> {ev.location}
+                            </span>
+                          </div>
                         </CardContent>
                       </Card>
                     </Link>

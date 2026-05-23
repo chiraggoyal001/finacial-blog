@@ -106,10 +106,14 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
   });
 
   // Sync the raw input when content_ids array changes (e.g. from initialData)
+  const contentIdsStr = JSON.stringify(formData.visibility_rules.content_ids);
   useEffect(() => {
     setContentIdsRaw(formData.visibility_rules.content_ids.join(', '));
-  }, [JSON.stringify(formData.visibility_rules.content_ids)]);
+  }, [contentIdsStr]);
 
+  // Use JSON.stringify to deep-compare initialData so re-opening the same link resets the form
+  const initialDataStr = JSON.stringify(initialData);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (initialData) {
       const vr = initialData.visibility_rules || {};
@@ -166,9 +170,7 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
         hasRecurrence: false,
       });
     }
-  // Use JSON.stringify to deep-compare initialData so re-opening the same link resets the form
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(initialData), isOpen]);
+  }, [initialDataStr, initialData, isOpen]);
 
   const toggleArrayItem = (field: string, value: string) => {
     setFormData(prev => {

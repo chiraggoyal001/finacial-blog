@@ -1,0 +1,267 @@
+Superdesign
+Home
+Prompt Library
+Create Prompt
+Login
+Sign up
+All
+Public
+My Team
+All
+Style
+Animation
+UI Component
+Landing Page
+Acid Yellow Accent
+Ai First Product
+Blue Accent
+Bold
+Browser Native
+Chrome
++42 more
+High Contrast Landing Page
+
+A high-contrast Swiss-style minimalist design system utilizing brutalist typography and editorial layouts. Characterized by a neutral palette of off-whites, deep blacks, and monochromatic grays, this style emphasizes rhythmic patterns through stacked text 'echo' effects and asymmetrical grids. Ideal for luxury travel, architecture portfolios, high-end fashion, and premium editorial content where typography acts as the primary visual driver.
+
+Brutalist E-commerce Page
+
+A brutalist editorial e-commerce style guide inspired by poster-campaign aesthetics. Characterized by massive grotesque typography (Clash Display), soft-blurred gradient forms in red-orange tones (#DB4A2B, #F8A348), and a warm cream background (#E4E2DD). This aesthetic is optimized for high-end fashion, architecture, or lifestyle brands that want a 'poster-first' digital presence. Features include scroll-triggered entrance animations, mix-blend-mode interactions, and a clean, borderless grid structure.
+
+Brutalist Style Ecommerce Page
+
+A brutalist editorial design system for high-fashion, streetwear, or luxury brands. Featuring a raw, industrial aesthetic with massive typography, high-contrast photography, and utilitarian components. Key elements include a noise-grain texture overlay, a monochromatic palette with burnt orange and neon green accents, and asymmetrical layout grids. The style uses 'Clash Grotesk' for aggressive impact and 'General Sans' for technical clarity. Ideal for product launches, lookbooks, and fashion portfolios looking for a 'Raw Campaign' or 'Modern Brutalist' feel with scroll-triggered visual impact.
+
+SaaS Landing Page for Developer Tool
+
+A bold modernist design system inspired by exhibition poster aesthetics and technical documentation. Characterized by a high-contrast 'cream and cobalt' color palette, oversized aggressive typography, and a rigid 12-column grid layout with 1px border dividers. This style is ideal for technical SaaS, developer tools, high-end design agencies, or architectural portfolios. Key elements include tight line-heights (0.85), no rounded corners, and a unique vertical labeling system in a dedicated left-hand grid column.
+
+Superdesign Editorial Waitlist
+
+Editorial waiting list landing page with a cinematic, high-fashion aesthetic. Features a deep matte #181818 background, warm beige #EBDCC4 typography, and a brutalist yet refined grid. Key elements include oversized edge-to-edge display type, subtle noise textures, and a layered text depth effect. Ideal for luxury tech, creative agency portfolios, high-end SaaS tools, architecture firms, and invite-only exclusivity campaigns. Layout utilizes strong typographic hierarchy and generous negative space with accent tones in coral, rust, and sage.
+
+Luxury-focused Design System
+
+A refined, editorial-style design system characterized by heavy geometric sans-serif typography, a sophisticated dusty rose and charcoal palette, and staggered grid layouts. This aesthetic is optimized for high-end luxury services, boutique hospitality, premium fashion brands, or architectural portfolios. It features scroll-triggered reveal animations, grayscale-to-color image transitions, and a 'glassmorphism' navigation bar. The layout focuses on massive, bold headlines paired with hyper-minimalist utility text, creating a contrast that feels modern yet timeless.
+
+BabyBites - Sophisticated Palette
+
+BabyBites style guide featuring a sophisticated high-contrast palette of dark charcoal, vibrant red, and sage-green. Characterized by playful but professional editorial typography, oversized rounded corners (up to 40px), and a clean, card-based layout. Ideal for parenting, nutrition, healthcare, and educational SaaS platforms. Includes scroll-triggered animations and custom view transitions for fluid mobile-first navigation.
+
+Lumina SaaS Landing Page
+
+Lumina is a high-energy, Neo-Brutalist B2C SaaS design characterized by its bold #ffe17c yellow primary color, heavy 2px black borders, and zero-blur hard shadows. It utilizes a striking combination of 'Cabinet Grotesk' for display-heavy typography and 'Satoshi' for body copy. This style is ideal for the creator economy, modern fintech, edtech, or any startup looking to break the 'clean corporate blue' mold with a confident, high-contrast interface. The layout features bento-style grids, marquee animations, and playful asymmetric card shapes.
+
+Bold Editorial Style
+
+A high-contrast, editorial-style SaaS landing page design optimized for designers and creative tools. It features bold Anton display typography, a sophisticated palette of golden yellow (#ffe17c) and deep charcoal (#171e19), and a structured layout combining grid patterns and bento-box feature blocks. This style is characterized by aggressive visual hierarchy, oversized headlines, and a minimalist yet punchy aesthetic suitable for high-velocity startups, fintech, or creative agency portfolios.
+
+Bold Editorial Design Style
+
+A premium, bold editorial design system characterized by high-contrast brutalist typography and a sophisticated dark navy and sage color palette. Optimized for creative agencies, design portfolios, luxury architecture, and high-end digital studios. Features include 'Anton' display headers, a custom crosshair cursor, floating ambient gradients, asymmetric masonry layouts, and smooth scroll-triggered reveal animations. The aesthetic balances minimalist white space with massive, impactful type and subtle micro-interactions like mix-blend-mode navigation and grayscale-to-color image transitions.
+
+Mosaic Grid Architecture Style
+
+An architectural, technical-blueprint style design system featuring a minimalist mosaic grid, forest green (#1A3C2B) and light-gray paper-textured (#F7F7F5) palette. Optimized for B2B SaaS, developer tools, and high-end agency portfolios. Key features include editorial typography with Space Grotesk, JetBrains Mono labels, bento grid layouts, and 2D flat wireframe aesthetics with zero shadows.
+
+Futuristic SasS Landing Page
+
+A modern, atmospheric SaaS design system featuring a high-contrast blend of dark mode hero sections and light mode content areas. Characterized by glassmorphism, sophisticated serif-sans typography pairing, and ethereal glows, it is ideal for AI startups, design tools, creative portfolios, and premium digital platforms. The style emphasizes depth through backdrop blurs, subtle borders (1px), and smooth micro-interactions like scroll-triggered navigation and hover-based transforms.
+
+Softly - Digital Wellness App
+
+A soft-aesthetic, Gen-Z oriented design system optimized for wellness, meditation, journaling, and lifestyle brands. Features a warm off-white foundation (#FDFCF8) layered with soft pastel accents (Coral #FFB7B2, Sage #E8EFE8, Lavender #EFEDF4), grain-textured overlays, and a mix of modern geometric sans-serif ('Outfit') and organic handwriting ('Reenie Beanie') typography. The layout emphasizes breathing room, gentle scroll-triggered reveals, and 'floating' organic shapes to reduce cognitive load and evoke a sense of calm.
+
+Chrome Extension Landing Page
+
+A browser-native developer tool aesthetic characterized by a 'system interface' look rather than a marketing landing page. This style features a light-neutral base with a vibrant cyan (#06B6D4) accent, mimicking the layout of Chrome DevTools or a workspace IDE. It uses a combination of Inter for primary readability and JetBrains Mono for technical labels and commands. Suitable for SaaS, developer tools, extensions, and technical platforms requiring a high-density, utility-focused layout with scroll-triggered panel reveals and simulated interactive environments.
+
+Neon Velocity Countdown
+
+A high-velocity, futuristic dark-mode design system characterized by neon accents, brutalist typography, and 3D glassmorphism. Featuring a 'Laser Green' and 'Navy Black' palette, it utilizes 'Plus Jakarta Sans' for high-impact headlines and 'Geist Mono' for technical metadata. This aesthetic is ideal for high-growth tech startups, SaaS platforms, developer tools, and fintech products that want to convey speed, precision, and cutting-edge innovation. The layout uses a bento-grid structure, fluid typography, and sophisticated scroll-triggered reveal animations.
+
+Minimalist Beta Capture
+
+A high-end 'Editorial Brutalist' style guide optimized for SaaS waitlists, fintech, or premium developer tools. It features a dark-mode palette (#080808), high-contrast monochromatic typography (DM Serif Display + Geist Mono), and sophisticated glassmorphism. The layout utilizes a bento-grid structure and fluid width (92vw) with oversized hero typography. Key features include scroll-triggered slide-up animations, a silver-metallic gradient system, and a persistent floating mobile navigation bar.
+
+Disruptor Beta Launch
+
+A high-impact Neo-Brutalist design system designed for product launches and disruptive SaaS platforms. Characterized by stark color contrasts, industrial typography, and heavy geometric borders. The aesthetic utilizes a dark mode base (#121212) punctuated by vibrant 'Volt' accents (#CCFF00) and crisp white containers. Key features include 'sticker-style' rotated elements, massive display type, solid 8px offsets (Neo-shadows), and vertical navigation elements. Ideal for high-growth tech, developer tools, fintech, and creative agencies looking for an aggressive, authoritative, and innovative brand presence.
+
+Architectural Type System Style
+
+A high-contrast, architectural design system rooted in Swiss Modernism and Brutalist minimalism. Characterized by a monochrome palette, massive 'Inter Tight' display typography, and a rigid grid defined by 0.5px hairlines. Features a technical 'JetBrains Mono' font for metadata and system status indicators, creating an engineering-first aesthetic. Suitable for high-end SaaS, developer tools, fintech, architecture portfolios, and design agencies. Includes a persistent noise overlay for texture and grid-based layouts that utilize viewport-relative sizing for maximalist impact.
+
+Neural Noir Interface Style
+
+The Neural Noir Interface Style is a high-end, futuristic aesthetic characterized by a 'tech-noir' atmosphere. It blends deep dark backgrounds (#0a0a0a) with sophisticated gold and bronze accents (#a78b71, #e8d5b7) and editorial typography. Key features include glassmorphism, neural network-inspired SVG connection lines, and a bento-grid layout. This style is optimized for premium AI platforms, creative design engines, high-end SaaS, and editorial-driven tech portfolios. It utilizes a combination of sleek sans-serif (Inter) for functional elements and elegant serif italics (Playfair Display) for headlines, creating a contrast between high-tech performance and classic sophistication.
+
+Deep Red Style
+
+A deep red/orange atmospheric gradients, elegant serif typography, and complex scroll-triggered animations, with floating parallax cards and a dot-grid background.
+
+Cinematic Style
+
+A high-end 'Cinematic' design system characterized by deep-space dark backgrounds, sophisticated 3D CSS transforms, and bold editorial typography. Optimized for premium portfolios, creative agencies, fintech, and high-tech SaaS. It features a signature 3D rolodex/cube hero section, glassmorphism elements, and smooth GSAP-driven scroll parallax. Key aesthetics include 'mix-blend-difference' navigation, vibrant neon gradients (cyan to pink), and a monochromatic 'Aspekta' font foundation with heavy weights and tight tracking.
+
+Nature Inspired Style
+
+A nature-inspired 'Organic Brutalist' design system perfect for wellness, sustainable CPG, eco-friendly lifestyle brands, or high-end nutrition. Characterized by a palette of deep forest greens and earthy sages, the style utilizes massive editorial typography (Anton) paired with functional sans-serifs (Inter). The layout features 'bento-adjacent' rounded grids, floating organic elements with parallax effects, and a subtle film grain noise overlay that gives the digital experience a tactile, premium paper-like feel. Key elements include oversized headings, ultra-rounded corners (up to 5rem), and fluid reveal animations.
+
+Midnight Editorial Style
+
+A premium, ultra-modern dark aesthetic featuring deep black backgrounds (#050505), massive 'Satoshi' typography for impact, and striking coral (#FF6B50) accents. Designed for high-end agencies and portfolios that prioritize storytelling and visual drama.
+
+Bold Editorial Studio Style
+
+Bold Editorial Studio Style is a high-impact, minimalist design system characterized by massive typography, a strict monochromatic palette, and sophisticated micro-interactions. It features a signature 'editorial' look using ultra-large display fonts (up to 12vw), custom cursor logic, and fluid marquee animations. Ideal for creative agencies, high-end portfolios, fashion brands, and premium fintech products, the system leverages white space and motion to create a premium, curated feel. Key elements include mix-blend-mode navigation, staggered text reveals, and asymmetrical image containers with varied border radii.
+
+Midnight Editorial Style
+
+A high-contrast, midnight-themed editorial design system optimized for premium portfolios, fintech SaaS, and luxury brand storytelling. Characterized by oversized 'Clash Display' typography, a deep #050505 background, and sophisticated mix-blend-mode interactions. Features smooth reveal animations, subtle atmospheric glows, and a brutalist yet refined layout that prioritizes whitespace and typographic hierarchy.
+
+Cinematic Noir Style
+
+A high-end 'Cinematic Noir' design system characterized by dramatic dark-mode aesthetics, high-contrast editorial typography, and immersive scroll-driven parallax effects. Suitable for creative agencies, luxury fashion, fintech, and high-end portfolios. Features include grain overlays, radial gradients with subtle warm tints, and brutalist-scale headings that blur the line between digital interface and cinematic experience.
+
+Kinetic Orange Style
+
+A high-energy brutalist design system characterized by a high-contrast 'Kinetic Orange' (#FF4D00) and black palette. It features bold, oversized editorial typography, technical monospace accents, and rhythmic motion through marquees and rotating elements. Ideal for creative agencies, fintech, modern portfolios, or AI-driven startups looking for a 'loud' and confident brand presence.
+
+Glassmorphism Style
+
+A high-tech glassmorphism design system featuring neon lime accents, deep obsidian surfaces, and a sophisticated blend of architectural grid patterns and organic glowing gradients. Optimized for high-end SaaS, AI product studios, and fintech platforms, this style uses JetBrains Mono for a developer-centric feel and Space Grotesk for bold, editorial headings. Key elements include backdrop-blur effects (glassmorphism), grain/noise overlays, and a 'floating shell' layout that gives the web interface a premium, app-like quality.
+
+Red Noir Style
+
+A bold, dark-themed landing page featuring high-contrast red accents, glassmorphism, and smooth scroll animations. Designed for AI and tech products with a futuristic aesthetic.
+
+Warm Industrial Gray Style
+
+A sophisticated warm industrial aesthetic that blends brutalist grid structures with editorial typography. Featuring a primary palette of warm concrete gray and rich charcoal accented by electric blue, this style is ideal for AI startups, creative technology studios, fintech platforms, and architecture portfolios. It utilizes a high-contrast pairing of heavy grotesque sans-serifs and elegant serif italics, layered over a subtle film grain noise texture. Key features include scroll-triggered reveals, magnetic hover states, and structural grid-line overlays that emphasize a 'form follows function' technical philosophy.
+
+Neo-Brutalism Style
+
+A high-impact Neo-Brutalist design system characterized by 'Acid' aesthetics. It features high-contrast color palettes (off-white, deep black, and neon yellow), heavy-weight typography, and 'hard' UI elements like non-blurred shadows and thick borders. The layout utilizes bento grids, oversized display text, and dynamic marquee components. Suitable for creative agencies, experimental e-commerce, fintech, and portfolio sites looking for a 'loud', digital-first brand identity.
+
+Dark Avant-Garde Style
+
+A dark avant-garde design system termed 'Digital Naturalism,' characterized by a sophisticated interplay between deep charcoal surfaces and high-energy acid green accents. Featuring editorial serif typography paired with clean sans-serif UI, the style utilizes Brutalist-inspired elements like serrated edges, skewed 'tab' navigation, and grainy noise overlays. Ideal for high-end design agencies, AI masterclasses, editorial portfolios, and premium fintech brands seeking a bold, technical, yet organic aesthetic.
+
+Cyber Serif Style
+
+A high-end 'Cyber Serif' aesthetic blending classical editorial typography with futuristic tech elements. Features a deep #050505 dark mode palette, neon emerald accents (#10b981), glassmorphism, and sophisticated micro-interactions. Suitable for high-end AI SaaS, creative agencies, fintech portfolios, and developer tools. Includes WebGL-inspired background effects, spotlight hover cards, and staggered scroll-reveal animations.
+
+Organic Modern Style
+
+An organic modern design system blending editorial typography with tactile textures and high-end minimalism. It features a sophisticated palette of cream, charcoal, and sage, utilizing 'DM Serif Display' for a classic yet contemporary feel. Key characteristics include heavy use of negative space, hand-drawn annotations, noise-textured backgrounds, and smooth transitions from grayscale to color. Ideal for high-end boutique agencies, AI-driven product startups, luxury lifestyle brands, and design studios.
+
+Red sun
+
+A sophisticated editorial-style design system named 'Red Sun', characterized by a high-contrast 'Coral and Ink' color palette. This style blends 'Instrument Serif' for high-impact typography with 'Manrope' for technical precision. Features include bento-grid layouts, glassmorphism navigation, scroll-triggered animations with subtle rotations, and soft ambient background blurs. Ideal for premium SaaS, creative agencies, AI product design tools, and fintech platforms looking for a balance between warmth and authority.
+
+Clean fluid
+
+A high-end, editorial design system blending luxury serif typography with technical monospace accents. Characterized by fluid 'premium ease' animations, a sophisticated cream and dark charcoal palette (#fcfbf9, #171717), and organic curved transitions. Optimized for AI startups, design studios, fintech dashboards, and luxury tech brands requiring a balance of intelligence and elegance. Key features include scroll-triggered reveal animations, mesh gradient backgrounds, and a signature concave wave transition between sections.
+
+Glassmorphism card
+
+A premium, high-tech glassmorphism design system characterized by deep translucent layers, dark-to-light transitions, and editorial typography. Featuring a 'Superdesign' aesthetic, it utilizes heavy background blurs, grain textures, and emerald accents. This style is ideal for SaaS, AI platforms, fintech, and high-end design agencies requiring a sophisticated, futuristic feel with bento-grid layouts and fluid animations.
+
+Tech Editorial
+
+A high-end 'Tech Editorial' aesthetic that merges brutalist precision with classic editorial sophistication. It features a muted, paper-like color palette (#f7f6f2), a structured grid-line system, and a unique pairing of high-contrast Serif (Playfair Display) for display headers and technical Mono (Space Mono) for functional UI. The style is characterized by scroll-triggered text reveals, glassmorphism navigation, and 'scan-line' animations that suggest a sophisticated AI-driven process. Ideal for high-tech SaaS, AI research labs, design agencies, and premium fintech platforms.
+
+Synapse
+
+A high-performance 'neural' dark mode design system characterized by deep black backgrounds (#030303), vibrant neon accents in violet (#8B5CF6) and cyan (#06B6D4), and a sophisticated blend of editorial serif typography (Instrument Serif) with functional sans-serif (Inter). The style utilizes glassmorphism, animated mesh gradients, and 'shimmer' text effects to evoke a sense of advanced intelligence, encryption, and institutional-grade technology. Ideal for Fintech, AI, Cybersecurity, and Web3 verticals where speed, security, and technical sophistication are core values.
+
+Bold Retro-Modernism
+
+A high-impact 'Bold Retro-Modernism' design system characterized by a vibrant primary color palette (Retro Red, Vintage Blue, Sunny Yellow), heavy editorial typography, and brutalist-inspired layout elements. It features massive display text, offset borders, and a mix of grayscale and high-saturation imagery. This style is ideal for luxury fashion, high-end lifestyle brands, avant-garde editorial platforms, or design-focused e-commerce. It uses tight leading (line-height) and tracking (letter-spacing) to create a dense, authoritative aesthetic.
+
+Grunge Collage Motion
+
+A high-energy, distressed collage style featuring raw textures, fragmented composition, and jittery stop-motion animation. Implements the 'Grunge Collage Motion Graphics' design system with bold typography and glitch effects.
+
+Hyper-Saturated Fluid
+
+A landing page featuring a Hyper-Saturated Fluid design style. It uses a 'Cyber Yellow' primary color with organic 'liquid' sectioning, contrasting against a 'Deep Onyx' dark void. Includes glassmorphic data cards, massive typography, and pill-shaped interactive elements.
+
+Architectural Blueprint
+
+A technical, architectural blueprint style dashboard with grid systems, measurement markers, and drafting aesthetics.
+
+Tectonic style
+
+Digital Geology & Obsidian Minimalism
+
+Liquid Metal style
+
+Liquid Chrome & Techno-Surrealism style
+
+Clay UI
+
+High-Fidelity Claymorphism Design System Source: designprompts.dev
+
+Modern Bold
+
+Bold Typography Design System Source: designprompts.dev
+
+Material
+
+Material Design 3 Source: designprompts.dev
+
+Flat design
+
+Flat Design removes all artifice Source: designprompts.dev
+
+Swiss Style
+
+International Typographic Style Source: designprompts.dev
+
+Terminal
+
+The Terminal CLI aesthetic pays homage to the raw power of the command line Source: designprompt.dev
+
+Monochrome
+
+# Minimalist Monochrome Source: designprompt.dev
+
+Sketch
+
+The Hand-Drawn design style celebrates authentic imperfection and human touch in a digital world Source: designprompts.dev
+
+Playful
+
+Playful Geometric Design System Source: designprompts.dev
+
+Kinetic
+
+High-energy brutalism meets kinetic poster design Source: designprompts.dev
+
+Bauhaus
+
+The Bauhaus style embodies the revolutionary principle "form follows function" while celebrating pure geometric beauty and primary color theory Source: designprompts.dev
+
+Luxury
+
+Elegance through restraint, precision, and depth Source: designprompts.dev
+
+Win98
+
+Embrace the raw, unfiltered aesthetic of the early web Source: designprompts.dev
+
+Neumorphism
+
+Neumorphism creates the illusion of physical depth through carefully balanced dual shadows Source: designprompts.dev
+
+News Print
+
+This style is an ode to the golden age of print journalism, reimagined for the web Source: designprompts.dev
+
+High Contrast Landing Page Prompt
+
+A high-contrast Swiss-style minimalist design system utilizing brutalist typography and editorial layouts. Characterized by a neutral palette of off-whites, deep blacks, and monochromatic grays, this style emphasizes rhythmic patterns through stacked text 'echo' effects and asymmetrical grids. Ideal for luxury travel, architecture portfolios, high-end fashion, and premium editorial content where typography acts as the primary visual driver.
+
+Use prompt
+View

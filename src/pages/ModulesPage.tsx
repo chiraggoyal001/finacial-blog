@@ -67,7 +67,7 @@ const ModulesPage = () => {
         </div>
       </section>
       <section className="py-10">
-        <div className="container space-y-8">
+        <div className="container space-y-8 stagger-children">
           {isLoading ? (
             <div className="space-y-8">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -90,8 +90,8 @@ const ModulesPage = () => {
             const allRead = mod.chapters.every((ch) => isRead(ch.id));
             const chaptersRead = mod.chapters.filter((ch) => isRead(ch.id)).length;
             return (
-              <Link key={mod.id} to={`/modules/${mod.id}`} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl">
-                <div className="rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg transition-all">
+              <Link key={mod.id} to={`/modules/${mod.id}`} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-2xl" style={{ viewTransitionName: `module-card-${mod.id}` }}>
+                <div className="rounded-2xl overflow-hidden border border-border bg-card hover:shadow-elevation-3 hover:border-primary/30 hover:-translate-y-1 hover:scale-[1.02] transition-all ease-spring-bounce duration-300 transform">
                   <div className="grid md:grid-cols-[320px_1fr] gap-0">
                     <div className="aspect-video md:aspect-auto overflow-hidden relative">
                       <img src={mod.image} alt={mod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />

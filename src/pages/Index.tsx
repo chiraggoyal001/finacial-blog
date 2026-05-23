@@ -197,18 +197,19 @@ const Index = () => {
       <Navbar />
 
       {/* Hero with illustration */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/30">
-        {/* Decorative blobs */}
-        <div className="absolute top-10 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-20 w-56 h-56 bg-secondary/5 rounded-full blur-3xl" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/40 pb-20">
+        {/* Animated Decorative blobs for Mesh Gradient effect */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-secondary/15 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '12s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-accent/30 rounded-full blur-[120px] mix-blend-multiply" />
 
         {/* Grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: "linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
+        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay" style={{
+          backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
         }} />
 
-        <div className="container py-16 md:py-24 relative">
+        <div className="container pt-16 pb-12 md:pt-24 md:pb-20 relative scroll-reveal">
           <div className="flex flex-col md:flex-row items-center gap-10">
             <div className="max-w-2xl space-y-6 flex-1">
               <span className="inline-block text-xs font-semibold tracking-widest uppercase text-primary">{t("home.tagline")}</span>
@@ -249,10 +250,17 @@ const Index = () => {
             </div>
           </div>
         </div>
+        
+        {/* Fluid Organic Wave Separator */}
+        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
+          <svg className="relative block w-full h-[60px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,119.26,192.39,103.73,238.16,92.17,280.9,74.52,321.39,56.44Z" className="fill-card"></path>
+          </svg>
+        </div>
       </section>
 
       <section className="py-12 bg-card">
-        <div className="container max-w-3xl text-center space-y-4">
+        <div className="container max-w-3xl text-center space-y-4 scroll-reveal">
           <h2 className="font-display text-2xl font-bold text-foreground">{t("home.aboutUs")}</h2>
           <p className="text-muted-foreground leading-relaxed">{t("home.aboutDesc")}</p>
         </div>
@@ -286,29 +294,29 @@ const Index = () => {
         )}
       </div>
 
-      <section className="py-12">
+      <section className="py-12 scroll-reveal">
         <div className="container">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-2xl font-bold text-foreground">{t("home.latest")}</h2>
-            <span className="text-xs text-muted-foreground font-mono">{t("home.updated")} {new Date().toLocaleDateString()}</span>
+            <span className="text-xs text-muted-foreground font-mono" suppressHydrationWarning>{t("home.updated")} {new Date().toLocaleDateString()}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             {Array.from({ length: 3 }).map((_, i) => {
               const post = latestFromEachCategory[i];
               // Show a skeleton for each slot that is still loading or missing data
               if (post) {
                 return (
-                  <Link key={post.id} to={getPostLink(post)} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl">
-                    <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/30 hover:scale-105 hover:z-10 transition-all duration-300 transform">
-                      <div className="aspect-video overflow-hidden">
-                        <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onError={handleImageError} />
+                  <Link key={post.id} to={getPostLink(post)} className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl" style={{ viewTransitionName: `index-card-${post.id}` }}>
+                    <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-elevation-3 hover:border-primary/30 hover:-translate-y-1 hover:scale-[1.02] hover:z-10 transition-all ease-spring-bounce duration-300 transform">
+                      <div className="aspect-video overflow-hidden relative">
+                        <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 parallax-image origin-center" loading="lazy" onError={handleImageError} />
                       </div>
                       <div className="p-5 space-y-2">
                         <span className="text-xs font-medium text-primary">{post.category}</span>
                         <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{post.title}</h3>
                         <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                          <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
+                          <span className="font-mono" suppressHydrationWarning>{new Date(post.date).toLocaleDateString()}</span>
                           <span>·</span>
                           <span>{post.readTime}</span>
                         </div>

@@ -72,6 +72,18 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      transitionTimingFunction: {
+        'spring-bounce': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'spring-smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'spring-snappy': 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      boxShadow: {
+        'elevation-1': '0 1px 2px rgba(0,0,0,0.05)',
+        'elevation-2': '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+        'elevation-3': '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+        'glow-primary': '0 0 15px 0 hsl(var(--primary) / 0.5)',
+        'glow-secondary': '0 0 15px 0 hsl(var(--secondary) / 0.5)',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

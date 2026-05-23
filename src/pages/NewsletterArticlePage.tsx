@@ -157,7 +157,7 @@ const NewsletterArticlePage = () => {
             </h1>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
+                <span className="font-mono" suppressHydrationWarning>{new Date(post.date).toLocaleDateString()}</span>
                 <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{post.readTime}</span>
                 {post.views && <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{post.views.toLocaleString()}</span>}
                 {post.likes && <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{post.likes}</span>}

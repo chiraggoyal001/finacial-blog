@@ -67,6 +67,15 @@ export default function AdminDashboard() {
     abTests: abTests?.length || 0,
   };
 
+  const isCardLoading = {
+    articles: loadingArticles,
+    modules: loadingModules,
+    videos: loadingVideos,
+    events: loadingEvents,
+    junior: loadingJunior,
+    abTests: loadingABTests,
+  };
+
   // Total views across all content
   const totalViews = (articles?.reduce((sum, a) => sum + (a.views || 0), 0) || 0) +
                      (modules?.reduce((sum, m) => sum + (m.views || 0), 0) || 0) +
@@ -130,7 +139,9 @@ export default function AdminDashboard() {
         <Card className="bg-primary/5 border-primary/20">
           <CardHeader className="pb-2">
             <CardDescription className="text-primary font-medium">Total Views</CardDescription>
-            <CardTitle className="text-2xl font-bold">{totalViews.toLocaleString()}</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              {isLoadingStats ? <Skeleton className="h-8 w-20" /> : totalViews.toLocaleString()}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-[10px] text-muted-foreground">Across all content types</p>
@@ -139,16 +150,22 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Live Articles</CardDescription>
-            <CardTitle className="text-2xl font-bold">{publishedArticles}</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              {loadingArticles ? <Skeleton className="h-8 w-16" /> : publishedArticles}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-[10px] text-muted-foreground">{draftArticles} drafts in progress</p>
+            <p className="text-[10px] text-muted-foreground">
+              {loadingArticles ? <Skeleton className="h-3 w-24 mt-1" /> : `${draftArticles} drafts in progress`}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total Ratings</CardDescription>
-            <CardTitle className="text-2xl font-bold">{totalRatings.toLocaleString()}</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              {isLoadingStats ? <Skeleton className="h-8 w-16" /> : totalRatings.toLocaleString()}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-[10px] text-muted-foreground">Across {stats.articles + stats.modules + stats.videos + stats.junior} content items</p>
@@ -158,7 +175,9 @@ export default function AdminDashboard() {
           <CardHeader className="pb-2">
             <CardDescription>Average Rating</CardDescription>
             <CardTitle className="text-2xl font-bold flex items-center gap-1">
-              {overallAvgRating === '—' ? '—' : (
+              {isLoadingStats ? (
+                <Skeleton className="h-8 w-16" />
+              ) : overallAvgRating === '—' ? '—' : (
                 <>
                   {overallAvgRating}
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -183,9 +202,9 @@ export default function AdminDashboard() {
             <CardDescription>Unique visitors over the last 30 days.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px] w-full mt-4">
+            <div className="h-[250px] w-full mt-4 flex">
               {loadingAnalytics ? (
-                <Skeleton className="h-full w-full" />
+                <Skeleton className="h-full w-full rounded-xl" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={analytics?.dailyActive}>
@@ -284,7 +303,11 @@ export default function AdminDashboard() {
                   <Icon className={`h-5 w-5 ${card.color}`} />
                 </div>
                 <span className="text-[11px] font-semibold text-foreground uppercase tracking-tight">{card.title.split(' ')[1] || card.title}</span>
-                <span className="text-xl font-bold">{stats[card.key as keyof typeof stats]}</span>
+                {isCardLoading[card.key as keyof typeof isCardLoading] ? (
+                  <Skeleton className="h-7 w-12" />
+                ) : (
+                  <span className="text-xl font-bold">{stats[card.key as keyof typeof stats]}</span>
+                )}
               </div>
             </Card>
           );

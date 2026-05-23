@@ -1,16 +1,24 @@
-import { Navigate, useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, isLoading, isSigningOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  if (isLoading || isSigningOut) {
+  useEffect(() => {
+    if (!isLoading && !isSigningOut && !user) {
+      navigate('/login', { state: { from: location }, replace: true });
+    }
+  }, [isLoading, isSigningOut, user, navigate, location]);
+
+  if (isLoading || isSigningOut || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="space-y-4 w-full max-w-md px-4">
@@ -22,9 +30,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 };
+
+export default ProtectedRoute;

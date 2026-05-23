@@ -173,7 +173,7 @@ const EventsPage = () => {
                           </div>
                           <h3 className="font-display font-semibold text-foreground leading-tight">{event.title}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
-                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground" suppressHydrationWarning>
                             <span className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {event.time}</span>
                             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {event.location}</span>

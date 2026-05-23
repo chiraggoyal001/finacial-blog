@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useLoaderData } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Clock, ChevronRight, Share2, Film, Play, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -14,6 +16,29 @@ import { useAuth } from "@/hooks/useAuth";
 import { VideoSeries, Module } from "@/lib/types";
 import DataError from "@/components/DataError";
 import { initArticleTracking } from "@/lib/sessionTracker";
+import { supabase } from "@/lib/supabase";
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  const { seriesId } = params;
+  if (!seriesId) return { initialDbVideoSeries: null };
+
+  const { data: series } = await supabase
+    .from('video_series')
+    .select('*')
+    .eq('id', seriesId)
+    .eq('is_published', true)
+    .single();
+    
+  if (!series) return { initialDbVideoSeries: null };
+
+  const { data: chapters } = await supabase
+    .from('video_chapters')
+    .select('*')
+    .eq('series_id', seriesId)
+    .order('sort_order', { ascending: true });
+
+  return { initialDbVideoSeries: { ...series, chapters } };
+}
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-label="X">
@@ -23,13 +48,15 @@ const XIcon = () => (
 
 const VideoArticlePage = () => {
   const { seriesId, chapterId } = useParams<{ seriesId: string; chapterId?: string }>();
+  const { initialDbVideoSeries } = useLoaderData() as any;
   const { isLoggedIn, user } = useAuth();
   const isSubscribed = isLoggedIn && user?.isSubscribed;
 
-  const { data: dbVideoSeries, isLoading, error, refetch } = useVideoSeriesItem(seriesId || "", { publishedOnly: true });
+  const { data: fetchedSeries, isLoading, error, refetch } = useVideoSeriesItem(seriesId || "", { publishedOnly: true });
+  const dbVideoSeries = fetchedSeries || initialDbVideoSeries;
   const { data: dbModules } = useModules({ published: true });
 
-  const series: VideoSeries | undefined = dbVideoSeries ? {
+  const series: VideoSeries | undefined = React.useMemo(() => dbVideoSeries ? {
     id: dbVideoSeries.id,
     title: dbVideoSeries.title,
     description: dbVideoSeries.description,
@@ -45,7 +72,7 @@ const VideoArticlePage = () => {
     })),
     totalDuration: dbVideoSeries.total_duration,
     linkedModuleId: dbVideoSeries.linked_module_id,
-  } : undefined;
+  } : undefined, [dbVideoSeries]);
 
   const activeChapterIndex = Math.max(0, series?.chapters.findIndex((c) => c.id === chapterId) ?? 0);
   const chapter = series?.chapters[activeChapterIndex];
@@ -64,7 +91,7 @@ const VideoArticlePage = () => {
     return cleanup;
   }, [chapter, series, user?.id]);
 
-  if (isLoading) {
+  if (isLoading && !dbVideoSeries) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />

@@ -73,7 +73,7 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, quizId, variant = 
     };
   }, [started, submitted]);
 
-  const isCorrectFn = (question: QuizQuestion): boolean => {
+  const isCorrectFn = React.useCallback((question: QuizQuestion): boolean => {
     const answer = answers[question.id];
     const type = question.type || "mcq";
     if (!answer) return false;
@@ -84,12 +84,12 @@ const QuizSection: React.FC<QuizSectionProps> = ({ questions, quizId, variant = 
       return JSON.stringify([...selected].sort()) === JSON.stringify(correctLabels);
     }
     return question.options.find(o => o.label === answer)?.isCorrect || false;
-  };
+  }, [answers]);
 
   const score = useMemo(() => {
     if (!submitted || !questions || questions.length === 0) return 0;
     return questions.filter(isCorrectFn).length;
-  }, [submitted, answers, questions]);
+  }, [submitted, questions, isCorrectFn]);
 
   if (!questions || questions.length === 0) return null;
 

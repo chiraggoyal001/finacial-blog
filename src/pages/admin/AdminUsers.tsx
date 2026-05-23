@@ -39,6 +39,8 @@ import {
   Baby,
   Timer,
   Heart,
+  Download,
+  CheckSquare
 } from 'lucide-react';
 import { 
   Card, 
@@ -89,7 +91,9 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { downloadAsCSV } from '@/lib/export';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -116,20 +120,11 @@ function getDateDaysAgo(days: number): Date {
 }
 
 export default function AdminUsers() {
-  const { data: users, isLoading, refetch } = useProfiles();
-  const updateSubscription = useUpdateUserSubscription();
-  const updateRole = useUpdateUserRole();
-  const suspendUser = useSuspendUser();
-  
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [subFilter, setSubFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<ExtendedProfile | null>(null);
-  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
-  const [suspendTarget, setSuspendTarget] = useState<ExtendedProfile | null>(null);
-  const [showToggleSubDialog, setShowToggleSubDialog] = useState(false);
-  const [toggleSubTarget, setToggleSubTarget] = useState<ExtendedProfile | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
   // Advanced filter states
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -141,27 +136,54 @@ export default function AdminUsers() {
   const [activityFilter, setActivityFilter] = useState<string>('all');
   const [interestFilter, setInterestFilter] = useState<string>('all');
 
-  // Derive unique values for dynamic filters
+  const { data: profilesResponse, isLoading, refetch } = useProfiles({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: searchQuery,
+    roleFilter,
+    subFilter,
+    onboardingFilter,
+    signupMethodFilter,
+    regionFilter,
+    professionFilter,
+    ageGroupFilter,
+    activityFilter,
+    interestFilter
+  });
+  
+  const users = profilesResponse?.data || [];
+  const totalUsers = profilesResponse?.totalCount || 0;
+
+  const updateSubscription = useUpdateUserSubscription();
+  const updateRole = useUpdateUserRole();
+  const suspendUser = useSuspendUser();
+  
+  const [selectedUser, setSelectedUser] = useState<ExtendedProfile | null>(null);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [suspendTarget, setSuspendTarget] = useState<ExtendedProfile | null>(null);
+  const [showToggleSubDialog, setShowToggleSubDialog] = useState(false);
+  const [toggleSubTarget, setToggleSubTarget] = useState<ExtendedProfile | null>(null);
+
+  // We keep some client-derived options, but since we are paginating,
+  // we could optionally use the full list or predefined constants.
+  // For safety, we keep them derived from the current page's users
+  // or you could replace them with standard arrays if you want all options available.
   const uniqueRegions = useMemo(() => {
-    if (!users) return [];
     const regions = new Set(users.map(u => u.region).filter(Boolean) as string[]);
     return Array.from(regions).sort();
   }, [users]);
 
   const uniqueProfessions = useMemo(() => {
-    if (!users) return [];
     const professions = new Set(users.map(u => u.profession).filter(Boolean) as string[]);
     return Array.from(professions).sort();
   }, [users]);
 
   const uniqueSignupMethods = useMemo(() => {
-    if (!users) return [];
     const methods = new Set(users.map(u => u.signup_method).filter(Boolean) as string[]);
     return Array.from(methods).sort();
   }, [users]);
 
   const uniqueInterests = useMemo(() => {
-    if (!users) return [];
     const interests = new Set<string>();
     users.forEach(u => {
       if (u.interests && Array.isArray(u.interests)) {
@@ -184,104 +206,49 @@ export default function AdminUsers() {
     return count;
   }, [onboardingFilter, signupMethodFilter, regionFilter, professionFilter, ageGroupFilter, activityFilter, interestFilter]);
 
-  const filteredUsers = useMemo(() => {
-    let list = users || [];
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(users.map(u => u.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleSelectUser = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(prev => [...prev, id]);
+    } else {
+      setSelectedUserIds(prev => prev.filter(userId => userId !== id));
+    }
+  };
+
+  const handleExportCSV = () => {
+    const dataToExport = selectedUserIds.length > 0 
+      ? users.filter(u => selectedUserIds.includes(u.id))
+      : users;
     
-    // Search filter
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(u => 
-        u.email.toLowerCase().includes(q) ||
-        `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
-        u.region?.toLowerCase().includes(q) ||
-        u.profession?.toLowerCase().includes(q) ||
-        u.interests?.some(i => i.toLowerCase().includes(q)) ||
-        u.signup_method?.toLowerCase().includes(q)
-      );
-    }
+    const formattedData = dataToExport.map(u => ({
+      ID: u.id,
+      FirstName: u.first_name,
+      LastName: u.last_name,
+      Email: u.email,
+      Role: u.role,
+      IsSubscribed: u.is_subscribed,
+      OnboardingCompleted: u.onboarding_completed,
+      SignupMethod: u.signup_method,
+      Region: u.region || '',
+      Profession: u.profession || '',
+      Age: u.age || '',
+      TotalActivities: u.total_activities,
+      LastActive: u.last_active_at || 'Never',
+      Joined: u.created_at
+    }));
     
-    // Role filter
-    if (roleFilter !== 'all') {
-      list = list.filter(u => u.role === roleFilter);
-    }
-    
-    // Subscription filter
-    if (subFilter === 'subscribed') {
-      list = list.filter(u => u.is_subscribed);
-    } else if (subFilter === 'free') {
-      list = list.filter(u => !u.is_subscribed);
-    }
+    downloadAsCSV(formattedData, 'users_export');
+  };
 
-    // Onboarding filter
-    if (onboardingFilter === 'completed') {
-      list = list.filter(u => u.onboarding_completed);
-    } else if (onboardingFilter === 'pending') {
-      list = list.filter(u => !u.onboarding_completed);
-    }
-
-    // Signup method filter
-    if (signupMethodFilter !== 'all') {
-      list = list.filter(u => u.signup_method === signupMethodFilter);
-    }
-
-    // Region filter
-    if (regionFilter !== 'all') {
-      list = list.filter(u => u.region === regionFilter);
-    }
-
-    // Profession filter
-    if (professionFilter !== 'all') {
-      list = list.filter(u => u.profession === professionFilter);
-    }
-
-    // Age group filter
-    if (ageGroupFilter !== 'all') {
-      list = list.filter(u => {
-        if (!u.age) return false;
-        switch (ageGroupFilter) {
-          case '18-25': return u.age >= 18 && u.age <= 25;
-          case '26-35': return u.age >= 26 && u.age <= 35;
-          case '36-50': return u.age >= 36 && u.age <= 50;
-          case '50+': return u.age > 50;
-          default: return true;
-        }
-      });
-    }
-
-    // Activity filter (based on last_active_at)
-    if (activityFilter !== 'all') {
-      const now = new Date();
-      list = list.filter(u => {
-        if (!u.last_active_at) return activityFilter === 'inactive-90';
-        const lastActive = new Date(u.last_active_at);
-        const diffDays = (now.getTime() - lastActive.getTime()) / 86400000;
-        switch (activityFilter) {
-          case 'active-7': return diffDays <= 7;
-          case 'active-30': return diffDays <= 30;
-          case 'active-90': return diffDays <= 90;
-          case 'inactive-90': return diffDays > 90;
-          default: return true;
-        }
-      });
-    }
-
-    // Interest filter
-    if (interestFilter !== 'all') {
-      list = list.filter(u => 
-        u.interests && Array.isArray(u.interests) && u.interests.includes(interestFilter)
-      );
-    }
-    
-    return list;
-  }, [users, searchQuery, roleFilter, subFilter, onboardingFilter, signupMethodFilter, regionFilter, professionFilter, ageGroupFilter, activityFilter, interestFilter]);
-
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(totalUsers / ITEMS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedUsers = filteredUsers.slice(
-    (safeCurrentPage - 1) * ITEMS_PER_PAGE,
-    safeCurrentPage * ITEMS_PER_PAGE
-  );
 
   const handleToggleSubscription = async () => {
     if (!toggleSubTarget) return;
@@ -379,9 +346,18 @@ export default function AdminUsers() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {selectedUserIds.length > 0 && (
+            <Badge variant="secondary" className="h-10 px-4 bg-muted">
+              {selectedUserIds.length} Selected
+            </Badge>
+          )}
+          <Button variant="outline" onClick={handleExportCSV} title="Export CSV">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
           <Badge variant="outline" className="h-10 px-4">
             <Users className="mr-2 h-4 w-4" />
-            {users?.length || 0} Total Users
+            {totalUsers} Total Users
           </Badge>
           <Button variant="outline" size="icon" onClick={() => refetch()} title="Refresh users">
             <RefreshCw className="h-4 w-4" />
@@ -685,6 +661,12 @@ export default function AdminUsers() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox 
+                      checked={users.length > 0 && selectedUserIds.length === users.length}
+                      onCheckedChange={(c) => handleSelectAll(!!c)}
+                    />
+                  </TableHead>
                   <TableHead className="w-[250px]">User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Subscription</TableHead>
@@ -699,6 +681,7 @@ export default function AdminUsers() {
                 {isLoading ? (
                   Array.from({ length: 8 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                       <TableCell><Skeleton className="h-10 w-[200px]" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-20" /></TableCell>
@@ -709,9 +692,9 @@ export default function AdminUsers() {
                       <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                     </TableRow>
                   ))
-                ) : filteredUsers.length === 0 ? (
+                ) : users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center">
+                    <TableCell colSpan={9} className="h-32 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Users className="h-8 w-8" />
                         <span>No users found matching your filters.</span>
@@ -722,8 +705,14 @@ export default function AdminUsers() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedUsers.map((user) => (
+                  users.map((user) => (
                     <TableRow key={user.id}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedUserIds.includes(user.id)}
+                          onCheckedChange={(c) => handleSelectUser(user.id, !!c)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
@@ -836,10 +825,10 @@ export default function AdminUsers() {
           </div>
         </CardContent>
         {/* Pagination Footer */}
-        {filteredUsers.length > ITEMS_PER_PAGE && (
+        {totalUsers > ITEMS_PER_PAGE && (
           <CardFooter className="flex items-center justify-between border-t px-6 py-3">
             <div className="text-sm text-muted-foreground">
-              Showing {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+              Showing {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeCurrentPage * ITEMS_PER_PAGE, totalUsers)} of {totalUsers} users
             </div>
             <div className="flex items-center gap-2">
               <Button

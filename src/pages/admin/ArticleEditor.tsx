@@ -371,11 +371,9 @@ export default function ArticleEditor() {
               Cancel
             </Button>
           </div>
-          {lastAutoSaved && (
-            <p className="text-[10px] text-muted-foreground text-center">
-              Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
-            </p>
-          )}
+          <div className="h-4 text-[10px] text-muted-foreground text-center">
+            {lastAutoSaved && `Draft auto-saved at ${lastAutoSaved.toLocaleTimeString()}`}
+          </div>
         </div>
       </form>
     </div>

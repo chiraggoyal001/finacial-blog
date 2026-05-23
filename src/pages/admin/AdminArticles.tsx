@@ -31,22 +31,70 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { useArticles, useDeleteArticle, useUpdateArticle } from '@/hooks/useContent';
+import { useDeleteArticle, useUpdateArticle } from '@/hooks/useContent';
+import { useAdminArticles } from '@/hooks/useAdmin';
 import type { DbArticle } from '@/lib/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AdminArticles() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
 
-  const { data: articles, isLoading } = useArticles();
+  const { data: response, isLoading } = useAdminArticles({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: searchQuery,
+  });
+
+  const articles = response?.data || [];
+  const totalArticles = response?.totalCount || 0;
+
   const deleteMutation = useDeleteArticle();
   const updateMutation = useUpdateArticle();
 
-  const filteredArticles = articles?.filter(article =>
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedArticleIds(articles.map(a => a.id));
+    else setSelectedArticleIds([]);
+  };
+
+  const handleSelectArticle = (id: string, checked: boolean) => {
+    if (checked) setSelectedArticleIds(prev => [...prev, id]);
+    else setSelectedArticleIds(prev => prev.filter(aId => aId !== id));
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${selectedArticleIds.length} articles?`)) return;
+    try {
+      await Promise.all(selectedArticleIds.map(id => deleteMutation.mutateAsync(id)));
+      toast.success(`${selectedArticleIds.length} articles deleted`);
+      setSelectedArticleIds([]);
+    } catch (error) {
+      toast.error('Failed to delete some articles');
+    }
+  };
+
+  const handleBulkTogglePublish = async () => {
+    try {
+      const selectedArticles = articles.filter(a => selectedArticleIds.includes(a.id));
+      await Promise.all(selectedArticles.map(article => 
+        updateMutation.mutateAsync({
+          id: article.id,
+          is_published: !article.is_published,
+          published_at: !article.is_published ? new Date().toISOString() : null,
+        })
+      ));
+      toast.success(`${selectedArticleIds.length} articles updated`);
+      setSelectedArticleIds([]);
+    } catch (error) {
+      toast.error('Failed to update some articles');
+    }
+  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -87,20 +135,34 @@ export default function AdminArticles() {
         </Button>
       </div>
 
-      {/* Search */}
+      {/* Search and Bulk Actions */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
+            <div className="relative flex-1 min-w-[250px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search articles..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="pl-9"
               />
             </div>
           </div>
+          {selectedArticleIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{selectedArticleIds.length} Selected</Badge>
+              <Button size="sm" variant="outline" onClick={handleBulkTogglePublish}>
+                Toggle Publish
+              </Button>
+              <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
+                Delete Selected
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -109,7 +171,7 @@ export default function AdminArticles() {
               <Skeleton className="h-12" />
               <Skeleton className="h-12" />
             </div>
-          ) : filteredArticles?.length === 0 ? (
+          ) : articles.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No articles found</p>
               <Button
@@ -124,6 +186,12 @@ export default function AdminArticles() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox 
+                      checked={articles.length > 0 && selectedArticleIds.length === articles.length}
+                      onCheckedChange={(c) => handleSelectAll(!!c)}
+                    />
+                  </TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Author</TableHead>
@@ -134,8 +202,14 @@ export default function AdminArticles() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredArticles?.map((article) => (
+                {articles.map((article) => (
                   <TableRow key={article.id}>
+                    <TableCell>
+                      <Checkbox 
+                        checked={selectedArticleIds.includes(article.id)}
+                        onCheckedChange={(c) => handleSelectArticle(article.id, !!c)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         {article.image && (
@@ -222,6 +296,31 @@ export default function AdminArticles() {
             </Table>
           )}
         </CardContent>
+        {totalArticles > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-between border-t px-6 py-3">
+            <div className="text-sm text-muted-foreground">
+              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, totalArticles)} of {totalArticles} articles
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => p + 1)}
+                disabled={currentPage * ITEMS_PER_PAGE >= totalArticles}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Delete Confirmation */}
@@ -235,12 +334,22 @@ export default function AdminArticles() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-              className="bg-red-600 hover:bg-red-700"
+            <Button
+              onClick={(e) => {
+                if (deleteConfirmId) handleDelete(deleteConfirmId);
+              }}
+              disabled={deleteMutation.isPending}
+              variant="destructive"
             >
-              Delete
-            </AlertDialogAction>
+              {deleteMutation.isPending ? (
+                <>
+                  <div className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -157,14 +157,15 @@ const HorizontalScroll = ({ title, posts, description, sectionType }: Horizontal
               <Link
                 key={post.id}
                 to={getPostLink(post)}
-                className="flex-shrink-0 w-72 snap-start scroll-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl"
+                className="group flex-shrink-0 w-72 snap-start scroll-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-xl"
+                style={{ viewTransitionName: `scroll-card-${post.id}` }}
               >
-                <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:z-10 transition-all duration-300 transform">
+                <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-elevation-3 hover:border-primary/30 hover:-translate-y-1 hover:scale-[1.02] hover:z-10 transition-all ease-spring-bounce duration-300 transform">
                   <div className="aspect-video overflow-hidden relative">
                     <img
                       src={post.image}
                       alt={post.title}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 parallax-image origin-center"
                       loading="lazy"
                       onError={handleImageError}
                     />
@@ -190,7 +191,7 @@ const HorizontalScroll = ({ title, posts, description, sectionType }: Horizontal
                       {post.title}
                     </h4>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
+                      <span className="font-mono" suppressHydrationWarning>{new Date(post.date).toLocaleDateString()}</span>
                       <span>·</span>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readTime}</span>
                       {post.views && (

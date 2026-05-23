@@ -1,12 +1,20 @@
-import { useState, useMemo } from 'react';
-import ReactQuill from 'react-quill';
+import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
 import 'react-quill/dist/quill.snow.css';
+
+const ReactQuill = lazy(() => import('react-quill'));
+
+function ClientOnly({ children, fallback }: { children: React.ReactNode; fallback: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted ? <>{children}</> : <>{fallback}</>;
+}
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Eye, Code, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { toast } from 'sonner';
 
 interface ContentEditorProps {
   value: string;
@@ -158,6 +166,18 @@ export function ContentEditor({
     'link', 'image'
   ];
 
+  const handleEditorChange = (content: string) => {
+    // Intercept base64 image uploads to prevent database bloat
+    if (content.includes('data:image/')) {
+      toast.error('Direct image uploads are disabled. Please host images externally and insert them via URL to save database space.');
+      // Strip out the base64 image tags
+      const sanitizedContent = content.replace(/<img[^>]+src="data:image\/[^">]+"[^>]*>/gi, '');
+      onChange(sanitizedContent);
+    } else {
+      onChange(content);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -198,15 +218,19 @@ export function ContentEditor({
 
       {mode === 'visual' && (
         <div className="bg-background rounded-md border min-h-[400px] flex flex-col">
-          <ReactQuill 
-            theme="snow"
-            value={value || ''}
-            onChange={onChange}
-            modules={modules}
-            formats={formats}
-            placeholder={placeholder}
-            className="flex-1 flex flex-col"
-          />
+          <ClientOnly fallback={<div className="flex-1 min-h-[300px] flex items-center justify-center text-muted-foreground">Loading editor...</div>}>
+            <Suspense fallback={<div className="flex-1 min-h-[300px] flex items-center justify-center text-muted-foreground">Loading editor...</div>}>
+              <ReactQuill 
+                theme="snow"
+                value={value || ''}
+                onChange={handleEditorChange}
+                modules={modules}
+                formats={formats}
+                placeholder={placeholder}
+                className="flex-1 flex flex-col"
+              />
+            </Suspense>
+          </ClientOnly>
           <style>{`
             .quill { display: flex; flex-direction: column; }
             .ql-container { flex: 1; min-h: 300px; font-size: 16px; }

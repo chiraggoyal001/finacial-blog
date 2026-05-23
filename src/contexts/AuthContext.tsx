@@ -183,7 +183,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      if (authTimeoutRef.current) clearTimeout(authTimeoutRef.current);
     };
   }, [fetchProfileAndSetUser]);
 

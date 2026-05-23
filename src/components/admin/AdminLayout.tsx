@@ -176,7 +176,7 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r bg-card">
+      <aside className="hidden lg:flex w-64 flex-col border-r bg-card h-screen sticky top-0">
         <SidebarContent />
       </aside>
 
@@ -212,3 +212,5 @@ export function AdminLayout() {
     </div>
   );
 }
+
+export default AdminLayout;

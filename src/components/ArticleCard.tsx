@@ -29,14 +29,14 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
 
   if (variant === "hero") {
     return (
-      <Link to={getPostLink(post)} className="group block">
-        <div className="relative rounded-2xl overflow-hidden border border-border bg-card">
+      <Link to={getPostLink(post)} className="group block" style={{ viewTransitionName: `article-card-${post.id}` }}>
+        <div className="relative rounded-2xl overflow-hidden border border-border bg-card hover:shadow-elevation-3 hover:-translate-y-1 transition-all ease-spring-bounce duration-300">
           <div className="grid md:grid-cols-2 gap-0">
             <div className="aspect-video md:aspect-auto overflow-hidden relative">
               <img
                 src={post.image}
                 alt={post.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 parallax-image origin-center"
               />
               <div className="absolute top-4 right-4 z-20">
                 <BookmarkButton contentType="article" contentId={post.id} className="bg-background/80 backdrop-blur-sm" />
@@ -59,7 +59,7 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
               </h2>
               <p className="text-muted-foreground leading-relaxed">{post.excerpt}</p>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
+                <span className="font-mono" suppressHydrationWarning>{new Date(post.date).toLocaleDateString()}</span>
                 <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readTime}</span>
                 {post.views && <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{post.views.toLocaleString()}</span>}
                 {post.likes && <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{post.likes}</span>}
@@ -82,13 +82,13 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
   }
 
   return (
-    <Link to={getPostLink(post)} className="group block">
-      <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:z-10 transition-all duration-300 transform">
+    <Link to={getPostLink(post)} className="group block" style={{ viewTransitionName: `article-card-${post.id}` }}>
+      <div className="relative rounded-xl overflow-hidden border border-border bg-card hover:shadow-elevation-3 hover:-translate-y-1 hover:scale-[1.02] hover:z-10 transition-all ease-spring-bounce duration-300 transform">
         <div className="aspect-video overflow-hidden relative">
           <img
             src={post.image}
             alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 parallax-image origin-center"
             loading="lazy"
           />
           <div className="absolute top-2 right-2 z-20 flex gap-2">
@@ -119,7 +119,7 @@ const ArticleCard = ({ post, variant = "default" }: ArticleCardProps) => {
             <p className="text-xs text-muted-foreground line-clamp-2">{post.excerpt}</p>
           )}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-mono">{new Date(post.date).toLocaleDateString()}</span>
+            <span className="font-mono" suppressHydrationWarning>{new Date(post.date).toLocaleDateString()}</span>
             <span>·</span>
             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readTime}</span>
             {post.views && (

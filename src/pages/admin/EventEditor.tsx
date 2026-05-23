@@ -42,12 +42,58 @@ export default function EventEditor() {
     recording_url: '',
   });
 
-  // Compute is_upcoming from the event date
+  // Compute is_upcoming from the event date securely using UTC to avoid timezone shifts
   const computedIsUpcoming = formData.date
-    ? new Date(formData.date) >= new Date(new Date().toDateString())
+    ? new Date(formData.date).getTime() >= new Date().setUTCHours(0, 0, 0, 0)
     : true;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastAutoSaved, setLastAutoSaved] = useState<Date | null>(null);
+
+  const DRAFT_KEY = `draft_event_${id || 'new'}`;
+
+  // Auto-save logic
+  useEffect(() => {
+    if (isSubmitting || !formData.title) return;
+    
+    const timer = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ 
+        formData, 
+        updatedAt: new Date().toISOString()
+      }));
+      setLastAutoSaved(new Date());
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData, DRAFT_KEY, isSubmitting]);
+
+  // Check for draft on mount
+  useEffect(() => {
+    const savedDraftStr = localStorage.getItem(DRAFT_KEY);
+    if (!savedDraftStr || existingEvent) return;
+
+    try {
+      const { formData: draftData, updatedAt } = JSON.parse(savedDraftStr);
+      const draftDate = new Date(updatedAt);
+      const isRecent = (new Date().getTime() - draftDate.getTime()) < 1000 * 60 * 60 * 24; // 24 hours
+
+      if (isRecent && draftData.title) {
+        toast("Unsaved draft found", {
+          description: `Saved ${draftDate.toLocaleTimeString()} - would you like to restore it?`,
+          action: {
+            label: "Restore",
+            onClick: () => {
+              const { formData: restoredData } = JSON.parse(savedDraftStr);
+              setFormData(prev => ({ ...prev, ...restoredData }));
+              toast.success("Draft restored!");
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing event draft", e);
+    }
+  }, [DRAFT_KEY, existingEvent]);
 
   useEffect(() => {
     if (existingEvent) {
@@ -58,11 +104,18 @@ export default function EventEditor() {
         date: existingEvent.date ? new Date(existingEvent.date).toISOString().split('T')[0] : '',
         tags: existingEvent.tags || [],
       });
+      localStorage.removeItem(DRAFT_KEY);
     }
-  }, [existingEvent]);
+  }, [existingEvent, DRAFT_KEY]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.capacity !== undefined && formData.capacity <= 0) {
+      toast.error('Capacity must be greater than 0');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Auto-compute is_upcoming from the event date
@@ -85,6 +138,7 @@ export default function EventEditor() {
         );
         toast.success('Event created');
       }
+      localStorage.removeItem(DRAFT_KEY);
       navigate('/admin/events');
     } catch {
       toast.error(isEditing ? 'Failed to update event' : 'Failed to create event');
@@ -222,11 +276,20 @@ export default function EventEditor() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isSubmitting} className="flex-1">
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Event' : 'Create Event'}</>}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/admin/events')} disabled={isSubmitting}>Cancel</Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isSubmitting} className="flex-1">
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{isEditing ? 'Update Event' : 'Create Event'}</>}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/admin/events')} disabled={isSubmitting}>Cancel</Button>
+          </div>
+          <div className="h-5">
+            {lastAutoSaved && (
+              <p className="text-[10px] text-muted-foreground text-center">
+                Draft auto-saved at {lastAutoSaved.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
       </form>
     </div>
