@@ -404,7 +404,10 @@ const ProfilePage = () => {
         <div className="flex flex-col md:flex-row gap-6">
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0">
-            <Card className="sticky top-24">
+            <Card 
+              style={{ top: "calc(6rem + var(--banner-height, 0px))" }}
+              className="sticky"
+            >
               <CardContent className="p-4">
                 {/* User Info */}
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b">

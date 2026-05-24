@@ -68,7 +68,10 @@ const Navbar = () => {
   return (
     <>
       <SystemBanner />
-      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
+      <header 
+        style={{ top: "var(--banner-height, 0px)" }}
+        className="sticky z-50 w-full border-b border-border/50 bg-background/40 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40"
+      >
         <div className="container flex h-16 items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2">
             <span className="font-display text-2xl font-bold text-primary">KAMADA</span>

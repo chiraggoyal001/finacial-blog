@@ -155,7 +155,10 @@ const JuniorArticlePage = () => {
 
       {/* Reading progress bar */}
       {!isVideoChapter && (
-        <div className="sticky top-0 z-50 h-1 bg-muted">
+        <div 
+          style={{ top: "calc(4rem + var(--banner-height, 0px))" }}
+          className="sticky z-50 h-1 bg-muted"
+        >
           <div className="h-full bg-secondary transition-all duration-200" style={{ width: `${scrollPercent}%` }} />
         </div>
       )}

@@ -228,17 +228,50 @@ export default function AdminSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bg-primary text-primary-foreground">Primary (Green)</SelectItem>
-                    <SelectItem value="bg-secondary text-secondary-foreground">Secondary (Navy)</SelectItem>
-                    <SelectItem value="bg-accent text-accent-foreground">Accent (Gold)</SelectItem>
+                    <SelectItem value="bg-primary text-primary-foreground">Primary (Deep Teal)</SelectItem>
+                    <SelectItem value="bg-secondary text-secondary-foreground">Secondary (Warm Coral)</SelectItem>
+                    <SelectItem value="bg-accent text-accent-foreground">Accent (Light Teal)</SelectItem>
+                    <SelectItem value="rainbow">Rainbow (Flowing Gradient)</SelectItem>
                     <SelectItem value="bg-destructive text-destructive-foreground">Destructive (Red)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Preview</Label>
-                <div className={`h-10 rounded flex items-center justify-center px-2 text-[10px] font-medium truncate ${banner.backgroundColor}`}>
-                  {banner.text || "Your message here..."}
+                <div className="border border-border/40 rounded-lg overflow-hidden h-10 flex items-center bg-card">
+                  <div className="w-full h-full relative flex items-center justify-center text-center">
+                    {banner.backgroundColor === 'rainbow' ? (
+                      <>
+                        <style>
+                          {`@keyframes fd-moving-banner {
+                              from { background-position: 0% 0;  }
+                              to { background-position: 100% 0;  }
+                           }`}
+                        </style>
+                        <div className="absolute inset-0 bg-background/80" />
+                        <div
+                          className="absolute inset-0 z-0"
+                          style={{
+                            maskImage: "linear-gradient(to bottom, white, transparent), radial-gradient(circle at top center, white, transparent)",
+                            maskComposite: "intersect",
+                            WebkitMaskImage: "linear-gradient(to bottom, white, transparent), radial-gradient(circle at top center, white, transparent)",
+                            WebkitMaskComposite: "source-in",
+                            animation: "fd-moving-banner 20s linear infinite",
+                            backgroundImage: "repeating-linear-gradient(70deg, hsla(174, 100%, 21%, 0.65) 0%, hsla(12, 89%, 62%, 0.65) 20%, hsla(174, 30%, 92%, 0.5) 40%, hsla(40, 20%, 98%, 0.4) 60%, hsla(174, 100%, 21%, 0.65) 80%)",
+                            backgroundSize: "200% 100%",
+                            filter: "saturate(1.5)",
+                          }}
+                        />
+                        <span className="relative z-10 text-[10px] font-semibold text-foreground truncate px-2">
+                          {banner.text || "Your message here..."}
+                        </span>
+                      </>
+                    ) : (
+                      <div className={`w-full h-full flex items-center justify-center px-2 text-[10px] font-semibold truncate ${banner.backgroundColor}`}>
+                        {banner.text || "Your message here..."}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

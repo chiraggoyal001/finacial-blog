@@ -18,8 +18,10 @@ export default {
         sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
         display: ["Space Grotesk", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
+        inter: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
+        "brand-gray": "#1A1A1A",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

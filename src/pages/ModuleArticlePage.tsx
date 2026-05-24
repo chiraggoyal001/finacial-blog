@@ -218,7 +218,10 @@ const ModuleArticlePage = () => {
       <Navbar />
 
       {/* Reading progress bar */}
-      <div className="sticky top-16 z-40 w-full">
+      <div 
+        style={{ top: "calc(4rem + var(--banner-height, 0px))" }}
+        className="sticky z-40 w-full"
+      >
         <Progress value={currentPercent} className="h-1 rounded-none" />
       </div>
 
