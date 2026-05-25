@@ -17,6 +17,8 @@ import heroIllustration from "@/assets/hero-illustration.png";
 import { useSEO } from "@/hooks/useSEO";
 import { sanitizeHtml } from "@/lib/sanitize";
 import DataError from "@/components/DataError";
+import { PastelGradientBackground } from "@/components/PastelGradientBackground";
+import { TrustedBy } from "@/components/TrustedBy";
 
 
 const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f0f0f0' width='600' height='400'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='24' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3EImage unavailable%3C/text%3E%3C/svg%3E";
@@ -198,69 +200,69 @@ const Index = () => {
       <Navbar />
 
       {/* Hero with illustration */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/40 pb-20">
-        {/* Animated Decorative blobs for Mesh Gradient effect */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-secondary/15 rounded-full blur-[80px] animate-pulse" style={{ animationDuration: '12s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-accent/30 rounded-full blur-[120px] mix-blend-multiply" />
+      <section className="relative overflow-hidden bg-background">
+        <PastelGradientBackground className="pb-20">
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay pointer-events-none" style={{
+            backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }} />
 
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay" style={{
-          backgroundImage: "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }} />
+          <div className="container pt-16 pb-12 md:pt-24 md:pb-20 relative scroll-reveal">
+            <div className="flex flex-col md:flex-row items-center gap-10">
+              <div className="max-w-2xl space-y-6 flex-1">
+                <span className="inline-block text-xs font-semibold tracking-widest uppercase text-primary">{t("home.tagline")}</span>
+                <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground leading-tight">
+                  {t("home.heroTitle1")}{" "}<span className="text-primary">{t("home.heroTitle2")}</span>
+                </h1>
+                <p className="text-lg text-muted-foreground leading-relaxed">{t("home.heroDesc")}</p>
+                <div className="flex flex-wrap gap-3">
+                  <Link to="/subscribe"><Button size="lg" className="rounded-xl gap-2 font-semibold">{t("home.getStarted")} <ArrowRight className="h-4 w-4" /></Button></Link>
+                  <Link to="/modules"><Button variant="outline" size="lg" className="rounded-xl font-semibold">{t("home.exploreModules")}</Button></Link>
+                </div>
 
-        <div className="container pt-16 pb-12 md:pt-24 md:pb-20 relative scroll-reveal">
-          <div className="flex flex-col md:flex-row items-center gap-10">
-            <div className="max-w-2xl space-y-6 flex-1">
-              <span className="inline-block text-xs font-semibold tracking-widest uppercase text-primary">{t("home.tagline")}</span>
-              <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground leading-tight">
-                {t("home.heroTitle1")}{" "}<span className="text-primary">{t("home.heroTitle2")}</span>
-              </h1>
-              <p className="text-lg text-muted-foreground leading-relaxed">{t("home.heroDesc")}</p>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/subscribe"><Button size="lg" className="rounded-xl gap-2 font-semibold">{t("home.getStarted")} <ArrowRight className="h-4 w-4" /></Button></Link>
-                <Link to="/modules"><Button variant="outline" size="lg" className="rounded-xl font-semibold">{t("home.exploreModules")}</Button></Link>
+                {/* Stats strip with real computed values */}
+                <div className="flex gap-6 pt-4">
+                  {[
+                    { icon: Zap, label: `${totalModules}+ Modules` },
+                    { icon: TrendingUp, label: `${readersInK}K+ Readers` },
+                    { icon: BarChart3, label: `${totalArticles}+ Articles` },
+                  ].map((s, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <s.icon className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Stats strip with real computed values */}
-              <div className="flex gap-6 pt-4">
-                {[
-                  { icon: Zap, label: `${totalModules}+ Modules` },
-                  { icon: TrendingUp, label: `${readersInK}K+ Readers` },
-                  { icon: BarChart3, label: `${totalArticles}+ Articles` },
-                ].map((s, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <s.icon className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{s.label}</span>
-                  </div>
-                ))}
+              {/* Hero illustration */}
+              <div className="flex-1 flex justify-center">
+                <img
+                  src={heroIllustration}
+                  alt="KAMADA mascot helping with financial literacy"
+                  className="w-full max-w-md md:max-w-lg drop-shadow-xl"
+                  width={1024}
+                  height={768}
+                  onError={handleImageError}
+                />
               </div>
             </div>
 
-            {/* Hero illustration */}
-            <div className="flex-1 flex justify-center">
-              <img
-                src={heroIllustration}
-                alt="KAMADA mascot helping with financial literacy"
-                className="w-full max-w-md md:max-w-lg drop-shadow-xl"
-                width={1024}
-                height={768}
-                onError={handleImageError}
-              />
-            </div>
+            {/* Redesigned Trusted By segment (Logos + Trust Badges) */}
+            <TrustedBy />
           </div>
-        </div>
-        
+        </PastelGradientBackground>
+
         {/* Fluid Organic Wave Separator */}
-        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
+        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-20">
           <svg className="relative block w-full h-[60px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,119.26,192.39,103.73,238.16,92.17,280.9,74.52,321.39,56.44Z" className="fill-card"></path>
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,119.26,192.39,103.73,238.16,92.17,280.9,74.52,321.39,56.44Z" className="fill-background"></path>
           </svg>
         </div>
       </section>
 
-      <section className="py-12 bg-card">
+      <section className="py-12 bg-background">
         <div className="container max-w-3xl text-center space-y-4 scroll-reveal">
           <h2 className="font-display text-2xl font-bold text-foreground">{t("home.aboutUs")}</h2>
           <p className="text-muted-foreground leading-relaxed">{t("home.aboutDesc")}</p>

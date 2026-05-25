@@ -31,6 +31,13 @@ export const translations: Translations = {
   "home.latest": { en: "Latest", hi: "नवीनतम" },
   "home.updated": { en: "Updated", hi: "अपडेटेड" },
   "home.viewAll": { en: "View All", hi: "सभी देखें" },
+  "home.trustedBy": { en: "Featured & Trusted Partner Platforms", hi: "प्रदर्शित और विश्वसनीय भागीदार प्लेटफॉर्म" },
+  "home.badgeVerified": { en: "100% Fact-Checked", hi: "100% तथ्य-जाँचे गए" },
+  "home.badgeVerifiedDesc": { en: "Verified by financial experts", hi: "वित्तीय विशेषज्ञों द्वारा सत्यापित" },
+  "home.badgeCompliant": { en: "Structured Paths", hi: "संरचित शिक्षा पथ" },
+  "home.badgeCompliantDesc": { en: "Aligned with guidelines", hi: "दिशानिर्देशों के अनुरूप" },
+  "home.badgeRating": { en: "Top Rated Platform", hi: "टॉप रेटेड प्लेटफॉर्म" },
+  "home.badgeRatingDesc": { en: "4.8+ avg learner rating", hi: "4.8+ औसत शिक्षार्थी रेटिंग" },
 
   // ─── Newsletter Page ───
   "newsletter.tag": { en: "Newsletter", hi: "न्यूज़लेटर" },

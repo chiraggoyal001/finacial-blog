@@ -15,6 +15,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useJuniorModules } from "@/hooks/useContent";
 import { JuniorModule, JuniorChapter } from "@/lib/types";
 import DataError from "@/components/DataError";
+import { PastelGradientBackground } from "@/components/PastelGradientBackground";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -236,47 +237,45 @@ const JuniorPage = () => {
       <Navbar />
 
       {/* Animated Hero Banner */}
-      <section ref={heroRef} className="bg-gradient-to-br from-secondary/10 via-background to-primary/5 relative overflow-hidden">
-        {/* Floating emojis with GSAP */}
-        <FloatingEmoji emoji="💡" className="top-8 left-[5%]" />
-        <FloatingEmoji emoji="🚀" className="top-16 right-[10%]" />
-        <FloatingEmoji emoji="📚" className="bottom-8 left-[30%]" />
-        <FloatingEmoji emoji="🎮" className="bottom-12 right-[5%]" />
-        <FloatingEmoji emoji="⭐" className="top-[40%] left-[15%]" />
-        <FloatingEmoji emoji="🎯" className="top-[30%] right-[25%]" />
-        <FloatingEmoji emoji="💰" className="bottom-[20%] left-[60%]" />
-        <FloatingEmoji emoji="🏆" className="top-12 left-[50%]" />
+      <section ref={heroRef} className="relative overflow-hidden bg-background">
+        <PastelGradientBackground>
+          {/* Floating emojis with GSAP */}
+          <FloatingEmoji emoji="💡" className="top-8 left-[5%]" />
+          <FloatingEmoji emoji="🚀" className="top-16 right-[10%]" />
+          <FloatingEmoji emoji="📚" className="bottom-8 left-[30%]" />
+          <FloatingEmoji emoji="🎮" className="bottom-12 right-[5%]" />
+          <FloatingEmoji emoji="⭐" className="top-[40%] left-[15%]" />
+          <FloatingEmoji emoji="🎯" className="top-[30%] right-[25%]" />
+          <FloatingEmoji emoji="💰" className="bottom-[20%] left-[60%]" />
+          <FloatingEmoji emoji="🏆" className="top-12 left-[50%]" />
 
-        {/* Animated gradient orbs */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-secondary/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+          <div className="container py-14 md:py-24 relative z-10" ref={heroTextRef}>
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-6 w-6 text-secondary" />
+              <span className="inline-block text-xs font-semibold tracking-widest uppercase text-secondary">{t("junior.tag")}</span>
+            </div>
+            <h1 className="font-display text-4xl md:text-6xl font-bold text-foreground">
+              {t("junior.heroTitle1")} <span className="text-secondary inline-flex items-center gap-2">{t("junior.heroTitle2")} <span className="text-4xl md:text-5xl">🎉</span></span>
+            </h1>
+            <p className="mt-5 text-muted-foreground max-w-xl text-lg leading-relaxed">
+              {t("junior.heroDesc")}
+            </p>
 
-        <div className="container py-14 md:py-24 relative z-10" ref={heroTextRef}>
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-6 w-6 text-secondary" />
-            <span className="inline-block text-xs font-semibold tracking-widest uppercase text-secondary">{t("junior.tag")}</span>
+            {/* Fun stats bar */}
+            <div className="mt-8 flex flex-wrap gap-4">
+              {[
+                { icon: Rocket, label: `${juniorModules.length} Modules`, color: "text-secondary" },
+                { icon: Star, label: `${juniorModules.reduce((a, m) => a + m.chapters.length, 0)} Chapters`, color: "text-primary" },
+                { icon: Zap, label: "Interactive", color: "text-orange-500" },
+              ].map((stat, i) => (
+                <div key={i} className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-2 shadow-sm">
+                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                  <span className="text-sm font-medium text-foreground">{stat.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <h1 className="font-display text-4xl md:text-6xl font-bold text-foreground">
-            {t("junior.heroTitle1")} <span className="text-secondary inline-flex items-center gap-2">{t("junior.heroTitle2")} <span className="text-4xl md:text-5xl">🎉</span></span>
-          </h1>
-          <p className="mt-5 text-muted-foreground max-w-xl text-lg leading-relaxed">
-            {t("junior.heroDesc")}
-          </p>
-
-          {/* Fun stats bar */}
-          <div className="mt-8 flex flex-wrap gap-4">
-            {[
-              { icon: Rocket, label: `${juniorModules.length} Modules`, color: "text-secondary" },
-              { icon: Star, label: `${juniorModules.reduce((a, m) => a + m.chapters.length, 0)} Chapters`, color: "text-primary" },
-              { icon: Zap, label: "Interactive", color: "text-orange-500" },
-            ].map((stat, i) => (
-              <div key={i} className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-border rounded-full px-4 py-2 shadow-sm">
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                <span className="text-sm font-medium text-foreground">{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </PastelGradientBackground>
       </section>
 
       {/* Video Modules */}

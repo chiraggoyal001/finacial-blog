@@ -15,7 +15,7 @@ async function run() {
   for (const route of routes) {
     try {
       console.log(`Navigating to ${route}...`);
-      await page.goto(`http://localhost:5173${route}`, { waitUntil: 'networkidle' });
+      await page.goto(`http://localhost:5174${route}`, { waitUntil: 'networkidle' });
       // Wait an extra second for animations to settle
       await page.waitForTimeout(1000);
       
