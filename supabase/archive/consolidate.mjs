@@ -1,8 +1,38 @@
-import { readFileSync, readdirSync, writeFileSync } from 'fs';
+import { readFileSync, readdirSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
 
-const PROJECT_REF = 'jvucpnlgfvgulhgthhix';
-const ACCESS_TOKEN = 'sbp_d51b70d38b39cb2f4c33f5d0a654db4d9a4495ff';
+let supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+let token = process.env.SUPABASE_ACCESS_TOKEN;
+
+// Try reading .env file from working directory if either is missing
+if (!supabaseUrl || !token) {
+  try {
+    const envPath = resolve(process.cwd(), '.env');
+    if (existsSync(envPath)) {
+      const envContent = readFileSync(envPath, 'utf-8');
+      if (!supabaseUrl) {
+        const urlMatch = envContent.match(/(SUPABASE_URL|VITE_SUPABASE_URL)\s*=\s*['"]?([^'"\r\n]+)['"]?/);
+        if (urlMatch) supabaseUrl = urlMatch[2];
+      }
+      if (!token) {
+        const tokenMatch = envContent.match(/SUPABASE_ACCESS_TOKEN\s*=\s*['"]?([^'"\r\n]+)['"]?/);
+        if (tokenMatch) token = tokenMatch[1];
+      }
+    }
+  } catch (e) {
+    // Ignore error
+  }
+}
+
+const PROJECT_REF = supabaseUrl 
+  ? supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'jvucpnlgfvgulhgthhix'
+  : 'jvucpnlgfvgulhgthhix';
+const ACCESS_TOKEN = token;
+
+if (!ACCESS_TOKEN) {
+  console.error('❌ Error: SUPABASE_ACCESS_TOKEN is not defined in environment or .env file');
+  process.exit(1);
+}
 
 async function applySql(sql) {
   const response = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`, {

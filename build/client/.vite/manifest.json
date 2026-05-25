@@ -149,8 +149,8 @@
       "_skeleton-C6Z-8-ad.js"
     ]
   },
-  "_PastelGradientBackground-DbIg-K-e.js": {
-    "file": "assets/PastelGradientBackground-DbIg-K-e.js",
+  "_PastelGradientBackground-BMqg6Krj.js": {
+    "file": "assets/PastelGradientBackground-BMqg6Krj.js",
     "name": "PastelGradientBackground",
     "imports": [
       "_chunk-4N6VE7H7-BLQoz5xV.js",
@@ -1216,7 +1216,7 @@
     ]
   },
   "app/root.tsx?__react-router-build-client-route": {
-    "file": "assets/root-CD9ZF8W9.js",
+    "file": "assets/root-BE3ubxpY.js",
     "name": "root",
     "src": "app/root.tsx?__react-router-build-client-route",
     "isEntry": true,
@@ -1250,7 +1250,7 @@
       "src/components/ChatbotWidget.tsx"
     ],
     "css": [
-      "assets/root-CEsmQoHA.css"
+      "assets/root-PaJxngpL.css"
     ]
   },
   "src/assets/hero-illustration.png": {
@@ -1744,7 +1744,7 @@
     ]
   },
   "src/pages/Index.tsx?__react-router-build-client-route": {
-    "file": "assets/Index-DG4zcw13.js",
+    "file": "assets/Index-BslyXKoA.js",
     "name": "Index",
     "src": "src/pages/Index.tsx?__react-router-build-client-route",
     "isEntry": true,
@@ -1764,7 +1764,7 @@
       "_useSEO-D1ahNxvh.js",
       "_sanitize-DR4QAsML.js",
       "_DataError-RkCqduDT.js",
-      "_PastelGradientBackground-DbIg-K-e.js",
+      "_PastelGradientBackground-BMqg6Krj.js",
       "_createLucideIcon-DOEZ_bMU.js",
       "_graduation-cap-D-Zo1bBu.js",
       "_star-CUHy98jm.js",
@@ -1901,7 +1901,7 @@
     ]
   },
   "src/pages/JuniorPage.tsx?__react-router-build-client-route": {
-    "file": "assets/JuniorPage-DJt9zsjz.js",
+    "file": "assets/JuniorPage-BTjKUF9Y.js",
     "name": "JuniorPage",
     "src": "src/pages/JuniorPage.tsx?__react-router-build-client-route",
     "isEntry": true,
@@ -1918,7 +1918,7 @@
       "_useTranslation-D-G6l8y_.js",
       "_useContent-BfuLX8Ig.js",
       "_DataError-RkCqduDT.js",
-      "_PastelGradientBackground-DbIg-K-e.js",
+      "_PastelGradientBackground-BMqg6Krj.js",
       "_sparkles-CeH_clxa.js",
       "_createLucideIcon-DOEZ_bMU.js",
       "_star-CUHy98jm.js",

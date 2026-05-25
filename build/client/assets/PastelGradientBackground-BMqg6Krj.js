@@ -46,7 +46,7 @@ import{o as a}from"./chunk-4N6VE7H7-BLQoz5xV.js";import{c as o}from"./utils-Cytz
             animation: rotate-reverse 24s linear infinite;
           }
           
-          /* Conic gradient colors - Dark Mode (Teal & Coral Aurora) */
+          /* Conic gradient colors - Dark Mode (Teal and Coral Aurora) */
           .dark .pastel-bg-layer-1 {
             background: conic-gradient(
               from 0deg,

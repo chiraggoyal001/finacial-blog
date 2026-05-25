@@ -1,7 +1,38 @@
 const https = require('https');
 
-const projectRef = 'jvucpnlgfvgulhgthhix';
-const token = 'sbp_d51b70d38b39cb2f4c33f5d0a654db4d9a4495ff';
+let supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+let token = process.env.SUPABASE_ACCESS_TOKEN;
+
+// Try reading .env file if either is missing
+if (!supabaseUrl || !token) {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.resolve(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      if (!supabaseUrl) {
+        const urlMatch = envContent.match(/(SUPABASE_URL|VITE_SUPABASE_URL)\s*=\s*['"]?([^'"\r\n]+)['"]?/);
+        if (urlMatch) supabaseUrl = urlMatch[2];
+      }
+      if (!token) {
+        const tokenMatch = envContent.match(/SUPABASE_ACCESS_TOKEN\s*=\s*['"]?([^'"\r\n]+)['"]?/);
+        if (tokenMatch) token = tokenMatch[1];
+      }
+    }
+  } catch (e) {
+    // Ignore error
+  }
+}
+
+const projectRef = supabaseUrl 
+  ? supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'jvucpnlgfvgulhgthhix'
+  : 'jvucpnlgfvgulhgthhix';
+
+if (!token) {
+  console.error('❌ Error: SUPABASE_ACCESS_TOKEN is not defined in environment or .env file');
+  process.exit(1);
+}
 
 function execSql(sql) {
   return new Promise((resolve, reject) => {
