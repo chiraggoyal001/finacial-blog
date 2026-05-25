@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -36,8 +36,13 @@ export default function AuthCallback() {
   }, []);
 
   // Helper to check if user needs onboarding
-  const checkAndRedirect = useCallback(async (userId: string) => {
+  const checkAndRedirect = useCallback(async (userId: string, nextUrl: string = '/') => {
     try {
+      if (nextUrl === '/reset-password') {
+        navigate('/reset-password');
+        return;
+      }
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('onboarding_completed, signup_method, first_name')
@@ -74,13 +79,13 @@ export default function AuthCallback() {
         }
         navigate('/onboarding');
       } else {
-        // Existing complete profile - go home
+        // Existing complete profile - go home or to nextUrl
         toast.success('Logged in successfully!');
-        navigate('/');
+        navigate(nextUrl);
       }
     } catch {
       toast.success('Logged in successfully!');
-      navigate('/');
+      navigate(nextUrl);
     }
   }, [navigate, createOAuthProfile]);
 
@@ -95,10 +100,30 @@ export default function AuthCallback() {
 
     const error = hashParams.get('error') || searchParams.get('error');
     const errorDescription = hashParams.get('error_description') || searchParams.get('error_description');
+    const nextUrl = searchParams.get('next') || '/';
 
     if (error) {
       toast.error(errorDescription || 'Authentication failed');
       timerRef.current = setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+
+    const code = searchParams.get('code');
+    if (code) {
+      // Manual exchange to ensure reliable PKCE flow
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error: exchangeError }) => {
+        if (exchangeError) {
+          toast.error('Authentication failed: ' + exchangeError.message);
+          navigate('/login');
+        } else if (data.session) {
+          void checkAndRedirect(data.session.user.id, nextUrl);
+        } else {
+          navigate('/login');
+        }
+      }).catch((err) => {
+        toast.error('Authentication failed: ' + (err.message || err));
+        navigate('/login');
+      });
       return;
     }
 
@@ -111,7 +136,7 @@ export default function AuthCallback() {
       }
 
       if (session) {
-        void checkAndRedirect(session.user.id);
+        void checkAndRedirect(session.user.id, nextUrl);
         return;
       }
 
@@ -119,7 +144,7 @@ export default function AuthCallback() {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' && session) {
           subscription.unsubscribe();
-          void checkAndRedirect(session.user.id);
+          void checkAndRedirect(session.user.id, nextUrl);
         }
       });
 
@@ -128,7 +153,7 @@ export default function AuthCallback() {
         subscription.unsubscribe();
         supabase.auth.getSession().then(({ data: { session: delayedSession } }) => {
           if (delayedSession) {
-            void checkAndRedirect(delayedSession.user.id);
+            void checkAndRedirect(delayedSession.user.id, nextUrl);
           } else {
             toast.error('Authentication timed out');
             navigate('/login');

@@ -31,14 +31,14 @@ DECLARE
   space_idx INTEGER;
 BEGIN
   -- Get role IDs
-  SELECT id INTO user_role_id FROM roles WHERE name = 'user';
-  SELECT id INTO admin_role_id FROM roles WHERE name = 'admin';
+  SELECT id INTO user_role_id FROM public.roles WHERE name = 'user';
+  SELECT id INTO admin_role_id FROM public.roles WHERE name = 'admin';
   
   -- Check if email is in admin list
   IF NEW.email IN ('goyalchirag721@gmail.com', 'anuraggoyal231@gmail.com') THEN
-    INSERT INTO user_roles (user_id, role_id) VALUES (NEW.id, admin_role_id);
+    INSERT INTO public.user_roles (user_id, role_id) VALUES (NEW.id, admin_role_id);
   ELSE
-    INSERT INTO user_roles (user_id, role_id) VALUES (NEW.id, user_role_id);
+    INSERT INTO public.user_roles (user_id, role_id) VALUES (NEW.id, user_role_id);
   END IF;
   
   -- Detect OAuth provider from identities or app_metadata
@@ -75,7 +75,7 @@ BEGIN
   );
   
   -- Create profile with OAuth data
-  INSERT INTO profiles (
+  INSERT INTO public.profiles (
     id, 
     first_name, 
     last_name, 
@@ -95,7 +95,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Add index for signup_method (useful for analytics)
 CREATE INDEX IF NOT EXISTS idx_profiles_signup_method ON profiles(signup_method);

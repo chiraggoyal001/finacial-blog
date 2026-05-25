@@ -117,6 +117,9 @@ type Pages = {
   "/license": {
     params: {};
   };
+  "/contact": {
+    params: {};
+  };
   "/admin": {
     params: {};
   };
@@ -197,7 +200,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/login" | "/signup" | "/forgot-password" | "/reset-password" | "/profile" | "/onboarding" | "/learning" | "/auth/callback" | "/calculators" | "/subscribe" | "/newsletter" | "/newsletter/:id" | "/modules" | "/modules/:moduleId" | "/modules/:moduleId/:chapterId" | "/videos" | "/videos/:seriesId" | "/videos/:seriesId/:chapterId" | "/events" | "/events/:eventId" | "/junior" | "/junior/:moduleId" | "/junior/:moduleId/:chapterId" | "/privacy" | "/grievance" | "/terms" | "/disclaimer" | "/license" | "/admin" | "/admin/articles" | "/admin/articles/new" | "/admin/articles/:id" | "/admin/modules" | "/admin/modules/new" | "/admin/modules/:id" | "/admin/videos" | "/admin/videos/new" | "/admin/videos/:id" | "/admin/events" | "/admin/events/new" | "/admin/events/:id" | "/admin/junior" | "/admin/junior/new" | "/admin/junior/:id" | "/admin/users" | "/admin/ab-tests" | "/admin/affiliates" | "/admin/settings" | "/*";
+    page: "/" | "/login" | "/signup" | "/forgot-password" | "/reset-password" | "/profile" | "/onboarding" | "/learning" | "/auth/callback" | "/calculators" | "/subscribe" | "/newsletter" | "/newsletter/:id" | "/modules" | "/modules/:moduleId" | "/modules/:moduleId/:chapterId" | "/videos" | "/videos/:seriesId" | "/videos/:seriesId/:chapterId" | "/events" | "/events/:eventId" | "/junior" | "/junior/:moduleId" | "/junior/:moduleId/:chapterId" | "/privacy" | "/grievance" | "/terms" | "/disclaimer" | "/license" | "/contact" | "/admin" | "/admin/articles" | "/admin/articles/new" | "/admin/articles/:id" | "/admin/modules" | "/admin/modules/new" | "/admin/modules/:id" | "/admin/videos" | "/admin/videos/new" | "/admin/videos/:id" | "/admin/events" | "/admin/events/new" | "/admin/events/:id" | "/admin/junior" | "/admin/junior/new" | "/admin/junior/:id" | "/admin/users" | "/admin/ab-tests" | "/admin/affiliates" | "/admin/settings" | "/*";
   };
   "../src/pages/Index.tsx": {
     id: "../src/pages/Index";
@@ -315,6 +318,10 @@ type RouteFiles = {
   "../src/pages/LicensePage.tsx": {
     id: "../src/pages/LicensePage";
     page: "/license";
+  };
+  "../src/pages/ContactPage.tsx": {
+    id: "../src/pages/ContactPage";
+    page: "/contact";
   };
   "../src/components/admin/ProtectedRoute.tsx": {
     id: "../src/components/admin/ProtectedRoute";
@@ -437,6 +444,7 @@ type RouteModules = {
   "../src/pages/TermsPage": unknown;
   "../src/pages/DisclaimerPage": unknown;
   "../src/pages/LicensePage": unknown;
+  "../src/pages/ContactPage": unknown;
   "../src/components/admin/ProtectedRoute": unknown;
   "../src/components/admin/AdminLayout": unknown;
   "../src/pages/admin/AdminDashboard": unknown;

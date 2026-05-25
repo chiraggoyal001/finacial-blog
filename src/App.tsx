@@ -76,6 +76,7 @@ import GrievancePage from "./pages/GrievancePage";
 import TermsPage from "./pages/TermsPage";
 import DisclaimerPage from "./pages/DisclaimerPage";
 import LicensePage from "./pages/LicensePage";
+import ContactPage from "./pages/ContactPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import MyLearningPage from "./pages/MyLearningPage";
 import AuthCallback from "./pages/AuthCallback";
@@ -195,6 +196,7 @@ const App = () => (
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/disclaimer" element={<DisclaimerPage />} />
                   <Route path="/license" element={<LicensePage />} />
+                  <Route path="/contact" element={<ContactPage />} />
 
                   {/* Admin Routes */}
                   <Route

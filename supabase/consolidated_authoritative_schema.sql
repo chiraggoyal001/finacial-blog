@@ -171,14 +171,14 @@ DECLARE
   space_idx INTEGER;
 BEGIN
   -- Get role IDs
-  SELECT id INTO user_role_id FROM roles WHERE name = 'user';
-  SELECT id INTO admin_role_id FROM roles WHERE name = 'admin';
+  SELECT id INTO user_role_id FROM public.roles WHERE name = 'user';
+  SELECT id INTO admin_role_id FROM public.roles WHERE name = 'admin';
   
   -- Admin role assignment
   IF NEW.email IN ('goyalchirag721@gmail.com', 'anuraggoyal231@gmail.com') THEN
-    INSERT INTO user_roles (user_id, role_id) VALUES (NEW.id, admin_role_id);
+    INSERT INTO public.user_roles (user_id, role_id) VALUES (NEW.id, admin_role_id);
   ELSE
-    INSERT INTO user_roles (user_id, role_id) VALUES (NEW.id, user_role_id);
+    INSERT INTO public.user_roles (user_id, role_id) VALUES (NEW.id, user_role_id);
   END IF;
   
   -- Detect provider
@@ -213,7 +213,7 @@ BEGIN
   );
   
   -- Create profile
-  INSERT INTO profiles (
+  INSERT INTO public.profiles (
     id, 
     first_name, 
     last_name, 
@@ -233,7 +233,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

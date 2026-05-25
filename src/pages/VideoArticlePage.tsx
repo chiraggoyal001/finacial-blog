@@ -60,7 +60,7 @@ const VideoArticlePage = () => {
     id: dbVideoSeries.id,
     title: dbVideoSeries.title,
     description: dbVideoSeries.description,
-    image: dbVideoSeries.image,
+    thumbnail: dbVideoSeries.thumbnail,
     tag: dbVideoSeries.tag,
     chapters: (dbVideoSeries.chapters || []).map((ch) => ({
       id: ch.id,

@@ -39,6 +39,7 @@ export default [
   route("terms", "../src/pages/TermsPage.tsx"),
   route("disclaimer", "../src/pages/DisclaimerPage.tsx"),
   route("license", "../src/pages/LicensePage.tsx"),
+  route("contact", "../src/pages/ContactPage.tsx"),
 
   layout("../src/components/admin/ProtectedRoute.tsx", [
     layout("../src/components/admin/AdminLayout.tsx", [

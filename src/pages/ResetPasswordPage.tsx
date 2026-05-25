@@ -17,8 +17,30 @@ const ResetPasswordPage = () => {
   const { isLoggedIn } = useAuth();
 
   useEffect(() => {
-    // Check if the user is here with a valid recovery token
+    // Check if the user is here with a valid recovery token (implicit flow) or PKCE code in query
     const hash = window.location.hash;
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = searchParams.get('code');
+
+    if (code) {
+      // Direct PKCE exchange
+      setIsLoading(true);
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        setIsLoading(false);
+        if (error) {
+          toast.error("Invalid or expired password reset link");
+          navigate("/login");
+        } else {
+          toast.success("Please enter your new password");
+        }
+      }).catch((err) => {
+        setIsLoading(false);
+        toast.error("An unexpected error occurred");
+        navigate("/login");
+      });
+      return;
+    }
+
     if (!hash || !hash.includes("type=recovery")) {
       // If they don't have a recovery token but are logged in, allow them to change password
       // Otherwise, they shouldn't be here

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Youtube, Instagram, Facebook, Linkedin, MessageCircle, Calculator, Lightbulb, X } from "lucide-react";
+import { Youtube, Instagram, Facebook, Linkedin, MessageCircle, Calculator } from "lucide-react";
 import { NAV_ITEMS, SOCIAL_LINKS, OTHER_PRODUCTS } from "@/lib/data";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -31,22 +31,8 @@ const GooglePlayIcon = () => (
   </svg>
 );
 
-const FINANCIAL_TIPS = [
-  "Emergency Fund first! Keep 6 months of basic expenses in a high-interest liquid account before investing.",
-  "Compound interest is the 8th wonder. Starting a ₹2,000/month SIP early yields more than ₹10,000/month later.",
-  "Diversification is your only free lunch. Spread assets across Equity, Debt, Gold, and International index funds.",
-  "Track your expenses for just one month. You will easily find 15% wastage that can be channeled into savings.",
-  "Term Insurance is a must if you have dependents. Don't mix insurance with investments (avoid LIC endowment plans).",
-  "Health insurance is non-negotiable. A single medical emergency can wipe out years of stock market savings.",
-  "Beware of inflation! Cash in a bank account loses value. Invest to beat the 6% average annual inflation rate.",
-  "Avoid credit card debt. Paying 36-40% annual interest on CC rolling balances destroys your net worth."
-];
-
 const Footer = () => {
   const { t } = useTranslation();
-  const [showTip, setShowTip] = useState(false);
-  const [tipText, setTipText] = useState("");
-  const [isRolling, setIsRolling] = useState(false);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const textRef = useRef<SVGTextElement>(null);
@@ -79,17 +65,6 @@ const Footer = () => {
       clearTimeout(timer);
     };
   }, []);
-
-  const handleCubeClick = () => {
-    setIsRolling(true);
-    const randomIdx = Math.floor(Math.random() * FINANCIAL_TIPS.length);
-    setTipText(FINANCIAL_TIPS[randomIdx]);
-    
-    setTimeout(() => {
-      setIsRolling(false);
-      setShowTip(true);
-    }, 800);
-  };
 
   return (
     <footer className="w-full bg-white dark:bg-background pt-6 pb-12 px-6 overflow-hidden relative select-none">
@@ -205,44 +180,30 @@ const Footer = () => {
           
           {/* Floating lucky badge */}
           <div className="absolute top-[-36px] right-6 sm:right-10 z-10 flex flex-col items-start gap-1 select-none">
-            <div 
-              onClick={handleCubeClick}
-              className={`w-18 h-18 sm:w-24 sm:h-24 rounded-[16px] sm:rounded-[22px] rotate-[-10deg] bg-gradient-to-br from-[#00bfa5] via-[#006b5e] to-[#004d43] dark:from-[#00e5ff] dark:via-[#00bfa5] dark:to-[#006b5e] shadow-[inset_3px_3px_8px_rgba(255,255,255,0.35),inset_-3px_-3px_12px_rgba(0,0,0,0.18),0_12px_28px_rgba(0,107,94,0.3)] flex items-center justify-center cursor-pointer transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:rotate-[5deg] hover:scale-108 hover:shadow-[inset_4px_4px_10px_rgba(255,255,255,0.45),inset_-4px_-4px_14px_rgba(0,0,0,0.22),0_16px_36px_rgba(0,107,94,0.45)] active:rotate-[-25deg] active:scale-95 ${isRolling ? "animate-cube-roll" : ""}`}
-              title="Click for a financial tip!"
+            <Link 
+              to="/contact" 
+              className="flex flex-col items-start gap-1 group/kbadge no-underline"
             >
-              <span className="font-dm-sans text-3xl sm:text-[42px] font-bold text-white rotate-[10deg] text-shadow-[0_3px_6px_rgba(0,0,0,0.25)] leading-none pointer-events-none">K</span>
-              
-              {/* Tip popover popup balloon */}
-              {showTip && (
-                <div className="absolute bottom-[85px] sm:bottom-[110px] right-[-10px] sm:right-[-20px] w-[250px] sm:w-[280px] bg-white dark:bg-[#1e272c] border border-[#006b5e]/15 dark:border-white/10 rounded-2xl p-4 shadow-[0_10px_25px_rgba(0,0,0,0.08),0_4px_10px_rgba(0,107,94,0.05)] z-50 text-left pointer-events-auto transition-all duration-300 tip-bubble-tail" onClick={(e) => e.stopPropagation()}>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setShowTip(false); }}
-                    className="absolute top-2.5 right-2.5 text-gray-400 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white transition-colors p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                    aria-label="Close tip"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                  <div className="text-[13px] font-bold text-[#f15a3b] dark:text-[#ff7a59] uppercase tracking-wider mb-1.5 flex items-center gap-1.5 font-dm-sans">
-                    <Lightbulb className="h-3.5 w-3.5" />
-                    KAMADA Pro Tip
-                  </div>
-                  <div className="text-[12.5px] leading-relaxed text-gray-900 dark:text-gray-100 font-medium font-dm-sans">
-                    {tipText}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-row gap-1.5 items-center rotate-[-4deg] mt-1 pl-2">
-              <div className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] text-gray-500 dark:text-gray-400">
-                <svg viewBox="0 0 24 24" className="w-full h-full stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 20 C 6 14, 10 9, 18 5" />
-                  <path d="M18 5 L 12 5" />
-                  <path d="M18 5 L 18 11" />
-                </svg>
+              <div 
+                className="w-18 h-18 sm:w-24 sm:h-24 rounded-[16px] sm:rounded-[22px] rotate-[-10deg] bg-gradient-to-br from-[#00bfa5] via-[#006b5e] to-[#004d43] dark:from-[#00e5ff] dark:via-[#00bfa5] dark:to-[#006b5e] shadow-[inset_3px_3px_8px_rgba(255,255,255,0.35),inset_-3px_-3px_12px_rgba(0,0,0,0.18),0_12px_28px_rgba(0,107,94,0.3)] flex items-center justify-center cursor-pointer transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/kbadge:rotate-[5deg] group-hover/kbadge:scale-108 group-hover/kbadge:shadow-[inset_4px_4px_10px_rgba(255,255,255,0.45),inset_-4px_-4px_14px_rgba(0,0,0,0.22),0_16px_36px_rgba(0,107,94,0.45)] active:rotate-[-25deg] active:scale-95"
+                title="Click to give feedback, suggestions or request content/events!"
+              >
+                <span className="font-dm-sans text-3xl sm:text-[42px] font-bold text-white rotate-[10deg] text-shadow-[0_3px_6px_rgba(0,0,0,0.25)] leading-none pointer-events-none">K</span>
               </div>
-              <span className="font-caveat text-lg sm:text-xl font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">Feeling lucky?</span>
-            </div>
+              
+              <div className="flex flex-row gap-1.5 items-center rotate-[-4deg] mt-1 pl-2">
+                <div className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] text-gray-500 dark:text-gray-400 group-hover/kbadge:text-primary dark:group-hover/kbadge:text-[#00bfa5] transition-colors">
+                  <svg viewBox="0 0 24 24" className="w-full h-full stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 20 C 6 14, 10 9, 18 5" />
+                    <path d="M18 5 L 12 5" />
+                    <path d="M18 5 L 18 11" />
+                  </svg>
+                </div>
+                <span className="font-caveat text-lg sm:text-xl font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap group-hover/kbadge:text-primary dark:group-hover/kbadge:text-[#00bfa5] transition-colors">
+                  {t("footer.shareFeedback")}
+                </span>
+              </div>
+            </Link>
           </div>
 
           {/* Navigation links grid */}

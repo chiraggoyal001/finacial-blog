@@ -193,9 +193,11 @@ export default function SignupPage() {
           className="z-10 w-full max-w-xs space-y-8"
         >
           {/* Brand/Logo */}
-          <motion.div variants={childVariants} className="flex items-center gap-2">
-            <Circle className="h-6 w-6 fill-white text-white" />
-            <span className="text-xl font-semibold tracking-tight">KAMADA</span>
+          <motion.div variants={childVariants}>
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Circle className="h-6 w-6 fill-white text-white" />
+              <span className="text-xl font-semibold tracking-tight">KAMADA</span>
+            </Link>
           </motion.div>
 
           {/* Heading Block */}

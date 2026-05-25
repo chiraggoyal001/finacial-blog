@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ export default function LoginPage() {
   const [isSocialLoading, setIsSocialLoading] = useState<'google' | 'twitter' | null>(null);
   const { login, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,12 +45,13 @@ export default function LoginPage() {
     
     if (result.success) {
       toast.success("Logged in successfully!");
+      const from = (location.state as any)?.from?.pathname || "/";
       if (result.isAdmin) {
         navigate("/admin");
       } else if (result.needsOnboarding) {
-        navigate("/profile");
+        navigate("/onboarding");
       } else {
-        navigate("/");
+        navigate(from);
       }
     } else {
       toast.error(result.error || "Login failed. Please check your credentials.");
@@ -92,9 +94,11 @@ export default function LoginPage() {
           className="z-10 w-full max-w-xs space-y-8"
         >
           {/* Brand/Logo */}
-          <motion.div variants={childVariants} className="flex items-center gap-2">
-            <Circle className="h-6 w-6 fill-white text-white" />
-            <span className="text-xl font-semibold tracking-tight">KAMADA</span>
+          <motion.div variants={childVariants}>
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Circle className="h-6 w-6 fill-white text-white" />
+              <span className="text-xl font-semibold tracking-tight">KAMADA</span>
+            </Link>
           </motion.div>
 
           {/* Heading Block */}
