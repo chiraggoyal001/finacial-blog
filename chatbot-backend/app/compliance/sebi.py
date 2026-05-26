@@ -12,10 +12,13 @@ from __future__ import annotations
 import re
 import logging
 
+from app import bot_config
+
 logger = logging.getLogger(__name__)
 
-# Words/phrases that should NEVER appear in bot responses
-BLOCKED_PHRASES = [
+# ── Hardcoded defaults (used as fallback) ──────────────────────
+
+_DEFAULT_BLOCKED_PHRASES = [
     r"\bguaranteed\s+returns?\b",
     r"\brisk[- ]?free\b",
     r"\bassured\s+returns?\b",
@@ -28,8 +31,7 @@ BLOCKED_PHRASES = [
     r"\bwill\s+definitely\s+(go\s+up|rise|increase)\b",
 ]
 
-# Patterns that suggest the bot is giving specific investment advice
-ADVICE_PATTERNS = [
+_DEFAULT_ADVICE_PATTERNS = [
     r"\byou\s+should\s+(buy|sell|invest\s+in)\b",
     r"\bi\s+recommend\s+(buying|selling|investing)\b",
     r"\b(buy|sell)\s+this\s+(stock|fund|share)\b",
@@ -37,15 +39,50 @@ ADVICE_PATTERNS = [
     r"\bthis\s+is\s+the\s+best\s+(investment|stock|fund)\b",
 ]
 
-COMPILED_BLOCKED = [re.compile(p, re.IGNORECASE) for p in BLOCKED_PHRASES]
-COMPILED_ADVICE = [re.compile(p, re.IGNORECASE) for p in ADVICE_PATTERNS]
 
-SEBI_DISCLAIMER = (
-    "\n\n---\n"
-    "⚠️ **Disclaimer**: This information is for educational purposes only "
-    "and does not constitute financial advice. Please consult a SEBI-registered "
-    "investment adviser before making investment decisions."
-)
+def _phrase_to_regex(phrase: str) -> str:
+    """Convert a plain-text phrase to a word-boundary regex pattern."""
+    # If it already looks like a regex (contains special chars), use as-is
+    if any(c in phrase for c in r"\[]()+*?{}"):
+        return phrase
+    # Otherwise, escape and wrap in word boundaries
+    escaped = re.escape(phrase)
+    return rf"\b{escaped}\b"
+
+
+def _get_blocked_patterns() -> list[re.Pattern]:
+    """Get compiled blocked phrase patterns from admin config."""
+    cfg = bot_config.get_sync("bot_blocked_phrases")
+    if isinstance(cfg, dict) and cfg.get("patterns"):
+        raw_patterns = cfg["patterns"]
+        regex_patterns = [_phrase_to_regex(p) for p in raw_patterns]
+    else:
+        regex_patterns = _DEFAULT_BLOCKED_PHRASES
+    return [re.compile(p, re.IGNORECASE) for p in regex_patterns]
+
+
+def _get_advice_patterns() -> list[re.Pattern]:
+    """Get compiled advice detection patterns from admin config."""
+    cfg = bot_config.get_sync("bot_advice_patterns")
+    if isinstance(cfg, dict) and cfg.get("patterns"):
+        raw_patterns = cfg["patterns"]
+        regex_patterns = [_phrase_to_regex(p) for p in raw_patterns]
+    else:
+        regex_patterns = _DEFAULT_ADVICE_PATTERNS
+    return [re.compile(p, re.IGNORECASE) for p in regex_patterns]
+
+
+def _get_sebi_disclaimer() -> str:
+    """Get SEBI disclaimer from admin config."""
+    cfg = bot_config.get_sync("bot_sebi_disclaimer")
+    if isinstance(cfg, dict) and cfg.get("text"):
+        return cfg["text"]
+    return (
+        "\n\n---\n"
+        "⚠️ **Disclaimer**: This information is for educational purposes only "
+        "and does not constitute financial advice. Please consult a SEBI-registered "
+        "investment adviser before making investment decisions."
+    )
 
 
 def check_response(response_text: str) -> dict:
@@ -68,15 +105,19 @@ def check_response(response_text: str) -> dict:
         "sanitized_text": response_text,
     }
 
+    # Load patterns from admin config (cached)
+    compiled_blocked = _get_blocked_patterns()
+    compiled_advice = _get_advice_patterns()
+
     # Check for blocked phrases
-    for pattern in COMPILED_BLOCKED:
+    for pattern in compiled_blocked:
         matches = pattern.findall(response_text)
         if matches:
             result["blocked_phrases"].extend(matches)
             result["passed"] = False
 
     # Check for advice language
-    for pattern in COMPILED_ADVICE:
+    for pattern in compiled_advice:
         if pattern.search(response_text):
             result["advice_detected"] = True
             result["passed"] = False
@@ -85,7 +126,7 @@ def check_response(response_text: str) -> dict:
     # If blocked phrases found, sanitize
     if result["blocked_phrases"]:
         sanitized = response_text
-        for pattern in COMPILED_BLOCKED:
+        for pattern in compiled_blocked:
             sanitized = pattern.sub("[term removed]", sanitized)
         result["sanitized_text"] = sanitized
         logger.warning(f"Blocked phrases found and removed: {result['blocked_phrases']}")
@@ -104,7 +145,7 @@ def check_response(response_text: str) -> dict:
 def inject_disclaimer(response_text: str) -> str:
     """Append SEBI disclaimer if not already present."""
     if "Disclaimer" not in response_text and "disclaimer" not in response_text:
-        return response_text + SEBI_DISCLAIMER
+        return response_text + _get_sebi_disclaimer()
     return response_text
 
 

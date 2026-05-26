@@ -133,6 +133,7 @@ export const translations: Translations = {
     hi: "अपने इनबॉक्स में सीधे डिलीवर की गई क्यूरेटेड सामग्री से अपडेट रहें।",
   },
   "subscribe.button": { en: "Subscribe", hi: "सदस्यता लें" },
+  "subscribe.subscribed": { en: "Subscribed", hi: "सदस्यता ली" },
   "subscribe.frequency": { en: "Mail Frequency", hi: "मेल फ़्रीक्वेंसी" },
   "subscribe.daily": { en: "Daily", hi: "दैनिक" },
   "subscribe.weekly": { en: "Weekly", hi: "साप्ताहिक" },

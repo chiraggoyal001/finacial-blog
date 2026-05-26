@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap, TrendingUp, BarChart3 } from "lucide-react";
@@ -57,9 +57,11 @@ const Index = () => {
     description: 'KAMADA is your guide to financial literacy. Explore modules, newsletters, and videos to master your personal finances.',
   });
 
-  const activeTip = useMemo(() => {
-    if (!dbTips || dbTips.length === 0) return null;
-    return dbTips[Math.floor(Math.random() * dbTips.length)];
+  const [activeTip, setActiveTip] = useState<any>(null);
+  useEffect(() => {
+    if (dbTips && dbTips.length > 0) {
+      setActiveTip(dbTips[Math.floor(Math.random() * dbTips.length)]);
+    }
   }, [dbTips]);
 
   // Individual loading states per section to prevent any single stuck query from freezing the entire page

@@ -28,7 +28,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
   if (!moduleId) return { initialDbModule: null };
 
   // Fetch from supabase server-side for SSR SEO
-  let query = supabase.from('modules').select('*').eq('id', moduleId).eq('is_published', true);
+  const query = supabase.from('modules').select('*').eq('id', moduleId).eq('is_published', true);
   const { data: moduleData } = await query.single();
   
   if (!moduleData) return { initialDbModule: null };
@@ -103,7 +103,7 @@ const ModuleArticlePage = () => {
     "provider": {
       "@type": "Organization",
       "name": "Dhaani",
-      "sameAs": window.location.origin
+      "sameAs": typeof window !== "undefined" ? window.location.origin : ""
     }
   } : undefined;
 

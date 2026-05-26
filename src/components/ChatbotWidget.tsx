@@ -133,6 +133,15 @@ interface ChatPosition {
 
 const ChatbotWidget = () => {
   const { user } = useAuth();
+  const [isBot, setIsBot] = useState(false);
+  useEffect(() => {
+    const AI_BOT_REGEX = /gptbot|chatgpt|claudebot|claude-web|google-extended|applebot-extended|perplexitybot|cohere-cohere-ai|facebookbot|bytesspider|headless|phantomjs|selenium|playwright|puppeteer/i;
+    if (typeof navigator !== "undefined" && AI_BOT_REGEX.test(navigator.userAgent)) {
+      setIsBot(true);
+    }
+  }, []);
+
+  if (isBot) return null;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -180,7 +189,11 @@ const ChatbotWidget = () => {
 
     const checkNudge = async () => {
       try {
-        const resp = await fetch(`${CHATBOT_API_URL}/api/nudge/${user.id}`);
+        const resp = await fetch(`${CHATBOT_API_URL}/api/nudge/${user.id}`, {
+          headers: {
+            "X-Client-Platform": "Web-Kamada-Human",
+          }
+        });
         if (!resp.ok || cancelled) return;
         const data = await resp.json();
         if (data.should_nudge && data.opener_text && !cancelled) {
@@ -378,6 +391,9 @@ const ChatbotWidget = () => {
     setInput("");
     setIsTyping(true);
 
+    const botMsgId = (Date.now() + 1).toString();
+    const botMsg: Message = { id: botMsgId, role: "bot", content: "", time: now() };
+
     try {
       // Capture the most recent history for context (last 10 messages)
       const chatHistory = messages.slice(-10).map(m => ({
@@ -387,13 +403,13 @@ const ChatbotWidget = () => {
 
       // Use FastAPI backend with SSE streaming
       const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
-      
-      const botMsgId = (Date.now() + 1).toString();
-      const botMsg: Message = { id: botMsgId, role: "bot", content: "", time: now() };
 
       const response = await fetch(`${CHATBOT_API_URL}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Client-Platform": "Web-Kamada-Human",
+        },
         body: JSON.stringify({
           message: text,
           user_id: user?.id || null,
@@ -417,6 +433,7 @@ const ChatbotWidget = () => {
       const decoder = new TextDecoder();
       let fullResponse = "";
       let buffer = "";
+      let currentEvent = "";
 
       if (reader) {
         while (true) {
@@ -430,28 +447,42 @@ const ChatbotWidget = () => {
           buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
           for (const line of lines) {
-            if (line.startsWith("event: ")) {
-              const eventType = line.slice(7).trim();
-              // Next data line will have the payload
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+
+            if (trimmedLine.startsWith("event: ")) {
+              currentEvent = trimmedLine.slice(7).trim();
               continue;
             }
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
+            if (trimmedLine.startsWith("data: ")) {
+              const data = trimmedLine.slice(6);
               
-              // Try to parse as JSON (for done/error events)
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.session_id) {
-                  // "done" event — streaming complete, store session
-                  sessionIdRef.current = parsed.session_id;
+              if (currentEvent === "done") {
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.session_id) {
+                    sessionIdRef.current = parsed.session_id;
+                  }
                   setSuggestedFollowUps(["Tell me more", "What else can you do?", "Help me with finance"]);
-                  continue;
+                } catch (e) {
+                  console.error("Failed to parse done event:", e);
                 }
-                if (parsed.error) {
-                  throw new Error(parsed.error);
-                }
-              } catch {
-                // Not JSON — it's a text token
+              } else if (currentEvent === "error") {
+                console.error("Chatbot error event:", data);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === botMsgId
+                      ? {
+                          ...m,
+                          content: "Sorry, I encountered an error. Please try again.",
+                          failed: true,
+                        }
+                      : m
+                  )
+                );
+                setFailedMessageId(botMsgId);
+              } else {
+                // Default to treating it as a token event
                 fullResponse += data;
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -470,7 +501,10 @@ const ChatbotWidget = () => {
       if (!fullResponse) {
         const syncResp = await fetch(`${CHATBOT_API_URL}/api/chat/sync`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "X-Client-Platform": "Web-Kamada-Human",
+          },
           body: JSON.stringify({
             message: text,
             user_id: user?.id || null,
@@ -494,13 +528,16 @@ const ChatbotWidget = () => {
       setIsTyping(false);
       setStreamingId(null);
       const errorMsgId = Date.now().toString();
-      setMessages((prev) => [...prev, {
-        id: errorMsgId,
-        role: "bot",
-        content: "I'm having trouble connecting right now. Please try again later.",
-        time: now(),
-        failed: true
-      }]);
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => m.id !== botMsgId);
+        return [...filtered, {
+          id: errorMsgId,
+          role: "bot",
+          content: "I'm having trouble connecting right now. Please try again later.",
+          time: now(),
+          failed: true
+        }];
+      });
       setFailedMessageId(errorMsgId);
     }
   }, [user, messages]);
@@ -534,7 +571,10 @@ const ChatbotWidget = () => {
     const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
     fetch(`${CHATBOT_API_URL}/api/chat/feedback`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-Client-Platform": "Web-Kamada-Human",
+      },
       body: JSON.stringify({
         message_id: messageId,
         session_id: sessionIdRef.current,

@@ -127,3 +127,42 @@ def build_budget(
     )
     
     return budget, trimmed_history, trimmed_knowledge, trimmed_products
+
+
+def trim_to_budget(messages: list[dict], max_tokens: int = 1000) -> list[dict]:
+    """Trim conversation history to fit within a token budget."""
+    if not messages:
+        return []
+    
+    msg_tokens = [estimate_tokens(m.get("content", "")) for m in messages]
+    
+    if sum(msg_tokens) <= max_tokens:
+        return messages
+        
+    system_msg = None
+    system_msg_tokens = 0
+    start_idx = 0
+    
+    if messages[0].get("role") == "system":
+        system_msg = messages[0]
+        system_msg_tokens = msg_tokens[0]
+        start_idx = 1
+        
+    allowed_history_tokens = max_tokens - system_msg_tokens
+    accumulated_tokens = 0
+    kept_indices = []
+    
+    for i in range(len(messages) - 1, start_idx - 1, -1):
+        if accumulated_tokens + msg_tokens[i] <= allowed_history_tokens:
+            kept_indices.insert(0, i)
+            accumulated_tokens += msg_tokens[i]
+        else:
+            break
+            
+    result = []
+    if system_msg:
+        result.append(system_msg)
+    for idx in kept_indices:
+        result.append(messages[idx])
+        
+    return result

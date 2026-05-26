@@ -1092,7 +1092,7 @@ CREATE POLICY "Users can read own AB assignments" ON ab_test_assignments FOR SEL
 CREATE POLICY "Users can insert own AB assignments" ON ab_test_assignments FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- System Settings (Whitelisted keys for public)
-CREATE POLICY "Public can read whitelisted settings" ON system_settings FOR SELECT USING (key IN ('system_banner'));
+CREATE POLICY "Public can read whitelisted settings" ON system_settings FOR SELECT USING (key IN ('system_banner', 'partner_platforms'));
 CREATE POLICY "Admins can manage system settings" ON system_settings FOR ALL USING (is_admin(auth.uid()));
 
 -- Affiliates

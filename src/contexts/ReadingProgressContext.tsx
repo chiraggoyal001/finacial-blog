@@ -22,19 +22,19 @@ export const ReadingProgressProvider = ({ children }: { children: ReactNode }) =
   const { data: dbProgressList } = useUserProgressList(user?.id);
   const upsertProgress = useUpsertProgress();
   
-  const [progress, setProgressState] = useState<ReadingProgress>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          return {};
-        }
+  const [progress, setProgressState] = useState<ReadingProgress>({});
+
+  // Load progress from localStorage once hydrated on the client
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        setProgressState(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse reading progress from localStorage", e);
       }
     }
-    return {};
-  });
+  }, []);
 
   // Track whether DB data has been merged into state to prevent re-triggering
   const dbMergedRef = useRef(false);

@@ -146,7 +146,10 @@ const JuniorArticlePage = () => {
   const nextChapter = mod.chapters[activeChapterIndex + 1];
   const progressKey = `junior-${mod.id}-${chapter.id}`;
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const [shareUrl, setShareUrl] = useState("");
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, []);
   const isVideoChapter = chapter.contentType === "video";
 
   return (

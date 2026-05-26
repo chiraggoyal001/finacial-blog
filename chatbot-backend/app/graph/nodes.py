@@ -12,6 +12,7 @@ from typing import Any
 
 from app.config import settings
 from app.db import repositories
+from app import bot_config
 from app.rag import embed_search
 from app.rag.inject import assemble_prompt, estimate_tokens
 from app.graph.state import ChatState
@@ -116,7 +117,8 @@ async def fetch_context(state: ChatState) -> dict[str, Any]:
 
     user_id = state.get("user_id")
     persona = {}
-    system_prompt = "You are Gyaan, a friendly and knowledgeable financial literacy assistant for an Indian finance education blog. You help users understand personal finance, investing, taxation, and money management in the Indian context. Be warm, clear, and educational."
+    default_prompt_cfg = await bot_config.get("bot_default_system_prompt")
+    system_prompt = default_prompt_cfg.get("text", "") if isinstance(default_prompt_cfg, dict) else ""
     affiliates_context = ""
 
     try:

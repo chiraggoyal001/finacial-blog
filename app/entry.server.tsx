@@ -16,10 +16,10 @@ export default function handleRequest(
 ) {
   return new Promise((resolve, reject) => {
     let shellRendered = false;
-    let userAgent = request.headers.get("user-agent");
+    const userAgent = request.headers.get("user-agent");
 
     // Ensure requests from bots and SPA-renders wait for all content to load before responding
-    let readyOption: keyof import("react-dom/server").RenderToPipeableStreamOptions =
+    const readyOption: keyof import("react-dom/server").RenderToPipeableStreamOptions =
       (userAgent && isbot(userAgent)) || routerContext.isSpaMode
         ? "onAllReady"
         : "onShellReady";

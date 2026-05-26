@@ -541,15 +541,36 @@ export const useUpdateSystemSetting = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, value }: { key: string, value: any }) => {
-      const { data, error } = await supabase
+      // Check if key exists
+      const { data: existing, error: checkError } = await supabase
         .from('system_settings')
-        .update({ value })
+        .select('id')
         .eq('key', key)
-        .select()
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
-      return data;
+      if (checkError) throw checkError;
+
+      let result;
+      if (existing) {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .update({ value })
+          .eq('key', key)
+          .select()
+          .single();
+        if (error) throw error;
+        result = data;
+      } else {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .insert({ key, value })
+          .select()
+          .single();
+        if (error) throw error;
+        result = data;
+      }
+      
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });
@@ -577,6 +598,126 @@ export const useAnalytics = () => {
         dailyActive: dailyActive.data,
         contentPerformance: performance.data
       };
+    },
+  });
+};
+
+// =====================================================
+// BOT CONFIGURATION
+// =====================================================
+
+export const BOT_CONFIG_KEYS = [
+  'bot_default_system_prompt',
+  'bot_compliance_rules',
+  'bot_sebi_disclaimer',
+  'bot_blocked_phrases',
+  'bot_advice_patterns',
+  'bot_escalation_responses',
+  'bot_nudge_templates',
+  'bot_fallback_response',
+] as const;
+
+export type BotConfigKey = typeof BOT_CONFIG_KEYS[number];
+
+export interface BotConfigData {
+  [key: string]: any;
+}
+
+/**
+ * Fetch all bot_* settings from system_settings.
+ */
+export const useBotConfig = () => {
+  return useQuery({
+    queryKey: ['bot-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('key, value')
+        .like('key', 'bot_%');
+
+      if (error) throw error;
+
+      const configMap: BotConfigData = {};
+      (data || []).forEach((row: any) => {
+        configMap[row.key] = row.value;
+      });
+
+      return configMap;
+    },
+  });
+};
+
+/**
+ * Update a specific bot config setting.
+ * Also invalidates the backend cache via the admin API.
+ */
+export const useUpdateBotConfig = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ key, value }: { key: BotConfigKey; value: any }) => {
+      // Check if the key already exists
+      const { data: existing } = await supabase
+        .from('system_settings')
+        .select('id')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('system_settings')
+          .update({ value })
+          .eq('key', key);
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('system_settings')
+          .insert({ key, value });
+        if (error) throw error;
+      }
+
+      // Invalidate backend bot_config cache
+      try {
+        const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
+        await fetch(`${CHATBOT_API_URL}/api/admin/bot-config/${key}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(value),
+        });
+      } catch (e) {
+        console.warn('Backend cache invalidation failed (non-critical):', e);
+      }
+
+      return { key, value };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bot-config'] });
+      queryClient.invalidateQueries({ queryKey: ['system-settings'] });
+    },
+  });
+};
+
+/**
+ * Reset a bot config key to its default value via the backend API.
+ */
+export const useResetBotConfig = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ key }: { key: BotConfigKey }) => {
+      const CHATBOT_API_URL = import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000";
+      const resp = await fetch(`${CHATBOT_API_URL}/api/admin/bot-config/reset/${key}`, {
+        method: 'POST',
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Reset failed');
+      }
+      return await resp.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bot-config'] });
+      queryClient.invalidateQueries({ queryKey: ['system-settings'] });
     },
   });
 };

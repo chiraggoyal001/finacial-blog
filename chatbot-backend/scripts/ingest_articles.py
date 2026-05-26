@@ -42,7 +42,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004")
+GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
 
 # Chunking parameters
 CHUNK_SIZE = 512       # target tokens per chunk
@@ -121,6 +121,7 @@ async def embed_texts_batch(texts: list[str]) -> list[list[float]]:
                 "model": GEMINI_EMBEDDING_MODEL,
                 "content": {"parts": [{"text": t}]},
                 "taskType": "RETRIEVAL_DOCUMENT",
+                "outputDimensionality": 768,
             }
             for t in texts
         ]

@@ -10,4 +10,4 @@ router = APIRouter()
 @router.get("/health")
 async def health_check():
     """Basic health check."""
-    return {"status": "ok", "service": "financial-chatbot", "phase": 1}
+    return {"status": "healthy", "service": "financial-chatbot", "phase": 1}

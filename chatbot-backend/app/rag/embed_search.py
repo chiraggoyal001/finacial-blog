@@ -34,7 +34,7 @@ async def embed_query(text: str) -> list[float]:
     """Embed a single query string using Gemini."""
     model = get_embeddings_model()
     try:
-        vector = await model.aembed_query(text)
+        vector = await model.aembed_query(text, output_dimensionality=settings.embedding_dimension)
         return vector
     except Exception as e:
         logger.error(f"Embedding failed: {e}")
@@ -45,7 +45,7 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
     """Batch embed multiple texts using Gemini."""
     model = get_embeddings_model()
     try:
-        vectors = await model.aembed_documents(texts)
+        vectors = await model.aembed_documents(texts, output_dimensionality=settings.embedding_dimension)
         return vectors
     except Exception as e:
         logger.error(f"Batch embedding failed: {e}")

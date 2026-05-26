@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from app.db.connection import get_pool
+from app import bot_config
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +198,9 @@ async def get_threshold(user_id: str) -> float:
 
 # ── Opener Generation ───────────────────────────────────────────
 
-OPENER_TEMPLATES = {
+# ── Hardcoded default templates (fallback) ──────────────────────
+
+_DEFAULT_OPENER_TEMPLATES = {
     "article_goal": "I noticed you've been reading about {topic}. Would you like me to help you understand how this applies to your financial goals?",
     "calc_use": "I see you were exploring the {calc_type} calculator. Would you like me to explain what those numbers mean for your situation?",
     "return_visit": "You've visited '{article_title}' a few times. Is there something specific about {topic} you'd like to discuss?",
@@ -206,9 +209,20 @@ OPENER_TEMPLATES = {
 }
 
 
+def _get_opener_templates() -> dict:
+    """Get nudge opener templates from admin config."""
+    cfg = bot_config.get_sync("bot_nudge_templates")
+    if isinstance(cfg, dict) and any(k in cfg for k in _DEFAULT_OPENER_TEMPLATES):
+        # Merge admin config with defaults (so missing keys still work)
+        merged = {**_DEFAULT_OPENER_TEMPLATES, **cfg}
+        return merged
+    return _DEFAULT_OPENER_TEMPLATES
+
+
 def generate_opener(context: dict, trigger_type: str = "general") -> str:
     """Generate a contextual opener message for proactive chat."""
-    template = OPENER_TEMPLATES.get(trigger_type, OPENER_TEMPLATES["general"])
+    templates = _get_opener_templates()
+    template = templates.get(trigger_type, templates.get("general", ""))
 
     # Extract context for template filling
     topic = "personal finance"

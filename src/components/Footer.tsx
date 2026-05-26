@@ -1,8 +1,11 @@
-import React, { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Youtube, Instagram, Facebook, Linkedin, MessageCircle, Calculator } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Youtube, Instagram, Facebook, Linkedin, MessageCircle, Calculator, Loader2 } from "lucide-react";
 import { NAV_ITEMS, SOCIAL_LINKS, OTHER_PRODUCTS } from "@/lib/data";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const NAV_LABEL_KEYS: Record<string, string> = {
   Newsletter: "nav.newsletter",
@@ -33,6 +36,66 @@ const GooglePlayIcon = () => (
 
 const Footer = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { isLoggedIn, user, updateProfile } = useAuth();
+  const [footerEmail, setFooterEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isAlreadySubscribed = isLoggedIn && user?.isSubscribed;
+
+  const handleFooterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailToSubscribe = isLoggedIn && user?.email ? user.email : footerEmail;
+    if (!emailToSubscribe) return;
+
+    setIsSubmitting(true);
+    try {
+      if (isLoggedIn && user) {
+        // Save subscription to user's profile in database
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            is_subscribed: true,
+            mail_preference: "non-intrusive",
+          })
+          .eq("id", user.id);
+
+        if (error) {
+          console.error("Error saving subscription:", error);
+          toast.error("Failed to save subscription. Please try again.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Also update local user state
+        if (updateProfile) {
+          await updateProfile({
+            isSubscribed: true,
+            mailPreference: "non-intrusive",
+          });
+        }
+
+        toast.success(t("subscribe.success"), {
+          description: `You're now subscribed to updates at ${emailToSubscribe}`,
+        });
+      } else {
+        // Anonymous user - save email and redirect to signup
+        localStorage.setItem("pendingSubscriptionEmail", emailToSubscribe);
+        localStorage.setItem("pendingSubscriptionFrequency", "weekly");
+        toast.success("Thanks for your interest!", {
+          description: "Please sign up or log in to complete your subscription.",
+        });
+        navigate("/signup");
+      }
+
+      setFooterEmail("");
+    } catch (error) {
+      console.error("Subscription error:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const svgRef = useRef<SVGSVGElement>(null);
   const textRef = useRef<SVGTextElement>(null);
@@ -69,13 +132,10 @@ const Footer = () => {
   return (
     <footer className="w-full bg-white dark:bg-background pt-6 pb-12 px-6 overflow-hidden relative select-none">
       
-      {/* Styles block for non-Tailwind dynamic styles (Caveat Font, animations & tip popover tail) */}
+      {/* Styles block for non-Tailwind dynamic styles (animations & tip popover tail) */}
       <style dangerouslySetInnerHTML={{__html: `
-        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
         
-        .font-caveat {
-          font-family: 'Caveat', cursive;
-        }
         .font-dm-sans {
           font-family: 'DM Sans', sans-serif;
         }
@@ -125,7 +185,7 @@ const Footer = () => {
             </div>
             <span className="font-dm-sans text-2xl font-bold text-white tracking-tight">KAMADA</span>
           </Link>
-
+ 
           {/* Tagline - Added shadow to make it contrast beautifully with bright videos */}
           <div className="mt-auto mb-7 relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
             <p className="text-[19px] font-normal text-white leading-[1.45]">
@@ -136,7 +196,7 @@ const Footer = () => {
 
           {/* Social Row */}
           <div className="flex flex-row justify-between items-center gap-3 relative z-10 border-t border-white/10 pt-4">
-            <span className="font-caveat text-[20px] font-semibold text-white/90 tracking-[0.3px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">Stay in touch!</span>
+            <span className="font-sans text-[16px] font-medium text-white/90 tracking-[0.3px]">Stay in touch!</span>
             <div className="flex flex-row gap-[7px]">
               
               {/* YouTube */}
@@ -199,7 +259,7 @@ const Footer = () => {
                     <path d="M18 5 L 18 11" />
                   </svg>
                 </div>
-                <span className="font-caveat text-lg sm:text-xl font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap group-hover/kbadge:text-primary dark:group-hover/kbadge:text-[#00bfa5] transition-colors">
+                <span className="font-sans text-sm sm:text-[15px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap group-hover/kbadge:text-primary dark:group-hover/kbadge:text-[#00bfa5] transition-colors">
                   {t("footer.shareFeedback")}
                 </span>
               </div>
@@ -207,12 +267,12 @@ const Footer = () => {
           </div>
 
           {/* Navigation links grid */}
-          <div className="pt-2 w-full">
+          <div className="pt-10 sm:pt-14 w-full">
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
               
               {/* Col 1: Explore */}
               <div className="flex flex-col">
-                <h4 className="font-caveat text-[26px] font-bold text-gray-600 dark:text-gray-300 mb-4 tracking-wide leading-none">{t("footer.explore")}</h4>
+                <h4 className="font-display text-[20px] font-bold text-gray-800 dark:text-gray-200 mb-4 tracking-tight leading-none">{t("footer.explore")}</h4>
                 {NAV_ITEMS.filter(i => !i.badge).map((item) => (
                   <Link key={item.label} to={item.href} className="block font-dm-sans text-[14px] font-semibold text-[#111827] dark:text-gray-200 mb-3.5 no-underline hover:text-[#006b5e] dark:hover:text-[#00bfa5] hover:translate-x-[3px] transition-all duration-200">
                     {t(NAV_LABEL_KEYS[item.label] || item.label)}
@@ -228,7 +288,7 @@ const Footer = () => {
 
               {/* Col 2: Other Services */}
               <div className="flex flex-col">
-                <h4 className="font-caveat text-[26px] font-bold text-gray-600 dark:text-gray-300 mb-4 tracking-wide leading-none">{t("footer.otherProducts")}</h4>
+                <h4 className="font-display text-[20px] font-bold text-gray-800 dark:text-gray-200 mb-4 tracking-tight leading-none">{t("footer.otherProducts")}</h4>
                 {OTHER_PRODUCTS.map((product) => (
                   <a key={product.name} href={product.href} className="block font-dm-sans text-[14px] font-semibold text-[#111827] dark:text-gray-200 mb-3.5 no-underline hover:text-[#006b5e] dark:hover:text-[#00bfa5] hover:translate-x-[3px] transition-all duration-200">
                     {product.name}
@@ -238,7 +298,7 @@ const Footer = () => {
 
               {/* Col 3: Our Info */}
               <div className="flex flex-col">
-                <h4 className="font-caveat text-[26px] font-bold text-gray-600 dark:text-gray-300 mb-4 tracking-wide leading-none">{t("footer.ourInfo")}</h4>
+                <h4 className="font-display text-[20px] font-bold text-gray-800 dark:text-gray-200 mb-4 tracking-tight leading-none">{t("footer.ourInfo")}</h4>
                 <Link to="/privacy" className="block font-dm-sans text-[14px] font-semibold text-[#111827] dark:text-gray-200 mb-3.5 no-underline hover:text-[#006b5e] dark:hover:text-[#00bfa5] hover:translate-x-[3px] transition-all duration-200">{t("footer.privacy")}</Link>
                 <Link to="/grievance" className="block font-dm-sans text-[14px] font-semibold text-[#111827] dark:text-gray-200 mb-3.5 no-underline hover:text-[#006b5e] dark:hover:text-[#00bfa5] hover:translate-x-[3px] transition-all duration-200">{t("footer.grievance")}</Link>
                 <Link to="/terms" className="block font-dm-sans text-[14px] font-semibold text-[#111827] dark:text-gray-200 mb-3.5 no-underline hover:text-[#006b5e] dark:hover:text-[#00bfa5] hover:translate-x-[3px] transition-all duration-200">{t("footer.terms")}</Link>
@@ -248,7 +308,7 @@ const Footer = () => {
 
               {/* Col 4: Contact Us & App Store buttons */}
               <div className="flex flex-col">
-                <h4 className="font-caveat text-[26px] font-bold text-gray-600 dark:text-gray-300 mb-4 tracking-wide leading-none">{t("footer.contactUs")}</h4>
+                <h4 className="font-display text-[20px] font-bold text-gray-800 dark:text-gray-200 mb-4 tracking-tight leading-none">{t("footer.contactUs")}</h4>
                 <a href="mailto:goyalchirag721@gmail.com" className="block font-dm-sans text-[14px] font-medium text-gray-600 dark:text-gray-300 mb-2.5 break-all hover:text-[#006b5e] dark:hover:text-[#00bfa5] transition-colors">goyalchirag721@gmail.com</a>
                 <span className="block font-dm-sans text-[14px] font-medium text-gray-600 dark:text-gray-300 mb-2.5">
                   123 Finance Street, Mumbai
@@ -290,10 +350,32 @@ const Footer = () => {
                 Finance moves fast.
                 <strong className="block text-[19px] font-bold text-[#111827] dark:text-white mt-0.5">Stay ahead with KAMADA.</strong>
               </h4>
-              <div className="flex flex-row w-full md:w-[310px] bg-white dark:bg-[#1a2327] border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-[0_2px_10px_rgba(0,0,0,0.03)] focus-within:border-[#006b5e] dark:focus-within:border-[#00bfa5] focus-within:shadow-[0_4px_12px_rgba(0,107,94,0.08)] transition-all duration-200">
-                <input type="email" placeholder="Enter email address" aria-label="Enter email address" className="flex-1 px-3 py-2 bg-transparent border-none outline-none font-dm-sans text-[13.5px] text-[#111827] dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" />
-                <button type="button" className="px-4 py-2 bg-[#111214] dark:bg-primary dark:text-primary-foreground text-white font-dm-sans text-[13.5px] font-semibold border-none rounded-lg cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-black dark:hover:bg-[#00bfa5] hover:-translate-y-[1px] hover:shadow-[0_6px_16px_rgba(0,0,0,0.3)] transition-all duration-200">Subscribe</button>
-              </div>
+              <form onSubmit={handleFooterSubscribe} className={`flex flex-row w-full md:w-[310px] bg-white dark:bg-[#1a2327] border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-[0_2px_10px_rgba(0,0,0,0.03)] focus-within:border-[#006b5e] dark:focus-within:border-[#00bfa5] focus-within:shadow-[0_4px_12px_rgba(0,107,94,0.08)] transition-all duration-200 ${isLoggedIn ? 'justify-center border-none bg-transparent dark:bg-transparent shadow-none p-0' : ''}`}>
+                {!isLoggedIn && (
+                  <input 
+                    type="email" 
+                    placeholder="Enter email address" 
+                    aria-label="Enter email address" 
+                    required
+                    value={footerEmail}
+                    onChange={(e) => setFooterEmail(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-transparent border-none outline-none font-dm-sans text-[13.5px] text-[#111827] dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" 
+                  />
+                )}
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting || isAlreadySubscribed}
+                  className={`px-4 py-2 bg-[#111214] dark:bg-primary dark:text-primary-foreground text-white font-dm-sans text-[13.5px] font-semibold border-none rounded-lg cursor-pointer shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-black dark:hover:bg-[#00bfa5] hover:-translate-y-[1px] hover:shadow-[0_6px_16px_rgba(0,0,0,0.3)] transition-all duration-200 flex items-center justify-center gap-1.5 ${isLoggedIn ? 'w-full py-2.5 h-11 text-[14px]' : ''}`}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isAlreadySubscribed ? (
+                    t("subscribe.subscribed") || "Subscribed"
+                  ) : (
+                    "Subscribe"
+                  )}
+                </button>
+              </form>
             </div>
           </div>
 

@@ -22,9 +22,12 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
   const { isLoggedIn, user, updateProfile } = useAuth();
   const navigate = useNavigate();
 
+  const isAlreadySubscribed = isLoggedIn && user?.isSubscribed;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    const emailToSubscribe = isLoggedIn && user?.email ? user.email : email;
+    if (!emailToSubscribe) return;
 
     setIsLoading(true);
 
@@ -55,11 +58,11 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
         }
 
         toast.success(t("subscribe.success"), {
-          description: `You're now subscribed to ${frequency} updates at ${email}`,
+          description: `You're now subscribed to ${frequency} updates at ${emailToSubscribe}`,
         });
       } else {
         // Anonymous user - save email and redirect to signup
-        localStorage.setItem("pendingSubscriptionEmail", email);
+        localStorage.setItem("pendingSubscriptionEmail", emailToSubscribe);
         localStorage.setItem("pendingSubscriptionFrequency", frequency);
         toast.success("Thanks for your interest!", {
           description: "Please sign up or log in to complete your subscription.",
@@ -86,7 +89,9 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
           <h2 className="font-display text-3xl font-bold text-foreground">{t("subscribe.fullTitle")}</h2>
           <p className="text-muted-foreground">{t("subscribe.fullDesc")}</p>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl" required />
+            {!isLoggedIn && (
+              <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl" required />
+            )}
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">{t("subscribe.frequency")}</Label>
               <RadioGroup value={frequency} onValueChange={setFrequency} className="flex justify-center gap-6">
@@ -104,12 +109,14 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
                 </div>
               </RadioGroup>
             </div>
-            <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl text-base font-semibold">
+            <Button type="submit" disabled={isLoading || isAlreadySubscribed} className="w-full h-12 rounded-xl text-base font-semibold">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Subscribing...
                 </>
+              ) : isAlreadySubscribed ? (
+                t("subscribe.subscribed") || "Subscribed"
               ) : (
                 t("subscribe.button")
               )}
@@ -128,11 +135,15 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
     <section className="py-12 bg-accent/50">
       <div className="container max-w-2xl mx-auto text-center space-y-4">
         <h3 className="font-display text-xl font-bold text-foreground">{t("subscribe.title")}</h3>
-        <form onSubmit={handleSubmit} className="flex gap-2 max-w-md mx-auto">
-          <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-10 rounded-lg flex-1" required />
-          <Button type="submit" disabled={isLoading} className="rounded-lg px-6">
+        <form onSubmit={handleSubmit} className="flex justify-center max-w-md mx-auto">
+          {!isLoggedIn && (
+            <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-10 rounded-lg flex-1 mr-2" required />
+          )}
+          <Button type="submit" disabled={isLoading || isAlreadySubscribed} className={`rounded-lg px-8 h-10 font-semibold transition-all hover:scale-[1.02] ${isLoggedIn ? 'w-full max-w-[240px]' : ''}`}>
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isAlreadySubscribed ? (
+              t("subscribe.subscribed") || "Subscribed"
             ) : (
               t("subscribe.button")
             )}

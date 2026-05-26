@@ -57,7 +57,7 @@ async function run() {
   for (const route of routesToTest) {
     try {
       console.log(`Testing ${route}...`);
-      await page.goto(`http://localhost:5173${route}`, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.goto(`http://localhost:5174${route}`, { waitUntil: 'networkidle', timeout: 15000 });
       // Wait a bit for client side rendering or React Query fetches
       await page.waitForTimeout(2000);
     } catch (e) {

@@ -12,11 +12,30 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [isBot, setIsBot] = React.useState(false);
   useEffect(() => {
-    if (!isLoading && !isSigningOut && !user) {
+    const AI_BOT_REGEX = /gptbot|chatgpt|claudebot|claude-web|google-extended|applebot-extended|perplexitybot|cohere-cohere-ai|facebookbot|bytesspider/i;
+    if (typeof navigator !== "undefined" && AI_BOT_REGEX.test(navigator.userAgent)) {
+      setIsBot(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isBot && !isLoading && !isSigningOut && !user) {
       navigate('/login', { state: { from: location }, replace: true });
     }
-  }, [isLoading, isSigningOut, user, navigate, location]);
+  }, [isLoading, isSigningOut, user, navigate, location, isBot]);
+
+  if (isBot) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-4">
+        <div className="text-center space-y-2">
+          <h1 className="text-xl font-bold">403 Forbidden</h1>
+          <p className="text-sm text-muted-foreground">Access denied for automated agents.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || isSigningOut || !user) {
     return (

@@ -23,7 +23,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 from app.config import settings
 from app.graph.builder import get_graph
@@ -31,6 +31,7 @@ from app.graph.state import ChatState
 from app.compliance.sebi import full_compliance_check
 from app.db import repositories
 from app.models.chat import ChatRequest
+from app import bot_config
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -41,15 +42,13 @@ _FAILURE_THRESHOLD = 5
 _circuit_open = False
 _last_failure_time = 0.0
 
-# Static FAQ fallback
-STATIC_FAQ = {
-    "default": "I'm experiencing technical difficulties right now. Here are some helpful resources:\n\n"
-               "📚 **Modules** — Check out our learning modules for structured courses\n"
-               "📰 **Newsletter** — Subscribe to our newsletter for weekly updates\n"
-               "🎓 **Junior Section** — Fun financial lessons for young learners\n"
-               "📅 **Events** — Join our community events and bootcamps\n\n"
-               "Please try again in a few moments!",
-}
+# Static FAQ fallback (loaded from admin config)
+def _get_fallback_response() -> str:
+    """Get the circuit-breaker fallback response from admin config."""
+    cfg = bot_config.get_sync("bot_fallback_response")
+    if isinstance(cfg, dict) and cfg.get("text"):
+        return cfg["text"]
+    return bot_config.DEFAULTS["bot_fallback_response"]["text"]
 
 
 def _get_llm() -> ChatGoogleGenerativeAI:
@@ -77,7 +76,7 @@ async def _stream_llm_response(
     if _circuit_open:
         elapsed = time.time() - _last_failure_time
         if elapsed < 30:  # 30s recovery window
-            yield STATIC_FAQ["default"]
+            yield _get_fallback_response()
             return
         else:
             _circuit_open = False  # HALF_OPEN — try again
@@ -89,15 +88,26 @@ async def _stream_llm_response(
         # Convert dict messages to LangChain message objects
         lc_messages = []
         for msg in messages:
-            if msg["role"] in ("user",):
+            if msg["role"] in ("system",):
+                lc_messages.append(SystemMessage(content=msg["content"]))
+            elif msg["role"] in ("user",):
                 lc_messages.append(HumanMessage(content=msg["content"]))
             elif msg["role"] in ("model", "assistant"):
                 lc_messages.append(AIMessage(content=msg["content"]))
 
         # Stream tokens
         async for chunk in llm.astream(lc_messages):
-            if chunk.content:
-                yield chunk.content
+            content = chunk.content
+            if content:
+                if isinstance(content, list):
+                    for part in content:
+                        if isinstance(part, dict):
+                            if part.get("type") == "text" and part.get("text"):
+                                yield part["text"]
+                        elif isinstance(part, str):
+                            yield part
+                elif isinstance(content, str):
+                    yield content
 
         # Success — reset circuit breaker
         _failure_count = 0
@@ -110,7 +120,7 @@ async def _stream_llm_response(
             _last_failure_time = time.time()
             logger.critical(f"Circuit breaker OPEN after {_failure_count} failures")
 
-        yield STATIC_FAQ["default"]
+        yield _get_fallback_response()
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -128,6 +138,26 @@ async def chat_endpoint(request: Request):
     - event: done    → data: {session_id, sources, compliance_flags}
     - event: error   → data: "error message"
     """
+    client_platform = request.headers.get("x-client-platform")
+    user_agent = request.headers.get("user-agent", "").lower()
+    
+    if client_platform != "Web-Kamada-Human":
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Access denied: Invalid origin verification."},
+        )
+        
+    bot_keywords = [
+        "gptbot", "chatgpt", "claudebot", "claude-web", "google-extended",
+        "applebot-extended", "perplexitybot", "cohere-cohere-ai", "facebookbot",
+        "bytesspider", "python-requests", "curl", "wget", "httpclient"
+    ]
+    if any(keyword in user_agent for keyword in bot_keywords):
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Access denied: Automated agents are not permitted to use the chatbot API."},
+        )
+
     try:
         body = await request.json()
         chat_req = ChatRequest(**body)
@@ -317,6 +347,26 @@ async def chat_sync_endpoint(request: Request):
     Non-streaming chat endpoint. Returns the full response at once.
     Used as a fallback when SSE is not supported.
     """
+    client_platform = request.headers.get("x-client-platform")
+    user_agent = request.headers.get("user-agent", "").lower()
+    
+    if client_platform != "Web-Kamada-Human":
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Access denied: Invalid origin verification."},
+        )
+        
+    bot_keywords = [
+        "gptbot", "chatgpt", "claudebot", "claude-web", "google-extended",
+        "applebot-extended", "perplexitybot", "cohere-cohere-ai", "facebookbot",
+        "bytesspider", "python-requests", "curl", "wget", "httpclient"
+    ]
+    if any(keyword in user_agent for keyword in bot_keywords):
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Access denied: Automated agents are not permitted to use the chatbot API."},
+        )
+
     try:
         body = await request.json()
         chat_req = ChatRequest(**body)

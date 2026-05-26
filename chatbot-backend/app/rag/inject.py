@@ -11,6 +11,7 @@ import logging
 from typing import Optional
 
 from app.config import settings
+from app import bot_config
 
 logger = logging.getLogger(__name__)
 
@@ -51,12 +52,21 @@ def trim_chunks(chunks: list[dict], budget: int) -> list[dict]:
 
 # ── SEBI Compliance Footer ──────────────────────────────────────
 
-SEBI_DISCLAIMER = (
-    "\n\n---\n"
-    "⚠️ **Disclaimer**: This information is for educational purposes only "
-    "and does not constitute financial advice. Please consult a SEBI-registered "
-    "investment adviser before making investment decisions."
-)
+def _get_sebi_disclaimer() -> str:
+    """Get SEBI disclaimer from admin config (cached)."""
+    cfg = bot_config.get_sync("bot_sebi_disclaimer")
+    if isinstance(cfg, dict) and cfg.get("text"):
+        return cfg["text"]
+    return (
+        "\n\n---\n"
+        "⚠️ **Disclaimer**: This information is for educational purposes only "
+        "and does not constitute financial advice. Please consult a SEBI-registered "
+        "investment adviser before making investment decisions."
+    )
+
+
+# Keep module-level alias for backward compatibility
+SEBI_DISCLAIMER = property(lambda self: _get_sebi_disclaimer())
 
 
 # ── Main Prompt Assembly ────────────────────────────────────────
@@ -84,15 +94,16 @@ def assemble_prompt(
 
     # ── 1. Build system instruction (never trimmed) ─────────────
     persona_text = _format_persona(persona)
-    compliance_instruction = (
-        "\n\nCOMPLIANCE RULES:\n"
-        "- Never provide specific investment advice or guaranteed returns.\n"
-        "- Never use words like 'guaranteed', 'risk-free', 'assured returns'.\n"
-        "- Always clarify that information is educational, not personalized advice.\n"
-        "- If asked about specific stocks/funds to buy, redirect to a SEBI-registered adviser.\n"
-        "- Never fabricate financial data, statistics, or regulatory information.\n"
-        "- If you're unsure, say so honestly rather than guessing.\n"
-    )
+    # Load compliance rules from admin config (cached)
+    rules_cfg = bot_config.get_sync("bot_compliance_rules")
+    rules_list = []
+    if isinstance(rules_cfg, dict) and rules_cfg.get("rules"):
+        rules_list = rules_cfg["rules"]
+    else:
+        rules_list = bot_config.DEFAULTS["bot_compliance_rules"]["rules"]
+
+    rules_text = "\n".join(f"- {rule}" for rule in rules_list)
+    compliance_instruction = f"\n\nCOMPLIANCE RULES:\n{rules_text}\n"
 
     system_content = f"{system_prompt}\n\n{persona_text}{compliance_instruction}"
     if affiliates_context:
@@ -119,13 +130,13 @@ def assemble_prompt(
     if knowledge_text:
         full_system += f"\n\nRELEVANT KNOWLEDGE:\n{knowledge_text}"
     if include_disclaimer:
+        disclaimer = _get_sebi_disclaimer()
         full_system += (
             "\n\nIMPORTANT: End every response with this disclaimer:\n"
-            f"{SEBI_DISCLAIMER}"
+            f"{disclaimer}"
         )
 
-    messages.append({"role": "user", "content": f"SYSTEM INSTRUCTION: {full_system}"})
-    messages.append({"role": "model", "content": "Understood. I will follow all instructions and compliance rules."})
+    messages.append({"role": "system", "content": full_system})
 
     # History messages
     for msg in trimmed_history:

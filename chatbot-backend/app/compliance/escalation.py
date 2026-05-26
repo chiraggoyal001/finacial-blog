@@ -16,6 +16,8 @@ import logging
 from enum import Enum
 from typing import Optional
 
+from app import bot_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -65,7 +67,7 @@ DISTRESS_PATTERNS = [
 ADVISER_REQUEST_PATTERNS = [
     re.compile(r'\b(?:speak|talk|connect|meet)\s+(?:to|with)\s+(?:an?\s+)?(?:adviser|advisor|expert|planner)\b', re.IGNORECASE),
     re.compile(r'\b(?:need\s+(?:professional|expert)\s+(?:advice|help|guidance))\b', re.IGNORECASE),
-    re.compile(r'\b(?:hire|find|recommend)\s+(?:a\s+)?(?:CA|CFP|financial\s+planner)\b', re.IGNORECASE),
+    re.compile(r'\b(?:hire|find|recommend)\s+(?:an?\s+)?(?:CA|CFP|financial\s+(?:planner|adviser|advisor))\b', re.IGNORECASE),
 ]
 
 
@@ -112,30 +114,18 @@ def detect_escalation(message: str) -> dict:
             signals.append(f"adviser_request: {match.group(0)}")
             level = max_level(level, EscalationLevel.RECOMMEND)
 
-    # Build response prefix based on level
+    # Build response prefix based on level (load from admin config)
+    escalation_cfg = bot_config.get_sync("bot_escalation_responses")
+    if not isinstance(escalation_cfg, dict):
+        escalation_cfg = bot_config.DEFAULTS["bot_escalation_responses"]
+
     response_prefix = None
     if level == EscalationLevel.URGENT:
-        response_prefix = (
-            "🆘 I can see you're going through a very difficult time. "
-            "Please reach out to these helplines immediately:\n\n"
-            "📞 **iCall**: 9152987821\n"
-            "📞 **Vandrevala Foundation**: 1860-2662-345\n"
-            "📞 **AASRA**: 9820466726\n\n"
-            "For your financial situation, I strongly recommend speaking with "
-            "a qualified financial adviser who can provide personalized guidance.\n\n"
-        )
+        response_prefix = escalation_cfg.get("urgent", "")
     elif level == EscalationLevel.RECOMMEND:
-        response_prefix = (
-            "This sounds like a situation where professional guidance would be really valuable. "
-            "I'd recommend connecting with a SEBI-registered investment adviser or a certified "
-            "financial planner (CFP) who can review your specific circumstances.\n\n"
-        )
+        response_prefix = escalation_cfg.get("recommend", "")
     elif level == EscalationLevel.SUGGEST:
-        response_prefix = (
-            "💡 For a decision of this complexity, you might benefit from consulting "
-            "a qualified financial adviser. I can share some general information, "
-            "but personalized advice requires understanding your full financial picture.\n\n"
-        )
+        response_prefix = escalation_cfg.get("suggest", "")
 
     if signals:
         logger.info(f"Escalation detected: level={level.value}, signals={signals}")

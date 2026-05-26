@@ -271,7 +271,7 @@ const ContactPage = () => {
 
               {/* Social Channels */}
               <div className="pt-6 border-t border-white/10 flex flex-col gap-3 relative z-10">
-                <span className="font-caveat text-lg text-white/90">Stay updated via socials!</span>
+                <span className="font-sans text-[15px] font-semibold text-white/90">Stay updated via socials!</span>
                 <div className="flex gap-2.5">
                   {Object.entries(SOCIAL_LINKS).map(([name, url]) => (
                     <a 

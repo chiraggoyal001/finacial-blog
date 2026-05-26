@@ -1,4 +1,4 @@
-import React, { useMemo, SyntheticEvent } from "react";
+import React, { useMemo, SyntheticEvent, useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useLoaderData } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
@@ -156,7 +156,10 @@ const EventDetailPage = () => {
   const meta = EVENT_TYPE_META[event.type];
   const Icon = meta.icon;
   const spotsLeft = event.capacity && event.registered ? event.capacity - event.registered : null;
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const [shareUrl, setShareUrl] = useState("");
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
