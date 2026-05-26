@@ -1,5 +1,5 @@
 import { createRequestHandler } from "@netlify/vite-plugin-react-router/serverless";
-import { b as build } from "./assets/server-build-BygH57iY.js";
+import { b as build } from "./assets/server-build-CzeRJNTu.js";
 import "react/jsx-runtime";
 import "node:stream";
 import "@react-router/node";
@@ -26,8 +26,6 @@ import "@radix-ui/react-dropdown-menu";
 import "@radix-ui/react-radio-group";
 import "@radix-ui/react-label";
 import "@radix-ui/react-progress";
-import "gsap";
-import "gsap/ScrollTrigger";
 import "@radix-ui/react-separator";
 import "dompurify";
 import "motion/react";

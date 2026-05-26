@@ -1,4 +1,4 @@
-import { h, j, a, c, e, f, i, p, d, r, g, s } from "./assets/server-build-BygH57iY.js";
+import { h, j, a, c, e, f, i, p, d, r, g, s } from "./assets/server-build-CzeRJNTu.js";
 import "react/jsx-runtime";
 import "node:stream";
 import "@react-router/node";
@@ -25,8 +25,6 @@ import "@radix-ui/react-dropdown-menu";
 import "@radix-ui/react-radio-group";
 import "@radix-ui/react-label";
 import "@radix-ui/react-progress";
-import "gsap";
-import "gsap/ScrollTrigger";
 import "@radix-ui/react-separator";
 import "dompurify";
 import "motion/react";

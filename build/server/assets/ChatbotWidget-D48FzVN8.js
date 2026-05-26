@@ -1,7 +1,7 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, X, ThumbsUp, ThumbsDown, User, RefreshCw, MoreHorizontal, ChevronDown, Send } from "lucide-react";
-import { u as useAuth, S as Skeleton, I as Input, B as Button } from "./server-build-CHnPmuHp.js";
+import { u as useAuth, S as Skeleton, I as Input, B as Button } from "./server-build-CzeRJNTu.js";
 import "node:stream";
 import "@react-router/node";
 import "react-router";
@@ -25,8 +25,6 @@ import "@radix-ui/react-dropdown-menu";
 import "@radix-ui/react-radio-group";
 import "@radix-ui/react-label";
 import "@radix-ui/react-progress";
-import "gsap";
-import "gsap/ScrollTrigger";
 import "@radix-ui/react-separator";
 import "dompurify";
 import "motion/react";
