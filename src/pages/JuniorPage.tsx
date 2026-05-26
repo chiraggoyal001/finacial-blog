@@ -17,7 +17,9 @@ import { JuniorModule, JuniorChapter } from "@/lib/types";
 import DataError from "@/components/DataError";
 import { PastelGradientBackground } from "@/components/PastelGradientBackground";
 
-gsap.registerPlugin(ScrollTrigger);
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 const FloatingEmoji = ({ emoji, className }: { emoji: string; className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);

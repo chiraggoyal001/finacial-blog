@@ -10,7 +10,9 @@ import { useReadingProgress } from "@/contexts/ReadingProgressContext";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 export type HorizontalScrollSection = "Newsletter" | "Modules" | "Videos" | "Junior" | "Events";
 
