@@ -46,7 +46,7 @@ export default function AuthCallback() {
 
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('onboarding_completed, signup_method, first_name')
+        .select('onboarding_completed, signup_method, first_name, last_name, email, created_at')
         .eq('id', userId)
         .maybeSingle();
 
@@ -56,13 +56,42 @@ export default function AuthCallback() {
         if (user) {
           const created = await createOAuthProfile(user);
           if (created) {
+            const subscribe = localStorage.getItem("pendingOAuthSubscription") === "true";
+            const mailPref = localStorage.getItem("pendingOAuthMailPreference") || "non-intrusive";
+            const notifyLaunches = localStorage.getItem("pendingOAuthNotifyLaunches") === "true";
+
+            localStorage.removeItem("pendingOAuthSubscription");
+            localStorage.removeItem("pendingOAuthMailPreference");
+            localStorage.removeItem("pendingOAuthNotifyLaunches");
+
+            if (subscribe || notifyLaunches || mailPref !== "non-intrusive") {
+              await supabase.from('profiles').update({
+                is_subscribed: subscribe,
+                mail_preference: mailPref,
+                notify_launches: notifyLaunches
+              }).eq('id', user.id);
+            }
+
+            const firstName = user.user_metadata?.first_name || user.user_metadata?.given_name || user.user_metadata?.name?.split(' ')[0] || '';
+            const lastName = user.user_metadata?.last_name || user.user_metadata?.family_name || user.user_metadata?.name?.split(' ').slice(1).join(' ') || '';
+
             // Fire welcome email for new OAuth user
             triggerEmail({
               type: 'signup',
               email: user.email || '',
-              first_name: user.user_metadata?.first_name || user.user_metadata?.given_name || user.user_metadata?.name?.split(' ')[0] || '',
-              last_name: user.user_metadata?.last_name || user.user_metadata?.family_name || user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
+              first_name: firstName,
+              last_name: lastName,
             });
+
+            if (subscribe) {
+              triggerEmail({
+                type: 'subscription',
+                email: user.email || '',
+                first_name: firstName,
+                last_name: lastName,
+              });
+            }
+
             // New OAuth profile created, redirect to onboarding
             toast.success('Welcome! Please complete your profile.');
             navigate('/onboarding');
@@ -73,6 +102,48 @@ export default function AuthCallback() {
         toast.error('Profile not found');
         navigate('/login');
         return;
+      }
+
+      // Check if this is a newly created OAuth profile (created in the last 45 seconds)
+      const isNewOAuthUser = 
+        profile.signup_method !== 'email' && 
+        profile.created_at &&
+        (new Date().getTime() - new Date(profile.created_at).getTime() < 45000);
+
+      if (isNewOAuthUser) {
+        const subscribe = localStorage.getItem("pendingOAuthSubscription") === "true";
+        const mailPref = localStorage.getItem("pendingOAuthMailPreference") || "non-intrusive";
+        const notifyLaunches = localStorage.getItem("pendingOAuthNotifyLaunches") === "true";
+
+        localStorage.removeItem("pendingOAuthSubscription");
+        localStorage.removeItem("pendingOAuthMailPreference");
+        localStorage.removeItem("pendingOAuthNotifyLaunches");
+
+        if (subscribe || notifyLaunches || mailPref !== "non-intrusive") {
+          await supabase.from('profiles').update({
+            is_subscribed: subscribe,
+            mail_preference: mailPref,
+            notify_launches: notifyLaunches
+          }).eq('id', userId);
+        }
+
+        // Fire welcome email
+        triggerEmail({
+          type: 'signup',
+          email: profile.email || '',
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+        });
+
+        // Fire subscription email if opted in
+        if (subscribe) {
+          triggerEmail({
+            type: 'subscription',
+            email: profile.email || '',
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+          });
+        }
       }
 
       const needsOnboarding = !profile.onboarding_completed || !profile.first_name;

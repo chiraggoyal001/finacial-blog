@@ -161,8 +161,19 @@ export default function SignupPage() {
 
   const handleSocial = async (provider: 'google' | 'twitter') => {
     setIsSocialLoading(provider);
+    
+    // Save signup/subscription preferences to localStorage so we can retrieve and apply them
+    // after returning from the OAuth callback page redirect.
+    localStorage.setItem("pendingOAuthSubscription", subscribe ? "true" : "false");
+    localStorage.setItem("pendingOAuthMailPreference", mailPref);
+    localStorage.setItem("pendingOAuthNotifyLaunches", notifyLaunches ? "true" : "false");
+
     const result = await signInWithOAuth(provider);
     if (!result.success) {
+      // Clear preferences on immediate failure
+      localStorage.removeItem("pendingOAuthSubscription");
+      localStorage.removeItem("pendingOAuthMailPreference");
+      localStorage.removeItem("pendingOAuthNotifyLaunches");
       toast.error(result.error || `${provider} signup failed`);
     }
     setIsSocialLoading(null);
