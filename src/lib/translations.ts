@@ -4,6 +4,7 @@ export const translations: Translations = {
   // ─── Navbar ───
   "nav.search": { en: "Search...", hi: "खोजें..." },
   "nav.login": { en: "Login", hi: "लॉगिन" },
+  "nav.signup": { en: "Sign Up", hi: "साइन अप" },
   "nav.darkMode": { en: "Dark Mode", hi: "डार्क मोड" },
   "nav.hindi": { en: "हिंदी", hi: "हिंदी" },
   "nav.newsletter": { en: "Newsletter", hi: "न्यूज़लेटर" },

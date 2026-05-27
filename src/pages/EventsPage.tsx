@@ -38,29 +38,37 @@ const EventsPage = () => {
     title: e.title,
     description: e.description,
     type: e.type,
-    date: e.date,
-    time: e.time,
+    start_time: e.start_time,
+    end_time: e.end_time,
     location: e.location,
     image: e.image,
     tags: e.tags,
-    isUpcoming: e.is_upcoming,
     registrationUrl: e.registration_url,
     capacity: e.capacity,
     registered: e.registered,
   }));
 
   const locations = useMemo(() => Array.from(new Set(events.map((e) => e.location))).sort(), [events]);
-  const eventDates = useMemo(() => events.filter((e) => e.isUpcoming).map((e) => new Date(e.date)), [events]);
+  const now = new Date();
+  const eventDates = useMemo(() => 
+    events.filter((e) => new Date(e.start_time) > now).map((e) => new Date(e.start_time)), 
+  [events]);
+
   const filteredEvents = useMemo(() =>
     events.filter((e) => {
-      if (!e.isUpcoming) return false;
+      const isUpcoming = new Date(e.end_time) > now;
+      if (!isUpcoming) return false;
       if (typeFilter !== "all" && e.type !== typeFilter) return false;
       if (locationFilter !== "all" && e.location !== locationFilter) return false;
-      if (selectedDate) { if (new Date(e.date).toDateString() !== selectedDate.toDateString()) return false; }
+      if (selectedDate) { if (new Date(e.start_time).toDateString() !== selectedDate.toDateString()) return false; }
       return true;
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
   [events, typeFilter, locationFilter, selectedDate]);
-  const pastEvents = events.filter((e) => !e.isUpcoming);
+
+  const pastEvents = useMemo(() => 
+    events.filter((e) => new Date(e.end_time) <= now)
+      .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()), 
+  [events]);
 
   const clearFilters = () => { setTypeFilter("all"); setLocationFilter("all"); setSelectedDate(undefined); };
   const hasActiveFilters = typeFilter !== "all" || locationFilter !== "all" || selectedDate;
@@ -174,8 +182,11 @@ const EventsPage = () => {
                           <h3 className="font-display font-semibold text-foreground leading-tight">{event.title}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground" suppressHydrationWarning>
-                            <span className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
-                            <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {event.time}</span>
+                            <span className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {new Date(event.start_time).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5" /> 
+                              {new Date(event.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} - {new Date(event.end_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
                             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {event.location}</span>
                           </div>
                           {spotsLeft !== null && (
@@ -210,7 +221,7 @@ const EventsPage = () => {
                       <Badge variant="outline" className={meta.color}><Icon className="h-3 w-3 mr-1" /> {meta.label}</Badge>
                       <h3 className="font-display font-semibold text-foreground text-sm">{event.title}</h3>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <CalendarIcon className="h-3 w-3" /> {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        <CalendarIcon className="h-3 w-3" /> {new Date(event.start_time).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         <span className="mx-1">·</span><MapPin className="h-3 w-3" /> {event.location}
                       </p>
                     </CardContent>

@@ -99,7 +99,7 @@ export default function AdminDashboard() {
   const draftArticles = (articles?.length || 0) - publishedArticles;
   const publishedModules = modules?.filter(m => m.is_published).length || 0;
   const publishedVideos = videos?.filter(v => v.is_published).length || 0;
-  const upcomingEvents = events?.filter(e => e.is_upcoming).length || 0;
+  const upcomingEvents = events?.filter(e => new Date(e.start_time) > new Date()).length || 0;
 
   // Recent content
   const recentContent = [

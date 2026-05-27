@@ -29,12 +29,11 @@ export default function EventEditor() {
     title: '',
     description: '',
     type: 'community',
-    date: '',
-    time: '',
+    start_time: '',
+    end_time: '',
     location: 'Online',
     image: '',
     tags: [],
-    is_upcoming: true,
     registration_url: '',
     capacity: undefined,
     is_published: false,
@@ -42,9 +41,20 @@ export default function EventEditor() {
     recording_url: '',
   });
 
-  // Compute is_upcoming from the event date securely using UTC to avoid timezone shifts
-  const computedIsUpcoming = formData.date
-    ? new Date(formData.date).getTime() >= new Date().setUTCHours(0, 0, 0, 0)
+  const formatDatetimeLocal = (isoString?: string) => {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const isUpcoming = formData.start_time
+    ? new Date(formData.start_time).getTime() >= Date.now()
     : true;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,7 +111,8 @@ export default function EventEditor() {
       const { id, created_at, updated_at, registered, ...editableFields } = existingEvent;
       setFormData({
         ...editableFields,
-        date: existingEvent.date ? new Date(existingEvent.date).toISOString().split('T')[0] : '',
+        start_time: formatDatetimeLocal(existingEvent.start_time),
+        end_time: formatDatetimeLocal(existingEvent.end_time),
         tags: existingEvent.tags || [],
       });
       localStorage.removeItem(DRAFT_KEY);
@@ -118,12 +129,11 @@ export default function EventEditor() {
 
     setIsSubmitting(true);
     try {
-      // Auto-compute is_upcoming from the event date
-      // Strip out any metadata fields that may have been spread into formData
       const { id, created_at, updated_at, registered, ...cleanData } = formData;
       const processedData = {
         ...cleanData,
-        is_upcoming: computedIsUpcoming,
+        start_time: formData.start_time ? new Date(formData.start_time).toISOString() : '',
+        end_time: formData.end_time ? new Date(formData.end_time).toISOString() : '',
         description: formData.description && !formData.description.includes('<')
           ? plainTextToHtml(formData.description)
           : formData.description,
@@ -200,12 +210,12 @@ export default function EventEditor() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Date *</Label>
-                <Input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} required />
+                <Label>Start Date & Time *</Label>
+                <Input type="datetime-local" value={formData.start_time || ''} onChange={e => setFormData({ ...formData, start_time: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label>Time</Label>
-                <Input value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} placeholder="e.g., 14:00 - 16:00" />
+                <Label>End Date & Time *</Label>
+                <Input type="datetime-local" value={formData.end_time || ''} onChange={e => setFormData({ ...formData, end_time: e.target.value })} required />
               </div>
             </div>
 
@@ -255,15 +265,15 @@ export default function EventEditor() {
               <div className="space-y-0.5">
                 <Label>Event Status</Label>
                 <p className="text-sm text-muted-foreground">
-                  Automatically determined from the event date
+                  Automatically determined from the event start date
                 </p>
               </div>
               <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                computedIsUpcoming 
+                isUpcoming 
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' 
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
               }`}>
-                {computedIsUpcoming ? 'Upcoming' : 'Past'}
+                {isUpcoming ? 'Upcoming' : 'Past'}
               </div>
             </div>
             <div className="flex items-center justify-between">

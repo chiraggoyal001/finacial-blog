@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from "react";
 import { User } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
+import { triggerEmail } from "@/lib/sendEmail";
 
 interface AuthContextType {
   user: User | null;
@@ -303,6 +304,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (profileError) {
         console.error('Error saving profile after signup:', profileError);
+      } else {
+        // Fire welcome email (fire-and-forget)
+        triggerEmail({
+          type: 'signup',
+          email,
+          first_name: firstName,
+          last_name: lastName,
+        });
+
+        // Fire subscription email if user opted to subscribe during signup
+        if (isSubscribed) {
+          triggerEmail({
+            type: 'subscription',
+            email,
+            first_name: firstName,
+            last_name: lastName,
+          });
+        }
       }
     }
 

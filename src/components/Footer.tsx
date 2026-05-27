@@ -5,6 +5,7 @@ import { NAV_ITEMS, SOCIAL_LINKS, OTHER_PRODUCTS } from "@/lib/data";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { triggerEmail } from "@/lib/sendEmail";
 import { toast } from "sonner";
 
 const NAV_LABEL_KEYS: Record<string, string> = {
@@ -77,6 +78,14 @@ const Footer = () => {
 
         toast.success(t("subscribe.success"), {
           description: `You're now subscribed to updates at ${emailToSubscribe}`,
+        });
+
+        // Fire subscription email (fire-and-forget)
+        triggerEmail({
+          type: 'subscription',
+          email: user.email || emailToSubscribe,
+          first_name: user.firstName || '',
+          last_name: user.lastName || '',
         });
       } else {
         // Anonymous user - save email and redirect to signup

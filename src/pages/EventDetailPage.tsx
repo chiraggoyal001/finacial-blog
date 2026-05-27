@@ -65,15 +65,14 @@ const EventDetailPage = () => {
       id: dbEvent.id,
       title: dbEvent.title,
       description: dbEvent.description,
-      date: dbEvent.date,
-      time: dbEvent.time,
+      start_time: dbEvent.start_time,
+      end_time: dbEvent.end_time,
       location: dbEvent.location,
       image: dbEvent.image,
       type: dbEvent.type as EventType,
       capacity: dbEvent.capacity,
       registered: dbEvent.registered,
       tags: dbEvent.tags || [],
-      isUpcoming: new Date(dbEvent.date) > new Date(),
       virtualLobbyUrl: dbEvent.virtual_lobby_url,
     } : undefined;
   }, [dbEvent]);
@@ -84,16 +83,21 @@ const EventDetailPage = () => {
   const otherUpcoming = useMemo(() => {
     if (!dbEvents) return [];
     return dbEvents
-      .filter(e => e.id !== eventId && new Date(e.date) > new Date())
+      .filter(e => e.id !== eventId && new Date(e.start_time) > new Date())
       .slice(0, 2);
   }, [dbEvents, eventId]);
 
   const isLobbyActive = useMemo(() => {
-    if (!event?.date) return false;
-    const eventTime = new Date(event.date);
+    if (!event?.start_time) return false;
+    const startTime = new Date(event.start_time);
     const now = new Date();
-    const diff = eventTime.getTime() - now.getTime();
+    const diff = startTime.getTime() - now.getTime();
     return diff <= 30 * 60 * 1000 && diff > -2 * 60 * 60 * 1000; // 30 mins before to 2 hours after
+  }, [event]);
+
+  const isUpcoming = useMemo(() => {
+    if (!event?.end_time) return false;
+    return new Date(event.end_time) > new Date();
   }, [event]);
 
   const handleRegister = async () => {
@@ -102,7 +106,12 @@ const EventDetailPage = () => {
       return;
     }
     try {
-      await registerMutation.mutateAsync(eventId!);
+      await registerMutation.mutateAsync({
+        eventId: eventId!,
+        email: user?.email,
+        firstName: user?.firstName,
+        lastName: user?.lastName,
+      });
       toast.success("Successfully registered for the event!");
     } catch (err) {
       toast.error("Failed to register for the event");
@@ -176,18 +185,21 @@ const EventDetailPage = () => {
             ))}
           </div>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">{event.title}</h1>
-          <div className="flex flex-wrap gap-4 mt-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1" suppressHydrationWarning><CalendarIcon className="h-4 w-4" /> {new Date(event.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
-            <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {event.time}</span>
+          <div className="flex flex-wrap gap-4 mt-4 text-sm text-muted-foreground" suppressHydrationWarning>
+            <span className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" /> {new Date(event.start_time).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-4 w-4" /> 
+              {new Date(event.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} - {new Date(event.end_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+            </span>
             <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {event.location}</span>
           </div>
         </div>
       </section>
 
       {/* Countdown Urgency */}
-      {event.isUpcoming && (
+      {new Date(event.start_time) > new Date() && (
         <section className="container py-6">
-          <CountdownTimer targetDate={event.date} />
+          <CountdownTimer targetDate={event.start_time} />
         </section>
       )}
 
@@ -208,15 +220,17 @@ const EventDetailPage = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <h2 className="text-2xl font-bold tracking-tight">{event.title}</h2>
-                  <p className="text-muted-foreground">{event.location} · {event.time}</p>
+                  <p className="text-muted-foreground" suppressHydrationWarning>
+                    {event.location} · {new Date(event.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <AddToCalendar 
                     title={event.title}
                     description={event.description}
                     location={event.location}
-                    startDate={event.date}
-                    time={event.time}
+                    startTime={event.start_time}
+                    endTime={event.end_time}
                   />
                 </div>
               </div>
@@ -248,7 +262,7 @@ const EventDetailPage = () => {
 
               {/* Dynamic Actions */}
               <div className="flex flex-wrap gap-3">
-                {event.isUpcoming ? (
+                {isUpcoming ? (
                   <>
                     {isAttending ? (
                       <>
@@ -317,7 +331,7 @@ const EventDetailPage = () => {
                           <h3 className="font-display font-semibold text-sm text-foreground">{ev.title}</h3>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1" suppressHydrationWarning>
-                              <CalendarIcon className="h-3 w-3" /> {new Date(ev.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                              <CalendarIcon className="h-3 w-3" /> {new Date(ev.start_time).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" /> {ev.location}

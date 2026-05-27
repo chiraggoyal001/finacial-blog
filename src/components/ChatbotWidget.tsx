@@ -115,6 +115,179 @@ const calculateTypingDelay = (textLength: number): number => {
 
 const GYAAN_AVATAR = "🦉";
 
+// Helper to parse formatting (bold, italic, inline code, and rupee/currency values)
+const formatMessageContent = (text: string, isUser: boolean = false): React.ReactNode => {
+  if (!text) return "";
+
+  // 1. Format inline bullets like `like:* 💰` or `* ` followed by an emoji or space.
+  // Match `*` when followed by an emoji or a space.
+  const bulletRegex = /\*(?=\s*[\uD800-\uDFFF\u2600-\u27BF]|\s+)/g;
+  
+  // Replace it with a newline and a bullet character, so they wrap on new lines nicely
+  const processedText = text.replace(bulletRegex, "\n• ");
+
+  // Split by horizontal line separators "---"
+  const sections = processedText.split("---");
+
+  return sections.map((section, secIdx) => {
+    const lines = section.split("\n");
+
+    const renderedLines = lines.map((line, lineIdx) => {
+      // Split by bold patterns **text**
+      const boldParts = line.split(/(\*\*[^*]+\*\*)/g);
+
+      const parsedBold = boldParts.map((boldPart, boldIdx) => {
+        let isBold = false;
+        let textToParse = boldPart;
+
+        if (boldPart.startsWith("**") && boldPart.endsWith("**")) {
+          isBold = true;
+          textToParse = boldPart.slice(2, -2);
+        }
+
+        // Split by italic patterns *text* (excluding bold matching)
+        const italicParts = textToParse.split(/(\*[^*]+\*)/g);
+
+        const parsedItalic = italicParts.map((italicPart, italicIdx) => {
+          let isItalic = false;
+          let textToFormat = italicPart;
+
+          if (italicPart.startsWith("*") && italicPart.endsWith("*")) {
+            isItalic = true;
+            textToFormat = italicPart.slice(1, -1);
+          }
+
+          // Split by inline code patterns `code`
+          const codeParts = textToFormat.split(/(`[^`]+`)/g);
+
+          const parsedCode = codeParts.map((codePart, codeIdx) => {
+            let isCode = false;
+            let textToHighlight = codePart;
+
+            if (codePart.startsWith("`") && codePart.endsWith("`")) {
+              isCode = true;
+              textToHighlight = codePart.slice(1, -1);
+            }
+
+            // Regex to match rupee values, e.g. ₹499, ₹1,20,000, ₹10 Lakhs, etc.
+            const rupeeRegex = /(₹\d+(?:\.\d+)?(?:,\d+)*(?:\s*(?:Lakh|Crore|Lakhs|Crores|k|M|B|\/month))?)/g;
+            const rupeeParts = textToHighlight.split(rupeeRegex);
+
+            const parsedRupees = rupeeParts.map((rupeePart, rupeeIdx) => {
+              if (rupeePart.startsWith("₹")) {
+                return (
+                  <span
+                    key={`r-${rupeeIdx}`}
+                    className={`font-mono font-semibold ${
+                      isUser
+                        ? "text-primary-foreground/90 underline decoration-dotted"
+                        : "text-amber-700 dark:text-amber-400"
+                    }`}
+                  >
+                    {rupeePart}
+                  </span>
+                );
+              }
+              return rupeePart;
+            });
+
+            if (isCode) {
+              return (
+                <code
+                  key={`c-${codeIdx}`}
+                  className={`font-mono text-xs px-1.5 py-0.5 rounded font-semibold ${
+                    isUser
+                      ? "bg-black/20 text-primary-foreground"
+                      : "bg-muted text-secondary-foreground"
+                  }`}
+                >
+                  {parsedRupees}
+                </code>
+              );
+            }
+
+            return <React.Fragment key={`c-${codeIdx}`}>{parsedRupees}</React.Fragment>;
+          });
+
+          if (isItalic) {
+            return (
+              <span
+                key={`i-${italicIdx}`}
+                className={`italic ${isUser ? "opacity-90" : "text-foreground/80 font-light"}`}
+              >
+                {parsedCode}
+              </span>
+            );
+          }
+          return <React.Fragment key={`i-${italicIdx}`}>{parsedCode}</React.Fragment>;
+        });
+
+        if (isBold) {
+          return (
+            <strong
+              key={`b-${boldIdx}`}
+              className={`font-semibold ${isUser ? "text-primary-foreground" : "text-foreground"}`}
+            >
+              {parsedItalic}
+            </strong>
+          );
+        }
+        return <React.Fragment key={`b-${boldIdx}`}>{parsedItalic}</React.Fragment>;
+      });
+
+      const trimmedLine = line.trim();
+      const isBullet = trimmedLine.startsWith("•");
+
+      // Handle spacing for empty lines vs content lines
+      return (
+        <span
+          key={lineIdx}
+          className={`block ${isBullet ? "pl-4 -indent-4 my-1" : ""} leading-relaxed`}
+        >
+          {lines.length > 1 && trimmedLine === "" ? <span className="block h-2" /> : parsedBold}
+        </span>
+      );
+    });
+
+    return (
+      <React.Fragment key={secIdx}>
+        {secIdx > 0 && <hr className="my-2 border-border/40" />}
+        {renderedLines}
+      </React.Fragment>
+    );
+  });
+};
+
+// Helper to detect dynamic confidence warning levels
+const getConfidenceLevel = (content: string): "high" | "medium" | "low" => {
+  const lower = content.toLowerCase();
+  if (
+    lower.includes("predict") ||
+    lower.includes("forecast") ||
+    lower.includes("will go up") ||
+    lower.includes("returns") ||
+    lower.includes("buy") ||
+    lower.includes("sell") ||
+    lower.includes("portfolio") ||
+    lower.includes("personalized")
+  ) {
+    return "low";
+  }
+  if (
+    lower.includes("recommend") ||
+    lower.includes("should") ||
+    lower.includes("suggest") ||
+    lower.includes("compare") ||
+    lower.includes("better than") ||
+    lower.includes("stocks") ||
+    lower.includes("invest") ||
+    lower.includes("subscribe")
+  ) {
+    return "medium";
+  }
+  return "high";
+};
+
 // Helper to get relative time
 const getRelativeTime = (date: Date): string => {
   const now = new Date();
@@ -861,7 +1034,7 @@ const ChatbotWidget = () => {
           ref={chatContainerRef}
           onTouchStart={handleChatTouchStart}
           onTouchEnd={handleChatTouchEnd}
-          className={`${getPositionClasses()} bg-card border ${prefersHighContrast ? "border-2 border-black dark:border-white" : "border-border"} rounded-2xl shadow-2xl overflow-hidden ${prefersReducedMotion ? "" : "animate-scale-in"} flex flex-col ${isMobile ? 'max-h-[70vh] w-[calc(100vw-3rem)]' : ''}`}
+          className={`${getPositionClasses()} bg-card/85 backdrop-blur-md border ${prefersHighContrast ? "border-2 border-black dark:border-white" : "border-border/40"} rounded-2xl shadow-elevation-3 overflow-hidden ${prefersReducedMotion ? "" : "animate-scale-in"} flex flex-col ${isMobile ? 'max-h-[70vh] w-[calc(100vw-3rem)]' : ''}`}
           style={{ width: isMobile ? undefined : chatSize.width, height: isMobile && keyboardHeight > 0 ? Math.min(chatSize.height, window.innerHeight - keyboardHeight - 100) : chatSize.height }}
           role="dialog"
           aria-modal="true"
@@ -877,20 +1050,20 @@ const ChatbotWidget = () => {
             <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/40 rounded-br-sm group-hover:border-primary transition-colors" />
           </div>
           {/* Header */}
-          <div className="bg-primary px-4 py-3 flex items-center justify-between">
+          <div className="bg-card/95 border-b border-border/40 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-primary-foreground/20 flex items-center justify-center text-xl">
+              <div className="w-9 h-9 rounded-full bg-secondary/15 flex items-center justify-center text-xl">
                 {GYAAN_AVATAR}
               </div>
               <div>
-                <p className="text-sm font-semibold text-primary-foreground">Gyaan AI</p>
-                <p className="text-[10px] text-primary-foreground/70">{isTyping ? "Thinking..." : streamingId ? "Typing..." : "Online • Ready to help"}</p>
+                <p className="text-sm font-semibold text-foreground font-display">Gyaan AI</p>
+                <p className="text-[10px] text-muted-foreground">{isTyping ? "Thinking..." : streamingId ? "Typing..." : "Online • Ready to help"}</p>
               </div>
             </div>
             <div className="flex gap-1">
               <button
                 onClick={startNewChat}
-                className="text-primary-foreground/70 hover:text-primary-foreground transition-colors p-1 rounded"
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted/50"
                 aria-label="New chat"
                 title="New chat"
               >
@@ -899,7 +1072,7 @@ const ChatbotWidget = () => {
               <button
                 ref={closeButtonRef}
                 onClick={() => setIsOpen(false)}
-                className="text-primary-foreground/70 hover:text-primary-foreground transition-colors p-1 rounded"
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted/50"
                 aria-label="Close chat"
               >
                 <X className="h-4 w-4" />
@@ -910,7 +1083,7 @@ const ChatbotWidget = () => {
           {/* Messages */}
           <div 
             ref={messagesContainerRef}
-            className="overflow-y-auto p-3 space-y-3 bg-muted/30 flex-1 scrollbar-hide relative"
+            className="overflow-y-auto p-3 pb-14 space-y-3 bg-muted/30 flex-1 scrollbar-hide relative"
             style={{ height: chatSize.height - 120 }} // Account for header and input
           >
             {messages.length === 0 && (
@@ -921,7 +1094,7 @@ const ChatbotWidget = () => {
                 <p className="text-sm text-muted-foreground">Hi! I'm <strong>Gyaan</strong> 🦉 How can I help you today? 👋</p>
                 <div className="flex flex-wrap gap-1.5 justify-center">
                   {QUICK_REPLIES.map((q) => (
-                    <button key={q} onClick={() => sendMessage(q)} className="text-[11px] px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors" aria-label={`Quick reply: ${q}`}>
+                    <button key={q} onClick={() => sendMessage(q)} className="text-[10px] font-mono px-2.5 py-1 rounded-full border border-secondary/30 bg-secondary/5 text-secondary-foreground hover:bg-secondary/15 transition-colors" aria-label={`Quick reply: ${q}`}>
                       {q}
                     </button>
                   ))}
@@ -932,7 +1105,7 @@ const ChatbotWidget = () => {
             {messages.length > 0 && (
               <div className="flex flex-wrap gap-1.5 justify-center py-2">
                 {(showQuickReplies ? QUICK_REPLIES : []).map((q) => (
-                  <button key={q} onClick={() => sendMessage(q)} className="text-[11px] px-2.5 py-1 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-colors" aria-label={`Quick reply: ${q}`}>
+                  <button key={q} onClick={() => sendMessage(q)} className="text-[10px] font-mono px-2.5 py-1 rounded-full border border-secondary/30 bg-secondary/5 text-secondary-foreground hover:bg-secondary/15 transition-colors" aria-label={`Quick reply: ${q}`}>
                     {q}
                   </button>
                 ))}
@@ -947,26 +1120,43 @@ const ChatbotWidget = () => {
                 )}
                 <div className="flex flex-col gap-1 max-w-[75%]">
                   <div className={`px-3 py-2 rounded-xl text-sm ${m.role === "user" ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-card border border-border rounded-bl-sm"}`}>
-                    <p className="whitespace-pre-wrap">
-                    {m.content ? (
-                      <>
-                        {m.content}
-                        {m.role === "bot" && streamingId === m.id && (
-                          <span className="inline-block w-1.5 h-3.5 bg-primary animate-pulse ml-0.5 align-middle" />
-                        )}
-                      </>
-                    ) : (
-                      m.role === "bot" && streamingId === m.id && (
-                        <div className="space-y-2 w-full">
-                          <Skeleton className="h-3 w-full" />
-                          <Skeleton className="h-3 w-5/6" />
-                          <Skeleton className="h-3 w-4/6" />
-                        </div>
-                      )
-                    )}
-                  </p>
-                    <p className={`text-[9px] mt-1 ${m.role === "user" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{getRelativeTime(m.time)}</p>
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {m.content ? (
+                        <>
+                          {formatMessageContent(m.content, m.role === "user")}
+                          {m.role === "bot" && streamingId === m.id && (
+                            <span className="inline-block w-1.5 h-3.5 bg-primary animate-pulse ml-0.5 align-middle" />
+                          )}
+                        </>
+                      ) : (
+                        m.role === "bot" && streamingId === m.id && (
+                          <div className="space-y-2 w-full">
+                            <Skeleton className="h-3 w-full" />
+                            <Skeleton className="h-3 w-5/6" />
+                            <Skeleton className="h-3 w-4/6" />
+                          </div>
+                        )
+                      )}
+                    </div>
+                    <p className={`text-[9px] mt-1 ${m.role === "user" ? "text-primary-foreground/80 font-medium" : "text-muted-foreground"}`}>{getRelativeTime(m.time)}</p>
                   </div>
+                  
+                  {/* Dynamic Confidence Warnings */}
+                  {m.role === "bot" && !streamingId && m.content && (
+                    <>
+                      {getConfidenceLevel(m.content) === "medium" && (
+                        <div className="mt-0.5 text-[9px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded border border-amber-200/50 flex items-center gap-1 font-medium w-fit">
+                          <span>⚠</span> AI-generated — verify with advisor
+                        </div>
+                      )}
+                      {getConfidenceLevel(m.content) === "low" && (
+                        <div className="mt-0.5 text-[9px] text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded border border-red-200/50 flex items-center gap-1 font-medium w-fit">
+                          <span>🚨</span> Not financial advice. Consult an advisor.
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   {/* Feedback buttons for bot messages */}
                   {m.role === "bot" && !streamingId && m.content && (
                     <div className="flex gap-1 ml-1">
@@ -989,19 +1179,6 @@ const ChatbotWidget = () => {
                     </div>
                   )}
                 </div>
-                {m.role === "user" && (
-                  <div className="w-7 h-7 rounded-full bg-secondary/10 flex items-center justify-center shrink-0 mt-1 overflow-hidden">
-                    {user?.avatarUrl ? (
-                      <img src={user.avatarUrl} alt="User" className="w-full h-full object-cover" />
-                    ) : user?.firstName ? (
-                      <span className="text-[10px] font-medium text-secondary">
-                        {user.firstName.charAt(0).toUpperCase()}
-                      </span>
-                    ) : (
-                      <User className="h-3 w-3 text-secondary" />
-                    )}
-                  </div>
-                )}
               </div>
             ))}
             {isTyping && (
@@ -1047,7 +1224,7 @@ const ChatbotWidget = () => {
                         sendMessage(q);
                         setSuggestedFollowUps([]);
                       }} 
-                      className="text-[11px] px-3 py-1.5 rounded-full border border-primary/40 bg-primary/5 text-primary hover:bg-primary/15 transition-colors"
+                      className="text-[10px] font-mono px-3 py-1.5 rounded-full border border-secondary/30 bg-secondary/5 text-secondary-foreground hover:bg-secondary/15 transition-colors"
                       aria-label={`Follow-up: ${q}`}
                     >
                       {q}
@@ -1070,19 +1247,20 @@ const ChatbotWidget = () => {
                 </button>
               </div>
             )}
-            {/* Scroll to bottom button */}
-            {isScrolledUp && messages.length > 0 && (
-              <button
-                onClick={scrollToBottom}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-10"
-                aria-label="Scroll to latest message"
-                title="Scroll to bottom"
-              >
-                <ChevronDown className="h-4 w-4 animate-bounce" />
-              </button>
-            )}
             <div ref={chatEndRef} />
           </div>
+
+          {/* Scroll to bottom button (outside scroll container) */}
+          {isScrolledUp && messages.length > 0 && (
+            <button
+              onClick={scrollToBottom}
+              className="absolute bottom-[68px] left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-20"
+              aria-label="Scroll to latest message"
+              title="Scroll to bottom"
+            >
+              <ChevronDown className="h-4 w-4 animate-bounce" />
+            </button>
+          )}
 
           {/* Input */}
           <div className="p-3 border-t border-border flex gap-2">

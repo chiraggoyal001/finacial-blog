@@ -14,26 +14,28 @@ interface AddToCalendarProps {
   title: string;
   description: string;
   location: string;
-  startDate: string;
-  time: string;
+  startTime: string;
+  endTime: string;
 }
 
-export const AddToCalendar = ({ title, description, location, startDate, time }: AddToCalendarProps) => {
+export const AddToCalendar = ({ title, description, location, startTime, endTime }: AddToCalendarProps) => {
   // Simple Google Calendar Link
   const getGoogleUrl = () => {
-    const start = new Date(startDate).toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const start = new Date(startTime).toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const end = new Date(endTime).toISOString().replace(/-|:|\.\d\d\d/g, "");
     const url = new URL('https://www.google.com/calendar/render');
     url.searchParams.append('action', 'TEMPLATE');
     url.searchParams.append('text', title);
     url.searchParams.append('details', description);
     url.searchParams.append('location', location);
-    url.searchParams.append('dates', `${start}/${start}`);
+    url.searchParams.append('dates', `${start}/${end}`);
     return url.toString();
   };
 
   // Simple ICS generation logic
   const downloadIcs = () => {
-    const start = new Date(startDate).toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const start = new Date(startTime).toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const end = new Date(endTime).toISOString().replace(/-|:|\.\d\d\d/g, "");
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -42,7 +44,7 @@ export const AddToCalendar = ({ title, description, location, startDate, time }:
       `DESCRIPTION:${description}`,
       `LOCATION:${location}`,
       `DTSTART:${start}`,
-      `DTEND:${start}`,
+      `DTEND:${end}`,
       'END:VEVENT',
       'END:VCALENDAR'
     ].join('\n');

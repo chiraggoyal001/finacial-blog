@@ -68,6 +68,7 @@ export default [
     ]),
   ]),
 
+
   // Catch-all
   route("*", "../src/pages/NotFound.tsx"),
 ] satisfies RouteConfig;

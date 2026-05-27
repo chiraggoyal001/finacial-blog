@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { triggerEmail } from '@/lib/sendEmail';
 import { toast } from 'sonner';
 
 export default function AuthCallback() {
@@ -55,6 +56,13 @@ export default function AuthCallback() {
         if (user) {
           const created = await createOAuthProfile(user);
           if (created) {
+            // Fire welcome email for new OAuth user
+            triggerEmail({
+              type: 'signup',
+              email: user.email || '',
+              first_name: user.user_metadata?.first_name || user.user_metadata?.given_name || user.user_metadata?.name?.split(' ')[0] || '',
+              last_name: user.user_metadata?.last_name || user.user_metadata?.family_name || user.user_metadata?.name?.split(' ').slice(1).join(' ') || '',
+            });
             // New OAuth profile created, redirect to onboarding
             toast.success('Welcome! Please complete your profile.');
             navigate('/onboarding');

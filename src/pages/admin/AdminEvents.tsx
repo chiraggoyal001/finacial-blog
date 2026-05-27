@@ -18,15 +18,14 @@ import { downloadAsCSV } from '@/lib/export';
 import AdminAttendeeList from './AdminAttendeeList';
 import type { DbEvent } from '@/lib/types';
 
-// Helper to compute event status from date rather than relying on stored is_upcoming
-function computeEventStatus(date: string): 'upcoming' | 'past' | 'happening' {
-  const eventDate = new Date(date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  eventDate.setHours(0, 0, 0, 0);
+// Helper to compute event status from start/end times
+function computeEventStatus(startTimeStr: string, endTimeStr: string): 'upcoming' | 'past' | 'happening' {
+  const start = new Date(startTimeStr);
+  const end = new Date(endTimeStr);
+  const now = new Date();
   
-  if (eventDate > today) return 'upcoming';
-  if (eventDate < today) return 'past';
+  if (start > now) return 'upcoming';
+  if (end < now) return 'past';
   return 'happening';
 }
 
@@ -107,13 +106,13 @@ export default function AdminEvents() {
         ID: e.id,
         Title: e.title,
         Type: EVENT_TYPES[e.type as keyof typeof EVENT_TYPES] || e.type,
-        Date: new Date(e.date).toLocaleDateString(),
-        Time: e.time,
+        Date: new Date(e.start_time).toLocaleDateString(),
+        Time: `${new Date(e.start_time).toLocaleTimeString()} - ${new Date(e.end_time).toLocaleTimeString()}`,
         Location: e.location,
         Published: e.is_published,
         Registrations: e.registered,
         Capacity: e.capacity || 'Unlimited',
-        Status: computeEventStatus(e.date)
+        Status: computeEventStatus(e.start_time, e.end_time)
       })),
       'events_export'
     );
@@ -248,14 +247,16 @@ export default function AdminEvents() {
                         )}
                         <div>
                           <div className="font-medium">{event.title}</div>
-                          <div className="text-xs text-muted-foreground">{event.location} • {event.time}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {event.location} • {new Date(event.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} - {new Date(event.end_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{EVENT_TYPES[event.type as keyof typeof EVENT_TYPES] || event.type}</Badge>
                     </TableCell>
-                    <TableCell>{new Date(event.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(event.start_time).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         {event.is_published ? (
@@ -264,7 +265,7 @@ export default function AdminEvents() {
                           <Badge variant="secondary" className="w-fit"><EyeOff className="mr-1 h-3 w-3" />Draft</Badge>
                         )}
                         {(() => {
-                          const status = computeEventStatus(event.date);
+                          const status = computeEventStatus(event.start_time, event.end_time);
                           if (status === 'upcoming') return <Badge variant="outline" className="w-fit text-blue-600">Upcoming</Badge>;
                           if (status === 'happening') return <Badge className="bg-green-100 text-green-700 border-green-200 w-fit">Happening Today</Badge>;
                           return <Badge variant="outline" className="w-fit text-gray-500">Past</Badge>;

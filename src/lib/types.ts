@@ -158,12 +158,11 @@ export interface BlogEvent {
   title: string;
   description: string;
   type: EventType;
-  date: string; // ISO date
-  time: string; // e.g. "14:00 - 16:00"
+  start_time: string; // ISO datetime
+  end_time: string; // ISO datetime
   location: string; // "Online" or city name
   image: string;
   tags: Tag[];
-  isUpcoming: boolean;
   registrationUrl?: string;
   capacity?: number;
   registered?: number;
@@ -305,12 +304,11 @@ export interface DbEvent {
   title: string;
   description: string;
   type: EventType;
-  date: string;
-  time: string;
+  start_time: string;
+  end_time: string;
   location: string;
   image: string;
   tags: { name: string; type: 'major' | 'minor' }[];
-  is_upcoming: boolean;
   registration_url: string;
   capacity: number;
   registered: number;

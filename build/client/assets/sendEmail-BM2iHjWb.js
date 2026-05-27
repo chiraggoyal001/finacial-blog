@@ -1,0 +1,1 @@
+import{s as n}from"./supabase-DeLnXWqS.js";async function r(i){try{const{data:a,error:e}=await n.functions.invoke("send-email",{body:i});e&&console.warn("[Email] Failed to send via Edge Function:",e)}catch(a){console.warn("[Email] Network error during Edge Function dispatch:",a)}}export{r as t};

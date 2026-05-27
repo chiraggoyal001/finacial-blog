@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { triggerEmail } from "@/lib/sendEmail";
+import { SOCIAL_LINKS } from "@/lib/data";
 
 interface SubscribeSectionProps {
   variant?: "inline" | "full";
@@ -59,6 +61,14 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
 
         toast.success(t("subscribe.success"), {
           description: `You're now subscribed to ${frequency} updates at ${emailToSubscribe}`,
+        });
+
+        // Fire subscription email (fire-and-forget)
+        triggerEmail({
+          type: 'subscription',
+          email: user.email || emailToSubscribe,
+          first_name: user.firstName || '',
+          last_name: user.lastName || '',
         });
       } else {
         // Anonymous user - save email and redirect to signup
@@ -124,7 +134,7 @@ const SubscribeSection = ({ variant = "inline" }: SubscribeSectionProps) => {
           </form>
           <p className="text-xs text-muted-foreground">
             {t("subscribe.joinTribe")}{" "}
-            <a href="https://whatsapp.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("subscribe.whatsapp")}</a>
+            <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("subscribe.whatsapp")}</a>
           </p>
         </div>
       </section>

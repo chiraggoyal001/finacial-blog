@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { triggerEmail } from '@/lib/sendEmail';
 import type { 
   DbArticle, 
   DbModule, 
@@ -444,7 +445,14 @@ export const useEvents = (filters?: { upcoming?: boolean; published?: boolean },
     queryKey: ['events', filters],
     queryFn: async () => {
       let query = supabase.from('events').select('*');
-      if (filters?.upcoming !== undefined) query = query.eq('is_upcoming', filters.upcoming);
+      if (filters?.upcoming !== undefined) {
+        const now = new Date().toISOString();
+        if (filters.upcoming) {
+          query = query.gt('start_time', now);
+        } else {
+          query = query.lt('end_time', now);
+        }
+      }
       if (filters?.published !== undefined) {
         query = query.eq('is_published', filters.published);
         if (filters.published) {
@@ -453,7 +461,7 @@ export const useEvents = (filters?: { upcoming?: boolean; published?: boolean },
         }
       }
 
-      const { data, error } = await query.order('date', { ascending: true });
+      const { data, error } = await query.order('start_time', { ascending: true });
       if (error) throw error;
       return data as DbEvent[];
     },
@@ -522,15 +530,27 @@ export const useUserEventRegistration = (eventId: string, userId?: string) => {
 export const useRegisterForEvent = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (eventId: string) => {
-      const { data, error } = await supabase.rpc('register_for_event', { p_event_id: eventId });
+    mutationFn: async (params: { eventId: string; email?: string; firstName?: string; lastName?: string }) => {
+      const { data, error } = await supabase.rpc('register_for_event', { p_event_id: params.eventId });
       if (error) throw error;
-      return data;
+      return { ...data, _email: params.email, _firstName: params.firstName, _lastName: params.lastName, _eventId: params.eventId };
     },
-    onSuccess: (_, eventId) => {
+    onSuccess: (result, params) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
-      queryClient.invalidateQueries({ queryKey: ['event-registration', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event', params.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-registration', params.eventId] });
+
+      // Fire confirmation email if registered (not waitlisted)
+      const status = (result as any)?.status;
+      if (status === 'registered' && params.email) {
+        triggerEmail({
+          type: 'confirmation',
+          email: params.email,
+          first_name: params.firstName || '',
+          last_name: params.lastName || '',
+          event_id: params.eventId,
+        });
+      }
     },
   });
 };

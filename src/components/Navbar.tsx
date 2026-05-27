@@ -36,7 +36,7 @@ const NAV_LABEL_KEYS: Record<string, string> = {
 const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const { isLoggedIn, user, needsOnboarding, isAdmin, logout } = useAuth();
-  const { isDark, toggleTheme, language, toggleLanguage } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const { t } = useTranslation();
   const location = useLocation();
 
@@ -107,10 +107,7 @@ const Navbar = () => {
               <Switch checked={isDark} onCheckedChange={toggleTheme} />
             </div>
 
-            <div className="hidden md:flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{language === "en" ? "EN" : "हि"}</span>
-              <Switch checked={language === "hi"} onCheckedChange={toggleLanguage} />
-            </div>
+
 
             {isLoggedIn && isAdmin && (
               <Link to="/admin">
@@ -168,12 +165,19 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link to="/login">
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <User className="h-3.5 w-3.5" />
-                  {t("nav.login")}
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link to="/login">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <User className="h-3.5 w-3.5" />
+                    {t("nav.login")}
+                  </Button>
+                </Link>
+                <Link to="/signup" className="hidden sm:inline-flex">
+                  <Button size="sm" className="gap-1.5">
+                    {t("nav.signup")}
+                  </Button>
+                </Link>
+              </div>
             )}
 
             <Sheet>
@@ -211,11 +215,22 @@ const Navbar = () => {
                       <span className="text-sm">{t("nav.darkMode")}</span>
                       <Switch checked={isDark} onCheckedChange={toggleTheme} />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{t("nav.hindi")}</span>
-                      <Switch checked={language === "hi"} onCheckedChange={toggleLanguage} />
-                    </div>
                   </div>
+                  {!isLoggedIn && (
+                    <div className="flex flex-col gap-2 mt-4">
+                      <Link to="/login">
+                        <Button variant="outline" className="w-full justify-center gap-1.5">
+                          <User className="h-3.5 w-3.5" />
+                          {t("nav.login")}
+                        </Button>
+                      </Link>
+                      <Link to="/signup">
+                        <Button className="w-full justify-center">
+                          {t("nav.signup")}
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
