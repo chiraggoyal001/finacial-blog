@@ -74,7 +74,7 @@ const Navbar = () => {
       >
         <div className="container flex h-16 items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2">
-            <span className="font-display text-2xl font-bold text-primary">KAMADA</span>
+            <img src="/logo.svg" alt="KAMADA Logo" className="h-12 w-auto dark:brightness-110" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
@@ -188,7 +188,9 @@ const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="left" className="w-72">
                 <div className="flex flex-col gap-4 mt-8">
-                  <Link to="/" className="font-display text-2xl font-bold text-primary mb-4">KAMADA</Link>
+                  <Link to="/" className="mb-4">
+                    <img src="/logo.svg" alt="KAMADA Logo" className="h-14 w-auto dark:brightness-110" />
+                  </Link>
                   {NAV_ITEMS.map((item) => (
                     <Link
                       key={item.label}

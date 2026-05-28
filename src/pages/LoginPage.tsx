@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, Circle, Twitter } from "lucide-react";
+import { Loader2, Eye, EyeOff, Twitter } from "lucide-react";
 import { motion } from "motion/react";
 
 const containerVariants = {
@@ -96,8 +96,7 @@ export default function LoginPage() {
           {/* Brand/Logo */}
           <motion.div variants={childVariants}>
             <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Circle className="h-6 w-6 fill-white text-white" />
-              <span className="text-xl font-semibold tracking-tight">KAMADA</span>
+              <img src="/logo.svg" alt="KAMADA Logo" className="h-14 w-auto brightness-0 invert" />
             </Link>
           </motion.div>
 

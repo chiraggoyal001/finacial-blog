@@ -189,10 +189,7 @@ const Footer = () => {
           
           {/* Brand Logo */}
           <Link to="/" className="flex flex-row items-center gap-2.5 relative z-10 no-underline group">
-            <div className="w-8 h-8 rounded-lg bg-white/15 border-[1.5px] border-white/85 flex items-center justify-center font-dm-sans text-base font-bold text-white tracking-tight transition-transform duration-300 group-hover:scale-110 group-hover:rotate-5">
-              K
-            </div>
-            <span className="font-dm-sans text-2xl font-bold text-white tracking-tight">KAMADA</span>
+            <img src="/logo.svg" alt="KAMADA Logo" className="h-14 w-auto brightness-0 invert transition-transform duration-300 group-hover:scale-105" />
           </Link>
  
           {/* Tagline - Added shadow to make it contrast beautifully with bright videos */}
@@ -257,7 +254,7 @@ const Footer = () => {
                 className="w-18 h-18 sm:w-24 sm:h-24 rounded-[16px] sm:rounded-[22px] rotate-[-10deg] bg-gradient-to-br from-[#00bfa5] via-[#006b5e] to-[#004d43] dark:from-[#00e5ff] dark:via-[#00bfa5] dark:to-[#006b5e] shadow-[inset_3px_3px_8px_rgba(255,255,255,0.35),inset_-3px_-3px_12px_rgba(0,0,0,0.18),0_12px_28px_rgba(0,107,94,0.3)] flex items-center justify-center cursor-pointer transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/kbadge:rotate-[5deg] group-hover/kbadge:scale-108 group-hover/kbadge:shadow-[inset_4px_4px_10px_rgba(255,255,255,0.45),inset_-4px_-4px_14px_rgba(0,0,0,0.22),0_16px_36px_rgba(0,107,94,0.45)] active:rotate-[-25deg] active:scale-95"
                 title="Click to give feedback, suggestions or request content/events!"
               >
-                <span className="font-dm-sans text-3xl sm:text-[42px] font-bold text-white rotate-[10deg] text-shadow-[0_3px_6px_rgba(0,0,0,0.25)] leading-none pointer-events-none">K</span>
+                <img src="/logo-icon.svg" alt="Kamada icon" className="w-10 h-10 sm:w-14 sm:h-14 object-contain rotate-[10deg] brightness-0 invert" />
               </div>
               
               <div className="flex flex-row gap-1.5 items-center rotate-[-4deg] mt-1 pl-2">
