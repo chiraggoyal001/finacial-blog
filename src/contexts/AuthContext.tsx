@@ -18,7 +18,7 @@ interface AuthContextType {
   updateProfile: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateAvatar: (url: string) => void;
-  signInWithOAuth: (provider: 'google' | 'twitter') => Promise<{ success: boolean; error?: string }>;
+  signInWithOAuth: (provider: 'google') => Promise<{ success: boolean; error?: string }>;
   markOnboardingComplete: () => void;
   updateUserAvatar: (url: string | null) => void;
 }
@@ -390,7 +390,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { success: true };
   };
 
-  const signInWithOAuth = async (provider: 'google' | 'twitter') => {
+  const signInWithOAuth = async (provider: 'google') => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider,

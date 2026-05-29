@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
-import { Loader2, Check, X, Shield, ChevronDown, Eye, EyeOff, Twitter } from "lucide-react";
+import { Loader2, Check, X, Shield, ChevronDown, Eye, EyeOff } from "lucide-react";
 import zxcvbn from "zxcvbn";
 import { motion } from "motion/react";
 import { Label } from "@/components/ui/label";
@@ -45,7 +45,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [showRequirementsError, setShowRequirementsError] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState<'google' | 'twitter' | null>(null);
+  const [isSocialLoading, setIsSocialLoading] = useState<'google' | null>(null);
   const { signup, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -159,7 +159,7 @@ export default function SignupPage() {
     setIsLoading(false);
   };
 
-  const handleSocial = async (provider: 'google' | 'twitter') => {
+  const handleSocial = async (provider: 'google') => {
     setIsSocialLoading(provider);
     
     // Save signup/subscription preferences to localStorage so we can retrieve and apply them
@@ -248,7 +248,7 @@ export default function SignupPage() {
           </div>
 
           {/* Social Buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="w-full">
             <SocialButton
               icon={
                 isSocialLoading === "google" ? (
@@ -276,18 +276,6 @@ export default function SignupPage() {
               }
               label={t("login.continueGoogle")}
               onClick={() => handleSocial("google")}
-              disabled={isLoading || isSocialLoading !== null}
-            />
-            <SocialButton
-              icon={
-                isSocialLoading === "twitter" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Twitter className="h-4 w-4 fill-current" />
-                )
-              }
-              label={t("login.continueX")}
-              onClick={() => handleSocial("twitter")}
               disabled={isLoading || isSocialLoading !== null}
             />
           </div>

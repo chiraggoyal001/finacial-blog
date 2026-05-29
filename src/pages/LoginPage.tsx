@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/hooks/useTranslation";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, Twitter } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { motion } from "motion/react";
 
 const containerVariants = {
@@ -31,7 +31,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState<'google' | 'twitter' | null>(null);
+  const [isSocialLoading, setIsSocialLoading] = useState<'google' | null>(null);
   const { login, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,7 +60,7 @@ export default function LoginPage() {
     setIsLoading(false);
   };
 
-  const handleSocial = async (provider: 'google' | 'twitter') => {
+  const handleSocial = async (provider: 'google') => {
     setIsSocialLoading(provider);
     const result = await signInWithOAuth(provider);
     if (!result.success) {
@@ -138,7 +138,7 @@ export default function LoginPage() {
           </div>
 
           {/* Social Buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="w-full">
             <SocialButton
               icon={
                 isSocialLoading === "google" ? (
@@ -166,18 +166,6 @@ export default function LoginPage() {
               }
               label={t("login.continueGoogle")}
               onClick={() => handleSocial("google")}
-              disabled={isLoading || isSocialLoading !== null}
-            />
-            <SocialButton
-              icon={
-                isSocialLoading === "twitter" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Twitter className="h-4 w-4 fill-current" />
-                )
-              }
-              label={t("login.continueX")}
-              onClick={() => handleSocial("twitter")}
               disabled={isLoading || isSocialLoading !== null}
             />
           </div>
