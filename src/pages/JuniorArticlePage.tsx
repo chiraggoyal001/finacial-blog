@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen, Play, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
@@ -150,6 +151,32 @@ const JuniorArticlePage = () => {
   useEffect(() => {
     setShareUrl(window.location.href);
   }, []);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: chapter?.title || mod?.title || "KAMADA",
+      text: mod?.description || "",
+      url: shareUrl || window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error(err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl || window.location.href);
+        toast.success("Link copied to clipboard!");
+      } catch (err) {
+        toast.error("Failed to copy link");
+      }
+    }
+  };
+
   const isVideoChapter = chapter.contentType === "video";
 
   return (
@@ -309,11 +336,16 @@ const JuniorArticlePage = () => {
 
             {/* Social Links */}
             <div className="flex items-center gap-3">
-              <Share2 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Share:</span>
-              <a href={`https://x.com/intent/tweet?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors"><XIcon /></a>
-              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors text-sm font-medium">LinkedIn</a>
-              <a href={`https://wa.me/?text=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors text-sm font-medium">WhatsApp</a>
+              <button 
+                onClick={handleShare}
+                className="text-sm text-muted-foreground hover:text-secondary transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0"
+              >
+                <Share2 className="h-4 w-4 text-muted-foreground" />
+                <span>Share:</span>
+              </button>
+              <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(chapter?.title || "")}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors"><XIcon /></a>
+              <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors text-sm font-medium">LinkedIn</a>
+              <a href={`https://wa.me/?text=${encodeURIComponent(`${chapter?.title || ""} ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-secondary transition-colors text-sm font-medium">WhatsApp</a>
             </div>
           </div>
         </div>

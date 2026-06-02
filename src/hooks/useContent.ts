@@ -16,12 +16,18 @@ import type {
 // ARTICLES
 // =====================================================
 
-export const useArticles = (filters?: { category?: string; published?: boolean }, options?: { staleTime?: number; gcTime?: number }) => {
+export const useArticles = (filters?: { category?: string | string[]; published?: boolean }, options?: { staleTime?: number; gcTime?: number }) => {
   return useQuery({
     queryKey: ['articles', filters],
     queryFn: async () => {
       let query = supabase.from('articles').select('*');
-      if (filters?.category) query = query.eq('category', filters.category);
+      if (filters?.category) {
+        if (Array.isArray(filters.category)) {
+          query = query.in('category', filters.category);
+        } else {
+          query = query.eq('category', filters.category);
+        }
+      }
       if (filters?.published !== undefined) {
         query = query.eq('is_published', filters.published);
         if (filters.published) {

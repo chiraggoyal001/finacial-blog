@@ -39,7 +39,7 @@ export default function ArticleEditor() {
     title: '',
     excerpt: '',
     content: '',
-    category: 'Blog',
+    category: 'Newsletter',
     author_name: user?.firstName ? `${user.firstName} ${user.lastName}` : 'Editorial Team',
     image: '',
     read_time: '',

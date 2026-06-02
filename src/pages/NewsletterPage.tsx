@@ -16,7 +16,7 @@ const NewsletterPage = () => {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  const { data: dbArticles, isLoading } = useArticles({ category: 'Newsletter', published: true });
+  const { data: dbArticles, isLoading } = useArticles({ category: ['Newsletter', 'Blog'], published: true });
 
   const mappedDbPosts = (dbArticles || []).map(article => ({
     id: article.id,

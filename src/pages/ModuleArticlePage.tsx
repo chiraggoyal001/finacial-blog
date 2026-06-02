@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useLoaderData } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 import { Clock, ChevronRight, Share2, CheckCircle2, BookOpen } from "lucide-react";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SubscribeSection from "@/components/SubscribeSection";
@@ -145,6 +146,36 @@ const ModuleArticlePage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [chapterId]);
+
+  const [shareUrl, setShareUrl] = useState("");
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, []);
+
+  const handleShare = async () => {
+    const shareData = {
+      title: chapter?.title || mod?.title || "KAMADA",
+      text: mod?.description || "",
+      url: shareUrl || window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error(err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl || window.location.href);
+        toast.success("Link copied to clipboard!");
+      } catch (err) {
+        toast.error("Failed to copy link");
+      }
+    }
+  };
 
   // Keyboard shortcut: ArrowRight to go to next chapter, ArrowLeft for previous
   useEffect(() => {
@@ -337,11 +368,14 @@ const ModuleArticlePage = () => {
 
             {/* Social Share - dynamic share URLs */}
             <div className="flex items-center gap-3 pt-8 mt-8 border-t border-border">
-              <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <button 
+                onClick={handleShare}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0"
+              >
                 <Share2 className="h-4 w-4" /> Share
-              </span>
+              </button>
               <a 
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${chapter.title} - ${mod.title}`)}&url=${encodeURIComponent(window.location.href)}`} 
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${chapter.title} - ${mod.title}`)}&url=${encodeURIComponent(shareUrl)}`} 
                 target="_blank" rel="noopener noreferrer" 
                 className="text-muted-foreground hover:text-primary"
                 aria-label="Share on X (Twitter)"
@@ -349,7 +383,7 @@ const ModuleArticlePage = () => {
                 <XIcon />
               </a>
               <a 
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`} 
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} 
                 target="_blank" rel="noopener noreferrer" 
                 className="text-muted-foreground hover:text-primary"
                 aria-label="Share on LinkedIn"
@@ -357,7 +391,7 @@ const ModuleArticlePage = () => {
                 <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
               </a>
               <a 
-                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${chapter.title} - ${mod.title} ${window.location.href}`)}`} 
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${chapter.title} - ${mod.title} ${shareUrl}`)}`} 
                 target="_blank" rel="noopener noreferrer" 
                 className="text-muted-foreground hover:text-primary"
                 aria-label="Share on WhatsApp"

@@ -108,7 +108,7 @@ const Index = () => {
   }));
 
   const newsletterPosts: BlogPost[] = (dbArticles || [])
-    .filter(a => a.category === 'Newsletter')
+    .filter(a => a.category === 'Newsletter' || a.category === 'Blog')
     .map(article => ({
       id: article.id,
       title: article.title,

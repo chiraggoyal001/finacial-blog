@@ -352,12 +352,11 @@ CREATE TABLE events (
   title TEXT NOT NULL,
   description TEXT,
   type TEXT NOT NULL,
-  date DATE NOT NULL,
-  time TEXT,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
   location TEXT,
   image TEXT,
   tags JSONB DEFAULT '[]',
-  is_upcoming BOOLEAN DEFAULT true,
   registration_url TEXT,
   virtual_lobby_url TEXT,
   recording_url TEXT,
@@ -484,6 +483,8 @@ CREATE TABLE event_registrations (
   event_id UUID REFERENCES events(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   status TEXT DEFAULT 'registered' CHECK (status IN ('registered', 'waitlisted', 'cancelled')),
+  reminder_sent_24h BOOLEAN DEFAULT false,
+  reminder_sent_1h BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(event_id, user_id)
 );
@@ -735,31 +736,39 @@ DECLARE
   v_capacity INTEGER;
   v_current_count INTEGER;
   v_status TEXT;
-  v_result JSONB;
+  v_old_status TEXT;
 BEGIN
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  SELECT capacity INTO v_capacity FROM events WHERE id = p_event_id;
+  -- Acquire row-level lock on the event to prevent concurrent registration spikes exceeding capacity
+  SELECT capacity, registered INTO v_capacity, v_current_count 
+  FROM events 
+  WHERE id = p_event_id 
+  FOR UPDATE;
   
-  SELECT COUNT(*) INTO v_current_count 
+  -- Get user's current status if they have registered before
+  SELECT status INTO v_old_status 
   FROM event_registrations 
-  WHERE event_id = p_event_id AND status = 'registered';
+  WHERE event_id = p_event_id AND user_id = v_user_id;
 
-  IF v_current_count < v_capacity THEN
+  -- Determine status based on current active registrations
+  IF v_current_count < v_capacity OR v_capacity IS NULL THEN
     v_status := 'registered';
   ELSE
     v_status := 'waitlisted';
   END IF;
 
-  INSERT INTO event_registrations (event_id, user_id, status)
-  VALUES (p_event_id, v_user_id, v_status)
+  -- Insert or Update registration
+  INSERT INTO event_registrations (event_id, user_id, status, reminder_sent_24h, reminder_sent_1h)
+  VALUES (p_event_id, v_user_id, v_status, false, false)
   ON CONFLICT (event_id, user_id) 
-  DO UPDATE SET status = v_status, created_at = NOW();
+  DO UPDATE SET status = v_status, created_at = NOW(), reminder_sent_24h = false, reminder_sent_1h = false;
 
-  IF v_status = 'registered' THEN
+  -- If status changes to registered from unregistered/waitlisted, increment registered count
+  IF v_status = 'registered' AND (v_old_status IS NULL OR v_old_status <> 'registered') THEN
     UPDATE events SET registered = registered + 1 WHERE id = p_event_id;
   END IF;
 
@@ -778,18 +787,44 @@ AS $$
 DECLARE
   v_user_id UUID;
   v_old_status TEXT;
+  v_promoted_user_id UUID;
 BEGIN
   v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
   
+  -- Get old status before deleting
   SELECT status INTO v_old_status 
   FROM event_registrations 
   WHERE event_id = p_event_id AND user_id = v_user_id;
 
+  -- Delete the registration
   DELETE FROM event_registrations 
   WHERE event_id = p_event_id AND user_id = v_user_id;
 
+  -- If the user was registered, promote the oldest waitlisted user
   IF v_old_status = 'registered' THEN
-    UPDATE events SET registered = GREATEST(0, registered - 1) WHERE id = p_event_id;
+    -- Lock the event row for updates
+    PERFORM 1 FROM events WHERE id = p_event_id FOR UPDATE;
+
+    -- Find oldest waitlisted user
+    SELECT user_id INTO v_promoted_user_id 
+    FROM event_registrations 
+    WHERE event_id = p_event_id AND status = 'waitlisted'
+    ORDER BY created_at ASC
+    LIMIT 1
+    FOR UPDATE;
+
+    IF v_promoted_user_id IS NOT NULL THEN
+      -- Promote the waitlisted user
+      UPDATE event_registrations 
+      SET status = 'registered', created_at = NOW(), reminder_sent_24h = false, reminder_sent_1h = false
+      WHERE event_id = p_event_id AND user_id = v_promoted_user_id;
+    ELSE
+      -- No one is on the waitlist, decrement active registrations
+      UPDATE events SET registered = GREATEST(0, registered - 1) WHERE id = p_event_id;
+    END IF;
   END IF;
 END;
 $$;
@@ -1118,7 +1153,8 @@ CREATE INDEX idx_articles_scheduled_for ON articles(scheduled_for);
 CREATE INDEX idx_modules_published ON modules(is_published);
 CREATE INDEX idx_modules_scheduled_for ON modules(scheduled_for);
 CREATE INDEX idx_video_series_scheduled_for ON video_series(scheduled_for);
-CREATE INDEX idx_events_upcoming ON events(is_upcoming);
+CREATE INDEX idx_events_start_time ON events(start_time);
+CREATE INDEX idx_events_end_time ON events(end_time);
 CREATE INDEX idx_events_scheduled_for ON events(scheduled_for);
 CREATE INDEX idx_junior_modules_scheduled_for ON junior_modules(scheduled_for);
 CREATE INDEX idx_user_likes_user_id ON user_likes(user_id);

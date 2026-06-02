@@ -1,5 +1,5 @@
 import { createRequestHandler } from "@netlify/vite-plugin-react-router/serverless";
-import { b as build } from "./assets/server-build-Cp54VmTC.js";
+import { b as build } from "./assets/server-build-Bpt0Fv3-.js";
 import "react/jsx-runtime";
 import "node:stream";
 import "@react-router/node";

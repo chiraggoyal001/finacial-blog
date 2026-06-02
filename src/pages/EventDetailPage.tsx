@@ -170,6 +170,31 @@ const EventDetailPage = () => {
     setShareUrl(window.location.href);
   }, []);
 
+  const handleShare = async () => {
+    const shareData = {
+      title: event?.title || "KAMADA",
+      text: event?.description || "",
+      url: shareUrl || window.location.href,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error(err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl || window.location.href);
+        toast.success("Link copied to clipboard!");
+      } catch (err) {
+        toast.error("Failed to copy link");
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -304,12 +329,17 @@ const EventDetailPage = () => {
 
           {/* Social Links */}
           <div className="flex items-center gap-3">
-            <Share2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Share:</span>
-            <a href={`https://x.com/intent/tweet?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">X</a>
-            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">LinkedIn</a>
-            <a href={`https://wa.me/?text=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">WhatsApp</a>
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">Facebook</a>
+            <button 
+              onClick={handleShare}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0"
+            >
+              <Share2 className="h-4 w-4 text-muted-foreground" />
+              <span>Share:</span>
+            </button>
+            <a href={`https://x.com/intent/tweet?text=${encodeURIComponent(event?.title || "")}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">X</a>
+            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">LinkedIn</a>
+            <a href={`https://wa.me/?text=${encodeURIComponent(`${event?.title || ""} ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">WhatsApp</a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors text-sm">Facebook</a>
           </div>
 
           {/* Other Upcoming Events */}
