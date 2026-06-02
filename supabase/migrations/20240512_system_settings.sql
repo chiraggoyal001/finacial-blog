@@ -49,6 +49,6 @@ $$;
 
 -- Default settings
 INSERT INTO system_settings (key, value) VALUES
-  ('ai_prompt', '{"text": "You are a friendly and knowledgeable financial literacy assistant for the blog Dhaani. Your goal is to explain complex financial concepts in simple, easy-to-understand terms for both adults and children. Always maintain a helpful, encouraging tone and avoid giving direct financial advice. Emphasize learning and understanding."}'::jsonb),
+  ('ai_prompt', '{"text": "You are a friendly and knowledgeable financial literacy assistant for the blog KAMADA. Your goal is to explain complex financial concepts in simple, easy-to-understand terms for both adults and children. Always maintain a helpful, encouraging tone and avoid giving direct financial advice. Emphasize learning and understanding."}'::jsonb),
   ('system_banner', '{"text": "", "isActive": false, "backgroundColor": "bg-primary", "textColor": "text-primary-foreground", "visiblePages": ["all"]}'::jsonb)
 ON CONFLICT (key) DO NOTHING;

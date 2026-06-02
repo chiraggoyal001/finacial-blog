@@ -4,6 +4,131 @@ Kamad is a state-of-the-art financial literacy blog and interactive education we
 
 ---
 
+## 📈 Executive Summary
+
+**Kamad** is a financial education ecosystem designed to close the global gap in financial literacy across demographics. By blending interactive learning modules, responsive calculation engines, and gamified content with an advanced AI chatbot, Kamad converts dry financial jargon into actionable, engaging, and age-appropriate knowledge.
+
+### The Problem
+Traditional financial education is typically passive (text-heavy blogs), fragmented (requiring multiple apps for learning, calculating, and tracking), and legally high-risk (LLM chatbots giving unsanctioned financial advice).
+
+### The Solution
+A unified, responsive portal hosted on serverless infrastructure. It offers a structured curriculum, dynamic scenario-modeling simulators, a dedicated sub-portal for children ("Junior Hub"), and a compliance-monitored AI tutor that grounds its knowledge in verified site articles.
+
+---
+
+## 💼 Business Requirements Document (BRD)
+
+### 1. Business Objectives & Core Vision
+The primary objective of Kamad is to establish a secure, scaleable, and highly engaging financial literacy portal. 
+*   **Engagement Growth:** Increase average session duration by transitioning from static reading to gamified learning.
+*   **Conversion Optimization:** Drive mailing list sign-ups and event RSVPs using integrated, low-cost native A/B testing.
+*   **Cost Efficiency:** Maintain near-zero infrastructure overhead by utilizing a serverless architecture (Supabase + Netlify static hosting).
+*   **Regulatory Compliance:** Neutralize the risk of compliance violations (such as SEBI advisory regulations) through automated AI filters.
+
+### 2. Stakeholders & Target Audience
+*   **Young Professionals & Novice Investors:** Users seeking structured courses to understand personal finance and investment options.
+*   **Parents & Teenagers:** Families seeking a safe, gamified interface to teach children money management habits early.
+*   **Content Managers & Educators:** Platform administrators requiring simple, code-free tools to curate articles, courses, webinars, and A/B tests.
+
+### 3. Compliance, Trust & Governance
+*   **Regulatory Compliance:** Display clear financial disclaimers and licensing terms on all pages. The AI Chatbot must adhere to safety rules forbidding direct stock tips.
+*   **Data Protection & Transparency:** Provide tools for cookie consent, personal data exports, and profile deletions.
+*   **Grievance Channeling:** Maintain a direct avenue for user support and officer compliance logs.
+
+---
+
+## 📋 Product Requirements Document (PRD)
+
+### 1. User Roles & Permissions
+*   **Anonymous Guest:** Accesses public blogs, calculators, events calendar, and static marketing views.
+*   **Registered Learner:** Accesses the LMS tracking panel, saves article bookmarks, takes interactive quizzes, and runs persistent chatbot session histories.
+*   **Junior Learner:** Enters the simplified Junior Hub designed with child-friendly UX guidelines.
+*   **System Administrator:** Accesses the secure admin dashboard (`/admin`) for full CRUD management and A/B test deployments.
+
+### 2. Functional Requirements
+*   **Structured LMS (Learning Management System):**
+    *   Modules divided into sequential chapters.
+    *   Interactive multiple-choice quizzes at the end of each module.
+    *   Visual progress tracking (completed vs. ongoing) in "My Learning".
+*   **AI Chatbot Companion:**
+    *   Retrieval-Augmented Generation (RAG) querying internal articles database.
+    *   Compliance filter to screen incoming queries and outgoing responses.
+    *   Server-Sent Events (SSE) for low-latency text streaming.
+    *   A/B test variations supporting static or motion graphic avatars.
+*   **Financial Calculators:**
+    *   Calculations for SIP, Lumpsum, Mutual Funds, and Loan Amortizations.
+    *   Interactive sliders for input parameters (interest rates, time horizons, amounts) and reactive chart updates.
+*   **A/B Testing Engine:**
+    *   Admin panel tools to create, pause, and delete tests.
+    *   Dynamic, session-based client variant assignment.
+    *   Automated tracking of views, clicks, and goal conversions.
+*   **Admin Panel & Analytics:**
+    *   Rich text editing (React Quill) with HTML outputs for all content models.
+    *   Analytics dashboard plotting Daily Active Users (DAU), engagement metrics, and individual content performance.
+
+### 3. Non-Functional Requirements
+*   **Security:** Supabase Row Level Security (RLS) policies protecting database writes. Automated signup trigger assigning default roles.
+*   **Performance:** Sub-second server-side routing load and optimized query caching (TanStack Query).
+*   **Aesthetics & Accessibility:** Harmonious glassmorphic color schemes, modern web typography, micro-animations, and mobile responsiveness.
+
+---
+
+## ⚙️ Technical Requirements Document (TRD)
+
+### 1. Database Schema & Data Models
+The database layer is built on PostgreSQL with relational integrity, triggers, and vectorized indexes.
+
+#### Core Tables
+*   **`profiles`**: Links to `auth.users(id)`. Stores personal criteria (age, region, interests), gamification parameters (`xp`), onboarding flags, and avatar preferences.
+*   **`articles`**: Houses newsletter and blog data. Leverages a generated `search_vector` (`tsvector`) column on title and excerpt for index-based full-text queries.
+*   **`modules` & `module_chapters`**: Manages structural courses, chapter order, read times, and embedded quiz metadata in JSONB arrays.
+*   **`video_series` & `video_chapters`**: Manages video playlists, associated YouTube links, durations, and quiz questions.
+*   **`events`**: Tracks masterclasses and webinars, capacity caps, virtual lobby entries, and registrants.
+*   **`junior_modules` & `junior_chapters`**: Handles child-friendly asset paths, illustrations, content type tags, and video files.
+
+#### Telemetry & Interaction Tables
+*   **`ab_tests` & `ab_test_variants`**: Tracks dynamic layouts, CTAs, and chatbot configurations with traffic distribution metrics.
+*   **`ab_test_assignments`**: Maps unique users to assigned test variants for session consistency.
+*   **`event_registrations`**: Connects users to webinars with waitlist status transitions (`registered`, `waitlisted`, `cancelled`).
+*   **`quiz_results`**: Tracks quiz grades, scores, and gamified XP tokens.
+*   **`user_progress`**: Tracks module completion percentages and bookmarks.
+*   **`user_likes`, `user_bookmarks`, `content_ratings`**: Captures basic user feedback metrics.
+
+### 2. Embedded Database Functions & RPCs
+*   **`submit_quiz_and_get_stats`**: Validates quiz completion, calculates XP (10 points per answer, 50 bonus for perfect scores), registers results, increments user XP, and calculates user-wide XP percentile rankings using database aggregations.
+*   **`get_personalized_recommendations`**: Employs tag-matching algorithms to calculate content relevance scores based on user profile interests, view counts, and total likes.
+*   **`register_for_event`**: Handles transaction-safe registrations. Verifies room capacity, registers the user, updates counters, and falls back to waitlists if capacity limits are breached.
+*   **`handle_new_user`**: Trigger function on `auth.users` insertion. Evaluates signup providers, parses full names, assigns user roles (auto-escalates administrative emails to `admin`), and generates profile records.
+
+### 3. AI Cognitive Architecture (Chatbot Pipeline)
+*   **FastAPI & ASGI Layer**: Handles async requests with sub-second throughput. Employs `sse-starlette` for Server-Sent Events (SSE) to support letter-by-letter streaming.
+*   **LangGraph Conversation Management**: The chat flow is designed as a state machine:
+    ```mermaid
+    graph TD
+        Query[Analyze Input] --> Route{Search Needed?}
+        Route -->|Yes| RAG[pgvector Vector Retrieval] --> Compliance[Compliance Filter]
+        Route -->|No| Prompt[Direct Prompt Model] --> Compliance
+        Compliance --> Stream[SSE Response Stream]
+    ```
+*   **Retrieval-Augmented Generation (RAG)**: Converts user queries to mathematical vectors and matches them to article embeddings stored in Supabase using cosine-similarity operators (`pgvector`).
+*   **Compliance Guardrails Filter**: Intercepts the generated answer before client streaming. Evaluates responses against SEBI-inspired financial regulations (detects direct stock recommendations, security tips, and speculative targets). Modifies predictions and appends mandatory warnings.
+
+### 4. A/B Testing & Telemetry Engineering
+*   **Dynamic Variant Routing**: The client application checks variant configurations via session identifiers. Assignments are cached in local storage to prevent visual flickering on page reloads.
+*   **Goal Tracking Telemetry**: Custom tracking hooks capture event triggers:
+    *   `increment_variant_views`: Logged when the component renders.
+    *   `increment_variant_clicks`: Logged when the target CTA is triggered.
+    *   `increment_variant_conversions`: Logged on signup completion.
+*   **Statistical Evaluation**: Variants capture conversion ratios (`conversions / views`) analyzed via the dashboard interface.
+
+### 5. Security & Access Rules
+*   **Row-Level Security (RLS)**: Active on all public tables:
+    *   `SELECT`: Open to guests/users if `is_published` is true.
+    *   `INSERT/UPDATE/DELETE`: Restricted via policy functions checking `is_admin(auth.uid())`.
+*   **Route Guarding**: Client-side layouts block `/admin/*` pages by verifying the user's role metadata fetched during authentication initialization.
+
+---
+
 ## 🛠️ The Tech Stack
 
 The application utilizes a distributed architecture dividing client rendering, AI computational workflows, and backend storage services.

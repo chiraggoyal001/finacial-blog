@@ -102,7 +102,7 @@ const ModuleArticlePage = () => {
     "description": mod.description,
     "provider": {
       "@type": "Organization",
-      "name": "Dhaani",
+      "name": "KAMADA",
       "sameAs": typeof window !== "undefined" ? window.location.origin : ""
     }
   } : undefined;

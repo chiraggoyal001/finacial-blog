@@ -11,14 +11,14 @@ interface SEOProps {
 export const useSEO = ({ title, description, image, type = 'website', schema }: SEOProps) => {
   useEffect(() => {
     // 1. Update Title
-    const baseTitle = 'Dhaani - Financial Literacy';
+    const baseTitle = 'KAMADA - Financial Literacy';
     const fullTitle = title ? `${title} | ${baseTitle}` : baseTitle;
     document.title = fullTitle;
 
     // 2. Update Meta Description
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', description || 'Learn financial literacy with Dhaani - articles, modules, and videos.');
+      metaDescription.setAttribute('content', description || 'Learn financial literacy with KAMADA - articles, modules, and videos.');
     }
 
     // 3. Update OG Tags (Social Media)

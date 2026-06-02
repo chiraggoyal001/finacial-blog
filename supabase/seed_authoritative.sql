@@ -238,8 +238,8 @@ FROM junior_modules WHERE title = 'What is Money? 💰';
 
 -- 9. System Settings
 INSERT INTO system_settings (key, value) VALUES
-  ('ai_prompt', '{"text": "You are a friendly and knowledgeable financial literacy assistant for the blog Dhaani. Your goal is to explain complex financial concepts in simple, easy-to-understand terms for both adults and children. Always maintain a helpful, encouraging tone and avoid giving direct financial advice. Emphasize learning and understanding."}'::jsonb),
-  ('system_banner', '{"text": "Welcome to Dhaani! Start your financial learning journey today.", "isActive": true, "backgroundColor": "bg-primary", "textColor": "text-primary-foreground", "visiblePages": ["all"]}'::jsonb)
+  ('ai_prompt', '{"text": "You are a friendly and knowledgeable financial literacy assistant for the blog KAMADA. Your goal is to explain complex financial concepts in simple, easy-to-understand terms for both adults and children. Always maintain a helpful, encouraging tone and avoid giving direct financial advice. Emphasize learning and understanding."}'::jsonb),
+  ('system_banner', '{"text": "Welcome to KAMADA! Start your financial learning journey today.", "isActive": true, "backgroundColor": "bg-primary", "textColor": "text-primary-foreground", "visiblePages": ["all"]}'::jsonb)
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 -- 10. Affiliate Links

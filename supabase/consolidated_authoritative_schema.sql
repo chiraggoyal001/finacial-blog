@@ -1078,6 +1078,7 @@ CREATE POLICY "Admins can manage junior chapters" ON junior_chapters FOR ALL USI
 -- User Interactions
 CREATE POLICY "Users can manage own likes" ON user_likes FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage own bookmarks" ON user_bookmarks FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can manage own progress" ON user_progress;
 CREATE POLICY "Users can manage own progress" ON user_progress FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can read own quiz results" ON quiz_results FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own quiz results" ON quiz_results FOR INSERT WITH CHECK (auth.uid() = user_id);
@@ -1179,6 +1180,6 @@ FROM user_activities GROUP BY DATE(created_at) ORDER BY date DESC;
 -- =====================================================
 
 INSERT INTO system_settings (key, value) VALUES
-  ('ai_prompt', '{"text": "You are a friendly and knowledgeable financial literacy assistant for the blog Dhaani. Your goal is to explain complex financial concepts in simple, easy-to-understand terms for both adults and children. Always maintain a helpful, encouraging tone and avoid giving direct financial advice. Emphasize learning and understanding."}'::jsonb),
+  ('ai_prompt', '{"text": "You are a friendly and knowledgeable financial literacy assistant for the blog KAMADA. Your goal is to explain complex financial concepts in simple, easy-to-understand terms for both adults and children. Always maintain a helpful, encouraging tone and avoid giving direct financial advice. Emphasize learning and understanding."}'::jsonb),
   ('system_banner', '{"text": "", "isActive": false, "backgroundColor": "bg-primary", "textColor": "text-primary-foreground", "visiblePages": ["all"]}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
