@@ -20,6 +20,10 @@ const handleImageError = (e: SyntheticEvent<HTMLImageElement>) => {
   e.currentTarget.src = PLACEHOLDER_IMAGE;
 };
 
+const stripHtml = (html: string) => {
+  return html ? html.replace(/<[^>]*>/g, "") : "";
+};
+
 const EventsPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
@@ -180,7 +184,7 @@ const EventsPage = () => {
                             {event.tags.filter(tg => tg.type === "major").map(tg => <Badge key={tg.name} variant="secondary" className="text-xs">{tg.name}</Badge>)}
                           </div>
                           <h3 className="font-display font-semibold text-foreground leading-tight">{event.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(event.description || "")}</p>
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground" suppressHydrationWarning>
                             <span className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {new Date(event.start_time).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
                             <span className="flex items-center gap-1">

@@ -19,6 +19,7 @@ import {
 } from '@/hooks/useContent';
 import { TagInput } from '@/components/admin/TagInput';
 import { QuizEditor } from '@/components/admin/QuizEditor';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import type { DbVideoSeries, DbVideoChapter, QuizQuestion } from '@/lib/types';
 
 interface ChapterForm {
@@ -234,8 +235,13 @@ export default function VideoSeriesEditor() {
                 <Input value={formData.total_duration} onChange={e => setFormData({ ...formData, total_duration: e.target.value })} placeholder="e.g., 2h 30min" />
               </div>
               <div className="space-y-2">
-                <Label>Thumbnail URL</Label>
-                <Input value={formData.thumbnail} onChange={e => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
+                <ImageUpload
+                  value={formData.thumbnail || ''}
+                  onChange={(url) => setFormData({ ...formData, thumbnail: url })}
+                  label="Thumbnail"
+                  placeholder="Enter thumbnail URL or upload custom image"
+                  folder="videos"
+                />
               </div>
             </div>
             <div className="space-y-2">

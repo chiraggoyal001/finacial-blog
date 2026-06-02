@@ -20,6 +20,11 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import DataError from "@/components/DataError";
 import { supabase } from "@/lib/supabase";
+import { sanitizeHtml } from "@/lib/sanitize";
+
+const formatPlainText = (text: string) => {
+  return text.split("\n\n").map(p => `<p>${p.replace(/\n/g, "<br />")}</p>`).join("");
+};
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { eventId } = params;
@@ -260,7 +265,16 @@ const EventDetailPage = () => {
                 </div>
               </div>
 
-              <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">{event.description}</p>
+              <div 
+                className="text-foreground/80 leading-relaxed prose prose-neutral dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary"
+                dangerouslySetInnerHTML={{ 
+                  __html: sanitizeHtml(
+                    event.description 
+                      ? (event.description.includes('<') ? event.description : formatPlainText(event.description)) 
+                      : ""
+                  ) 
+                }} 
+              />
               
               {/* Capacity & Social Proof */}
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4">

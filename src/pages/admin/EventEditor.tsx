@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useEvent, useCreateEvent, useUpdateEvent } from '@/hooks/useContent';
 import { TagInput } from '@/components/admin/TagInput';
 import { ContentEditor, plainTextToHtml } from '@/components/admin/ContentEditor';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import type { DbEvent } from '@/lib/types';
 
 export default function EventEditor() {
@@ -242,8 +243,13 @@ export default function EventEditor() {
             </div>
 
             <div className="space-y-2">
-              <Label>Image URL</Label>
-              <Input value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+              <ImageUpload
+                value={formData.image || ''}
+                onChange={(url) => setFormData({ ...formData, image: url })}
+                label="Event Image"
+                placeholder="Enter image URL or upload custom image"
+                folder="events"
+              />
             </div>
           </CardContent>
         </Card>

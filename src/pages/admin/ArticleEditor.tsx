@@ -19,6 +19,7 @@ import { useArticle, useCreateArticle, useUpdateArticle } from '@/hooks/useConte
 import { useAuth } from '@/hooks/useAuth';
 import { TagInput } from '@/components/admin/TagInput';
 import { ContentEditor, plainTextToHtml } from '@/components/admin/ContentEditor';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import type { DbArticle } from '@/lib/types';
 
 const CATEGORIES = ['Newsletter', 'Modules', 'Videos', 'Junior', 'Blog'];
@@ -251,12 +252,12 @@ export default function ArticleEditor() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image">Featured Image URL</Label>
-                <Input
-                  id="image"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://..."
+                <ImageUpload
+                  value={formData.image || ''}
+                  onChange={(url) => setFormData({ ...formData, image: url })}
+                  label="Featured Image"
+                  placeholder="Enter image URL or upload custom image"
+                  folder="articles"
                 />
               </div>
             </div>

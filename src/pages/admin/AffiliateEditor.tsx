@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCreateAffiliate, useUpdateAffiliate, AffiliateVisibilityRules, AffiliateScheduling, AffiliateTargeting } from '@/hooks/useAffiliates';
 import { toast } from 'sonner';
 import { Loader2, Globe, Clock, Target, Bot, Info, Calendar, MapPin, Users } from 'lucide-react';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import { FINANCE_INTERESTS, INDIAN_STATES } from '@/lib/types';
 
 interface AffiliateEditorProps {
@@ -345,12 +346,12 @@ export default function AffiliateEditor({ isOpen, onClose, initialData }: Affili
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="logo">Logo URL (Optional)</Label>
-                <Input 
-                  id="logo" 
-                  value={formData.logo_url}
-                  onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-                  placeholder="https://.../logo.png" 
+                <ImageUpload
+                  value={formData.logo_url || ''}
+                  onChange={(url) => setFormData({ ...formData, logo_url: url })}
+                  label="Logo Image (Optional)"
+                  placeholder="Enter logo URL or upload custom image"
+                  folder="affiliates"
                 />
               </div>
 

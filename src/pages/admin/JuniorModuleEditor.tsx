@@ -22,6 +22,7 @@ import {
 import { TagInput } from '@/components/admin/TagInput';
 import { ContentEditor, plainTextToHtml } from '@/components/admin/ContentEditor';
 import { QuizEditor } from '@/components/admin/QuizEditor';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import type { DbJuniorModule, DbJuniorChapter, QuizQuestion, JuniorContentType } from '@/lib/types';
 
 interface ChapterForm {
@@ -261,8 +262,13 @@ export default function JuniorModuleEditor() {
                 <Input value={formData.total_duration} onChange={e => setFormData({ ...formData, total_duration: e.target.value })} placeholder="e.g., 30 min" />
               </div>
               <div className="space-y-2">
-                <Label>Image URL</Label>
-                <Input value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://..." />
+                <ImageUpload
+                  value={formData.image || ''}
+                  onChange={(url) => setFormData({ ...formData, image: url })}
+                  label="Cover Image"
+                  placeholder="Enter image URL or upload custom image"
+                  folder="junior"
+                />
               </div>
             </div>
           </CardContent>
