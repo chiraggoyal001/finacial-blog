@@ -1,0 +1,95 @@
+# Product roadmap
+
+This roadmap prioritises evidence, trust, and reliability before expanding the product surface. It is a proposal, not a commitment to delivery dates.
+
+## Prioritisation principle
+
+Choose work that reduces the biggest uncertainty or risk in the core learning journey. Do not add a feature merely because it is technically possible.
+
+## Now — Establish a trustworthy baseline
+
+### 1. Choose one initial audience and journey
+**Why:** the product currently spans several audiences and learning formats.
+
+**Acceptance criteria**
+- One initial audience is described using evidence from discovery.
+- One target learning task is written in user language.
+- Current workarounds and major pain points are documented.
+- Out-of-scope use cases are explicit.
+
+### 2. Audit the current experience
+**Why:** the repository contains many routes and integrations; documentation should match the deployed behaviour.
+
+**Acceptance criteria**
+- A route-by-route smoke-test checklist exists.
+- Each key feature is labelled implemented, configured, or not yet verified.
+- Core journeys are tested on mobile and desktop.
+- Broken links, loading states, empty states, and errors are documented.
+
+### 3. Validate financial content and calculators
+**Why:** inaccurate educational content can undermine trust even when the interface is usable.
+
+**Acceptance criteria**
+- Calculator formulas are checked against independent examples.
+- Inputs, assumptions, units, and limitations are visible.
+- Financial articles have source links and review dates where appropriate.
+- A correction process is documented.
+
+## Next — Improve the core learning journey
+
+### 4. Conduct formative usability tests
+**Acceptance criteria**
+- 5–8 participants from the proposed audience attempt the same target task.
+- Task completion and major friction points are recorded.
+- The three most consequential usability issues are prioritised.
+- Changes are tied to observed evidence, not preference alone.
+
+### 5. Add outcome-oriented measurement
+**Acceptance criteria**
+- Event definitions and data minimisation rules are documented.
+- Learning task success and comprehension measures have clear definitions.
+- Duplicate events and exposure logging are checked.
+- A baseline is collected before claims about improvement are made.
+
+### 6. Evaluate AI Q&A as a separate risk surface
+**Acceptance criteria**
+- A versioned evaluation set includes answerable, unanswerable, ambiguous, and unsafe-request prompts.
+- Source relevance and factual accuracy are reviewed.
+- Unsafe-answer severity is tracked.
+- The no-relevant-source path is tested.
+- AI is clearly presented as educational support, not a substitute for a qualified professional.
+
+## Later — Scale only after evidence
+
+### 7. Improve content operations
+- Define content ownership, review dates, and correction workflow.
+- Test publishing and rollback tasks with administrators.
+- Audit admin permissions and server-side enforcement.
+
+### 8. Explore personalisation carefully
+- Begin with transparent, user-controlled recommendations.
+- Explain why a topic is recommended.
+- Avoid using sensitive attributes unless there is a justified, reviewed need.
+- Evaluate whether recommendations help learners complete meaningful tasks.
+
+### 9. Run controlled experiments where appropriate
+- Define hypotheses, guardrails, and minimum evidence requirements.
+- Verify assignment and event quality.
+- Use qualitative methods when traffic is insufficient.
+- Document negative and inconclusive results, not only positive outcomes.
+
+## Explicit non-goals for the next iteration
+
+- Adding more AI features before measuring answer quality.
+- Expanding to every audience before validating one core journey.
+- Treating time-on-site or clicks as proof of learning.
+- Claiming regulatory compliance solely because filters or disclaimers exist.
+- Claiming product-market fit, retention improvement, or business impact without evidence.
+
+## Decision gate
+
+At the end of the first validation cycle, decide whether to:
+1. **Continue** if the core task is valuable and understandable.
+2. **Narrow** if users value only one audience or one learning flow.
+3. **Redesign** if users cannot complete the task or misunderstand the outputs.
+4. **Pause a feature** if reliability, safety, privacy, or maintenance cost outweighs demonstrated value.
